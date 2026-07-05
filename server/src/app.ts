@@ -13,6 +13,7 @@ import { validateInterestList } from "./interests";
 import { paymentsRouter, razorpayWebhookHandler, walletRouter } from "./payments";
 import { databaseRateLimit } from "./rate-limit";
 import { socialRouter } from "./social";
+import { createSupabaseAuthUser, rememberSupabaseAuthLogin, sendSupabasePasswordReset } from "./supabase-auth";
 import { matchesRouter } from "./matches";
 import { discardIncomingUploads, optimizeUploads, removeUploads, upload } from "./uploads";
 
@@ -58,8 +59,9 @@ app.post("/api/auth/register", asyncRoute(async (request, response) => {
   const { interests = [], password: _password, ...details } = input;
   const interestList = validateInterestList(interests);
   if (!interestList.ok) return response.status(400).json({ error: interestList.error, field: "interests" });
+  const supabaseAuthUserId = await createSupabaseAuthUser({ email: input.email, password: input.password, name: input.name, phone: input.phone, role: "customer" });
   const user = await prisma.$transaction(async tx => {
-    const created = await tx.user.create({ data: { ...details, passwordHash, acceptedPolicies: input.acceptedPolicies === true, acceptedAt: input.acceptedPolicies ? new Date() : undefined, onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: publicUser });
+    const created = await tx.user.create({ data: { ...(supabaseAuthUserId ? { id: supabaseAuthUserId } : {}), ...details, passwordHash, acceptedPolicies: input.acceptedPolicies === true, acceptedAt: input.acceptedPolicies ? new Date() : undefined, onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: publicUser });
     if (interestList.interests.length) await tx.userInterest.createMany({ data: interestList.interests.map(interest => ({ userId: created.id, interest })) });
     await tx.wallet.create({ data: { userId: created.id } });
     return created;
@@ -69,6 +71,7 @@ app.post("/api/auth/register", asyncRoute(async (request, response) => {
 app.post("/api/auth/login", asyncRoute(async (request, response) => {
   const input = credentials.extend({ acceptedPolicies: z.boolean().optional(), acceptedPolicyVersion: z.string().max(40).optional() }).parse(request.body); const record = await prisma.user.findUnique({ where: { email: input.email } });
   if (!record || record.accountStatus !== "active" || !await bcrypt.compare(input.password, record.passwordHash)) return response.status(401).json({ error: "Invalid email or password.", code: "INVALID_CREDENTIALS" });
+  await rememberSupabaseAuthLogin(input.email, input.password);
   const current = input.acceptedPolicies ? await prisma.user.update({ where: { id: record.id }, data: { acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() } }) : record;
   response.json(await issueSession(current, response));
 }));
@@ -85,8 +88,9 @@ app.post("/api/auth/refresh", asyncRoute(async (request, response) => {
 app.post("/api/auth/logout", asyncRoute(async (request, response) => { const token = String(request.body?.refreshToken || request.headers.cookie?.match(/(?:^|;\s*)fitsaathi_refresh=([^;]+)/)?.[1] || ""); if (token) await prisma.refreshToken.deleteMany({ where: { tokenHash: hashToken(token) } }); response.clearCookie("fitsaathi_access", sessionCookie); response.clearCookie("fitsaathi_refresh", sessionCookie); response.status(204).end(); }));
 app.get("/api/auth/me", authenticate, asyncRoute(async (request: AuthRequest, response) => response.json(await prisma.user.findUnique({ where: { id: request.user!.id }, select: publicUser }))));
 app.post("/api/auth/forgot-password", asyncRoute(async (request, response) => {
-  credentials.pick({ email: true }).parse(request.body);
-  response.json({ message: "If the account exists, ask an administrator to reset the password. Email delivery is not configured." });
+  const input = credentials.pick({ email: true }).parse(request.body);
+  const sent = await sendSupabasePasswordReset(input.email);
+  response.json({ message: sent ? "If the account exists, check your email for a reset link." : "If the account exists, ask an administrator to reset the password. Email delivery is not configured." });
 }));
 app.post("/api/auth/change-password", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({ currentPassword: z.string().min(8), newPassword: z.string().min(8).max(100) }).parse(request.body);

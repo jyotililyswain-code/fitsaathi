@@ -5,12 +5,10 @@ import { Bell, Calendar, Heart, IndianRupee, MapPin, MessageCircle, QrCode, Star
 import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
-import { StatGrid } from "@/components/StatGrid";
-import { useCollectionCount, usePlatformStats, useUserBookings } from "@/lib/hooks";
+import { useCollectionCount, useUserBookings } from "@/lib/hooks";
 import { useSessionUser } from "@/lib/auth-client";
 
 export default function CustomerDashboardPage() {
-  const stats = usePlatformStats();
   const { user } = useSessionUser();
   const bookings = useUserBookings(user?.id ?? null);
   const favorites = useCollectionCount("favorites");
@@ -24,9 +22,6 @@ export default function CustomerDashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-white">Customer dashboard</h1>
         <p className="mt-3 text-zinc-400">Bookings, subscriptions, favorites, chats, payments, and reviews render from real records.</p>
-        <div className="mt-8">
-          <StatGrid stats={stats.data} />
-        </div>
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <Tile icon={<Calendar />} label="My bookings" value={bookings.data.length} />
           <Tile icon={<Heart />} label="Saved favorites" value={favorites.data} />

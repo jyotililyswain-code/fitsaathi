@@ -110,86 +110,87 @@ enum PremiumPlan {
 }
 
 model User {
-  id                     String                 @id @default(uuid())
-  name                   String
-  email                  String                 @unique
-  phone                  String?
-  passwordHash           String
-  role                   Role                   @default(customer)
-  accountStatus          String                 @default("active")
-  address                String?
-  acceptedPolicies       Boolean                @default(false)
-  acceptedPolicyVersion  String?
-  acceptedAt             DateTime?
-  isPhoneVerified        Boolean                @default(false)
-  gender                 String?
-  birthDate              DateTime?
-  city                   String?
-  state                  String?
-  country                String                 @default("India")
-  heightCm               Int?
-  weightKg               Float?
-  fitnessGoal            String?
-  relationshipPreference String?
-  profileBio             String?
-  fitnessLevel           String?
-  preferredAgeMin        Int?
-  preferredAgeMax        Int?
-  latitude               Float?
-  longitude              Float?
-  lastSeenAt             DateTime?
-  isOnline               Boolean                @default(false)
-  onboardingCompleted    Boolean                @default(false)
+  id                        String                    @id @default(uuid())
+  name                      String
+  email                     String                    @unique
+  phone                     String?
+  passwordHash              String
+  role                      Role                      @default(customer)
+  accountStatus             String                    @default("active")
+  address                   String?
+  acceptedPolicies          Boolean                   @default(false)
+  acceptedPolicyVersion     String?
+  acceptedAt                DateTime?
+  isPhoneVerified           Boolean                   @default(false)
+  gender                    String?
+  birthDate                 DateTime?
+  city                      String?
+  state                     String?
+  country                   String                    @default("India")
+  heightCm                  Int?
+  weightKg                  Float?
+  fitnessGoal               String?
+  relationshipPreference    String?
+  profileBio                String?
+  fitnessLevel              String?
+  preferredAgeMin           Int?
+  preferredAgeMax           Int?
+  latitude                  Float?
+  longitude                 Float?
+  lastSeenAt                DateTime?
+  isOnline                  Boolean                   @default(false)
+  onboardingCompleted       Boolean                   @default(false)
   verificationPaymentStatus VerificationPaymentStatus @default(unpaid)
-  verificationPaidUntil   DateTime?
-  premiumUntil           DateTime?
-  createdAt              DateTime               @default(now())
-  updatedAt              DateTime               @updatedAt
-  seller                 Seller?
-  coach                  Coach?
-  dojo                   Dojo?
-  orders                 Order[]
-  payments               Payment[]
-  reviews                Review[]
-  providerReviews        ProviderReview[]
-  notifications          Notification[]
-  wishlists              Wishlist[]
-  cartItems              CartItem[]
-  refreshTokens          RefreshToken[]
-  adminLogs              AdminLog[]             @relation("AdminActor")
-  customerBookings       Booking[]              @relation("BookingCustomer")
-  providerBookings       Booking[]              @relation("BookingProvider")
-  attendanceAsCustomer   Attendance[]           @relation("AttendanceCustomer")
-  attendanceScans        Attendance[]           @relation("AttendanceScanner")
-  verificationFiles      ProviderVerification[] @relation("VerificationOwner")
-  reviewedVerifications  ProviderVerification[] @relation("VerificationReviewer")
-  chatRequests           ChatRequest[]
-  profilePhotos          UserProfilePhoto[]
-  socialVerification     SocialVerification?
-  interests              UserInterest[]
-  achievements           UserAchievement[]
-  socialLinks            UserSocialLink[]
-  invitesSent            ConnectionInvite[]     @relation("InviteSender")
-  invitesReceived        ConnectionInvite[]     @relation("InviteRecipient")
-  blocksMade             UserBlock[]            @relation("Blocker")
-  blocksReceived         UserBlock[]            @relation("BlockedUser")
-  conversationsAsOne     Conversation[]         @relation("ConversationUserOne")
-  conversationsAsTwo     Conversation[]         @relation("ConversationUserTwo")
-  socialMessages         SocialMessage[]        @relation("MessageSender")
-  typingIndicators       TypingIndicator[]
-  wallet                 Wallet?
-  walletTransactions     WalletTransaction[]
-  premiumSubscriptions   PremiumSubscription[]
-  profileViewsReceived   ProfileView[]          @relation("ProfileViewed")
-  profilesViewed         ProfileView[]          @relation("ProfileViewer")
-  socialReviewsWritten   SocialReview[]         @relation("SocialReviewAuthor")
-  socialReviewsReceived  SocialReview[]         @relation("SocialReviewSubject")
-  pushSubscriptions      PushSubscription[]
-  moderationCases        ModerationCase[]       @relation("ModerationSubject")
-  emergencyRequests      EmergencyRequest[]
+  verificationPaidUntil     DateTime?
+  premiumUntil              DateTime?
+  createdAt                 DateTime                  @default(now())
+  updatedAt                 DateTime                  @updatedAt
+  seller                    Seller?
+  coach                     Coach?
+  dojo                      Dojo?
+  orders                    Order[]
+  payments                  Payment[]
+  reviews                   Review[]
+  providerReviews           ProviderReview[]
+  notifications             Notification[]
+  wishlists                 Wishlist[]
+  cartItems                 CartItem[]
+  refreshTokens             RefreshToken[]
+  adminLogs                 AdminLog[]                @relation("AdminActor")
+  customerBookings          Booking[]                 @relation("BookingCustomer")
+  providerBookings          Booking[]                 @relation("BookingProvider")
+  attendanceAsCustomer      Attendance[]              @relation("AttendanceCustomer")
+  attendanceScans           Attendance[]              @relation("AttendanceScanner")
+  verificationFiles         ProviderVerification[]    @relation("VerificationOwner")
+  reviewedVerifications     ProviderVerification[]    @relation("VerificationReviewer")
+  chatRequests              ChatRequest[]
+  profilePhotos             UserProfilePhoto[]
+  socialVerification        SocialVerification?
+  interests                 UserInterest[]
+  achievements              UserAchievement[]
+  socialLinks               UserSocialLink[]
+  invitesSent               ConnectionInvite[]        @relation("InviteSender")
+  invitesReceived           ConnectionInvite[]        @relation("InviteRecipient")
+  blocksMade                UserBlock[]               @relation("Blocker")
+  blocksReceived            UserBlock[]               @relation("BlockedUser")
+  conversationsAsOne        Conversation[]            @relation("ConversationUserOne")
+  conversationsAsTwo        Conversation[]            @relation("ConversationUserTwo")
+  socialMessages            SocialMessage[]           @relation("MessageSender")
+  typingIndicators          TypingIndicator[]
+  wallet                    Wallet?
+  walletTransactions        WalletTransaction[]
+  premiumSubscriptions      PremiumSubscription[]
+  profileViewsReceived      ProfileView[]             @relation("ProfileViewed")
+  profilesViewed            ProfileView[]             @relation("ProfileViewer")
+  socialReviewsWritten      SocialReview[]            @relation("SocialReviewAuthor")
+  socialReviewsReceived     SocialReview[]            @relation("SocialReviewSubject")
+  pushSubscriptions         PushSubscription[]
+  moderationCases           ModerationCase[]          @relation("ModerationSubject")
+  emergencyRequests         EmergencyRequest[]
 
   @@index([role, accountStatus])
   @@index([verificationPaymentStatus, verificationPaidUntil])
+  @@map("users")
 }
 
 model UserProfilePhoto {
@@ -205,6 +206,7 @@ model UserProfilePhoto {
   @@unique([userId, contentHash])
   @@index([userId, sortOrder])
   @@index([contentHash])
+  @@map("user_profile_photos")
 }
 
 model SocialVerification {
@@ -231,6 +233,7 @@ model SocialVerification {
 
   @@index([status, createdAt])
   @@index([paymentStatus, expiresAt])
+  @@map("social_verifications")
 }
 
 model UserInterest {
@@ -242,6 +245,7 @@ model UserInterest {
 
   @@unique([userId, interest])
   @@index([interest])
+  @@map("user_interests")
 }
 
 model UserAchievement {
@@ -254,6 +258,7 @@ model UserAchievement {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+  @@map("user_achievements")
 }
 
 model UserSocialLink {
@@ -265,6 +270,7 @@ model UserSocialLink {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, platform])
+  @@map("user_social_links")
 }
 
 model ConnectionInvite {
@@ -283,6 +289,7 @@ model ConnectionInvite {
 
   @@unique([senderId, recipientId])
   @@index([recipientId, status, createdAt])
+  @@map("connection_invites")
 }
 
 model UserBlock {
@@ -296,6 +303,7 @@ model UserBlock {
 
   @@unique([blockerId, blockedId])
   @@index([blockedId])
+  @@map("user_blocks")
 }
 
 model Conversation {
@@ -314,6 +322,7 @@ model Conversation {
 
   @@index([userOneId, lastActivityAt])
   @@index([userTwoId, lastActivityAt])
+  @@map("conversations")
 }
 
 model SocialMessage {
@@ -333,6 +342,7 @@ model SocialMessage {
 
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
+  @@map("social_messages")
 }
 
 model TypingIndicator {
@@ -345,6 +355,7 @@ model TypingIndicator {
 
   @@unique([conversationId, userId])
   @@index([expiresAt])
+  @@map("typing_indicators")
 }
 
 model Wallet {
@@ -355,6 +366,8 @@ model Wallet {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
 }
 
 model WalletTransaction {
@@ -380,6 +393,7 @@ model WalletTransaction {
   @@index([razorpayPaymentId])
   @@index([status, createdAt])
   @@index([userId, createdAt])
+  @@map("wallet_transactions")
 }
 
 model DailyConnectionCharge {
@@ -394,6 +408,7 @@ model DailyConnectionCharge {
 
   @@unique([connectionId, chargeDate])
   @@index([chargeDate])
+  @@map("daily_connection_charges")
 }
 
 model PremiumSubscription {
@@ -409,6 +424,7 @@ model PremiumSubscription {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, active, endsAt])
+  @@map("premium_subscriptions")
 }
 
 model ProfileView {
@@ -421,6 +437,7 @@ model ProfileView {
 
   @@index([viewedId, createdAt])
   @@index([viewerId, createdAt])
+  @@map("profile_views")
 }
 
 model SocialReview {
@@ -435,6 +452,7 @@ model SocialReview {
 
   @@unique([authorId, subjectId])
   @@index([subjectId, createdAt])
+  @@map("social_reviews")
 }
 
 model PushSubscription {
@@ -447,6 +465,7 @@ model PushSubscription {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model ModerationCase {
@@ -464,6 +483,7 @@ model ModerationCase {
 
   @@index([status, createdAt])
   @@index([subjectId])
+  @@map("moderation_cases")
 }
 
 model EmergencyRequest {
@@ -476,6 +496,7 @@ model EmergencyRequest {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
+  @@map("emergency_requests")
 }
 
 model RefreshToken {
@@ -487,6 +508,7 @@ model RefreshToken {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
+  @@map("refresh_tokens")
 }
 
 model Coach {
@@ -520,6 +542,7 @@ model Coach {
 
   @@index([status, verified, category])
   @@index([rating])
+  @@map("coaches")
 }
 
 model Dojo {
@@ -559,6 +582,7 @@ model Dojo {
 
   @@index([status, approved, category])
   @@index([rating])
+  @@map("dojos")
 }
 
 model ProviderVerification {
@@ -579,6 +603,7 @@ model ProviderVerification {
 
   @@unique([profileType, profileId])
   @@index([ownerId, status])
+  @@map("verification_requests")
 }
 
 model Seller {
@@ -607,6 +632,7 @@ model Seller {
 
   @@index([status, trusted])
   @@index([rating])
+  @@map("seller_accounts")
 }
 
 model Product {
@@ -645,6 +671,7 @@ model Product {
   @@index([sellerId, createdAt])
   @@index([customerPrice])
   @@index([rating])
+  @@map("products")
 }
 
 model ProductImage {
@@ -656,6 +683,7 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, sortOrder])
+  @@map("product_images")
 }
 
 model Order {
@@ -678,6 +706,7 @@ model Order {
 
   @@index([userId, createdAt])
   @@index([status, createdAt])
+  @@map("orders")
 }
 
 model OrderItem {
@@ -695,6 +724,7 @@ model OrderItem {
 
   @@index([orderId])
   @@index([sellerId])
+  @@map("order_items")
 }
 
 model Booking {
@@ -741,6 +771,7 @@ model Booking {
   @@index([providerOwnerId, status])
   @@index([coachId])
   @@index([dojoId])
+  @@map("bookings")
 }
 
 model Attendance {
@@ -759,6 +790,7 @@ model Attendance {
 
   @@index([bookingId, scannedAt])
   @@index([customerId, scannedAt])
+  @@map("attendance")
 }
 
 model Payment {
@@ -800,6 +832,7 @@ model Payment {
   @@index([status, createdAt])
   @@index([userId, purpose])
   @@index([bookingId])
+  @@map("payments")
 }
 
 model RazorpayWebhookEvent {
@@ -813,6 +846,7 @@ model RazorpayWebhookEvent {
 
   @@index([event, createdAt])
   @@index([paymentId])
+  @@map("razorpay_webhook_events")
 }
 
 model Review {
@@ -826,6 +860,7 @@ model Review {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@map("product_reviews")
 }
 
 model ProviderReview {
@@ -842,6 +877,7 @@ model ProviderReview {
 
   @@index([coachId, createdAt])
   @@index([dojoId, createdAt])
+  @@map("provider_reviews")
 }
 
 model Notification {
@@ -859,6 +895,7 @@ model Notification {
   order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
+  @@map("notifications")
 }
 
 model Wishlist {
@@ -870,6 +907,7 @@ model Wishlist {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@map("wishlists")
 }
 
 model CartItem {
@@ -883,6 +921,7 @@ model CartItem {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
+  @@map("cart_items")
 }
 
 model ChatRequest {
@@ -896,6 +935,7 @@ model ChatRequest {
   coach     Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
 
   @@index([coachId, createdAt])
+  @@map("chat_requests")
 }
 
 model ContactMessage {
@@ -906,6 +946,8 @@ model ContactMessage {
   message   String
   status    String   @default("new")
   createdAt DateTime @default(now())
+
+  @@map("support_tickets")
 }
 
 model PlatformSettings {
@@ -917,6 +959,8 @@ model PlatformSettings {
   manualSellerVerification Boolean  @default(true)
   updatedById              String?
   updatedAt                DateTime @updatedAt
+
+  @@map("platform_settings")
 }
 
 model Report {
@@ -932,6 +976,7 @@ model Report {
   updatedAt    DateTime @updatedAt
 
   @@index([status, createdAt])
+  @@map("reports")
 }
 
 model AdminLog {
@@ -946,6 +991,7 @@ model AdminLog {
 
   @@index([createdAt])
   @@index([actorId, createdAt])
+  @@map("admin_logs")
 }
 
 model RateLimitBucket {
@@ -955,4 +1001,5 @@ model RateLimitBucket {
   updatedAt DateTime @updatedAt
 
   @@index([resetAt])
+  @@map("rate_limit_buckets")
 }

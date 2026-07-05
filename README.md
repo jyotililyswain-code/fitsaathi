@@ -1,6 +1,6 @@
 # FitSaathi
 
-FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, PostgreSQL, Tailwind CSS, Razorpay, and Vercel Blob. PostgreSQL is the application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
+FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, Razorpay, and Vercel Blob. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
 
 ## Run locally
 
@@ -19,7 +19,9 @@ You can still run the standalone Express backend for local debugging with `npm r
 
 Copy `.env.example` to `.env` and configure:
 
-- `DATABASE_URL`: PostgreSQL connection string used by Prisma. On Vercel, use your production Postgres URL. The app also falls back to `POSTGRES_PRISMA_URL`, `POSTGRES_URL`, or `POSTGRES_URL_NON_POOLING` when `DATABASE_URL` is not set.
+- `DATABASE_URL`: Supabase PostgreSQL connection string used by Prisma. On Vercel, use the Supabase pooled connection string. The app also falls back to `POSTGRES_PRISMA_URL`, `POSTGRES_URL`, or `POSTGRES_URL_NON_POOLING` when `DATABASE_URL` is not set.
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL used by the browser/server Supabase client.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase anon key used by Supabase Auth/client access.
 - `JWT_SECRET`: long random access-token signing secret.
 - `JWT_REFRESH_SECRET`: separate long random refresh-token signing secret.
 - `ATTENDANCE_QR_SECRET`: separate long random HMAC secret for attendance QR codes.
@@ -65,15 +67,27 @@ The integration suites cover every Prisma model plus authentication, provider re
 
 Razorpay server routes create and verify payment orders, persist payment state through Prisma, and reject duplicate booking/order consumption. Configure a webhook for `/api/razorpay/webhook` and subscribe to payment, order, and refund events. Use Test Mode credentials for local QA.
 
+## Supabase database
+
+Run the Prisma migrations against your Supabase PostgreSQL database:
+
+```powershell
+npm run db:migrate
+```
+
+The Prisma migrations create the app schema and map the physical table names to Supabase-friendly names such as `users`, `coaches`, `bookings`, `orders`, `payments`, `seller_accounts`, and `refresh_tokens`. After that, run `supabase/migrations/20260705161000_fitsaathi_rls.sql` in the Supabase SQL editor to enable Row Level Security policies for direct Supabase client access.
+
+Supabase Auth is supported for new signups and password reset when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set. Existing custom JWT cookies remain in place so the current login UI and protected routes keep working.
+
 ## Storage and production
 
 ## Vercel deployment
 
 This repo is now designed to deploy as a single Vercel Next.js project:
 
-1. Connect a PostgreSQL database. Set `DATABASE_URL`, or connect Vercel Postgres so `POSTGRES_PRISMA_URL` / `POSTGRES_URL` are injected.
+1. Create a Supabase project and copy its PostgreSQL connection string into Vercel as `DATABASE_URL`.
 2. Connect a Vercel Blob store and keep `BLOB_READ_WRITE_TOKEN` available to the project.
-3. Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ATTENDANCE_QR_SECRET`, Razorpay keys, and `NEXT_PUBLIC_SITE_URL`.
+3. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ATTENDANCE_QR_SECRET`, Razorpay keys, and `NEXT_PUBLIC_SITE_URL`.
 4. Do not set `NEXT_PUBLIC_API_URL` unless you intentionally want to call a separate external API.
 5. Vercel should use `npm run build`, which runs `prisma generate` before `next build`.
 
