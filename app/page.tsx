@@ -1,10 +1,11 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Bike, Check, Dumbbell, Footprints, HeartPulse, MapPin, MessageCircle, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { ArrowRight, Bike, Check, Dumbbell, Footprints, HeartPulse, MapPin, MessageCircle, ShieldCheck, Sparkles, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { usePlatformStats } from "@/lib/hooks";
 import { SOCIAL_INTERESTS } from "@/lib/social";
 
 const features = [
@@ -14,6 +15,7 @@ const features = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const stats = usePlatformStats();
   const [screen, setScreen] = useState(0);
   const [interests, setInterests] = useState<string[]>([]);
   const toggle = (interest: string) => setInterests(current => current.includes(interest) ? current.filter(item => item !== interest) : [...current, interest]);
@@ -31,6 +33,7 @@ export default function OnboardingPage() {
           <div className="flex gap-2">{[0, 1, 2].map(item => <span key={item} className={`h-1.5 rounded-full transition-all ${item === screen ? "w-10 bg-acid" : "w-4 bg-white/15"}`} />)}</div>
           <Link href="/home" className="rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:border-acid/40">Skip</Link>
         </div>
+        <LiveSupabaseDashboard stats={stats.data} loading={stats.loading} unavailable={Boolean(stats.error)} />
         <AnimatePresence mode="wait">
           {screen === 0 ? (
             <motion.section key="welcome" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -30 }} className="m-auto grid w-full items-center gap-10 py-12 lg:grid-cols-[1.1fr_.9fr]">
@@ -45,5 +48,46 @@ export default function OnboardingPage() {
         </AnimatePresence>
       </div>
     </main>
+  );
+}
+
+function LiveSupabaseDashboard({
+  stats,
+  loading,
+  unavailable
+}: {
+  stats: { users: number; coaches: number; dojos: number; sellers: number; bookings: number };
+  loading: boolean;
+  unavailable: boolean;
+}) {
+  const items = [
+    { label: "Users", value: stats.users, icon: Users },
+    { label: "Coaches", value: stats.coaches, icon: Dumbbell },
+    { label: "Dojos", value: stats.dojos, icon: Trophy },
+    { label: "Sellers", value: stats.sellers, icon: ShieldCheck },
+    { label: "Bookings", value: stats.bookings, icon: Check }
+  ];
+
+  return (
+    <section className="mt-5 rounded-3xl border border-white/10 bg-white/[.045] p-4 backdrop-blur-xl">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="inline-flex items-center gap-2 text-sm font-semibold text-acid">
+          <Sparkles className="h-4 w-4" />
+          Live from Supabase
+        </p>
+        <span className={`rounded-full border px-3 py-1 text-xs ${unavailable ? "border-amber-300/30 text-amber-200" : "border-acid/30 text-acid"}`}>
+          {loading ? "Loading" : unavailable ? "Unavailable" : "Live"}
+        </span>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {items.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="rounded-2xl border border-white/10 bg-ink/55 p-3">
+            <Icon className="h-4 w-4 text-acid" />
+            <p className="mt-2 text-2xl font-black text-white">{loading ? "..." : value.toLocaleString("en-IN")}</p>
+            <p className="text-xs text-zinc-400">{label}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

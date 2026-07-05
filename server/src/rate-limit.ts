@@ -7,16 +7,15 @@ export const databaseRateLimit = (limit: number, windowMs: number): RequestHandl
     const ip = forwarded || request.ip || "unknown";
     const key = `express:${ip}`;
     const now = new Date();
-    const limited = await prisma.$transaction(async tx => {
-      const current = await tx.rateLimitBucket.findUnique({ where: { key } });
-      const bucket = !current || current.resetAt <= now
-        ? await tx.rateLimitBucket.upsert({ where: { key }, update: { count: 1, resetAt: new Date(now.getTime() + windowMs) }, create: { key, count: 1, resetAt: new Date(now.getTime() + windowMs) } })
-        : await tx.rateLimitBucket.update({ where: { key }, data: { count: { increment: 1 } } });
-      return bucket.count > limit;
-    });
+    const current = await prisma.rateLimitBucket.findUnique({ where: { key } });
+    const bucket = !current || current.resetAt <= now
+      ? await prisma.rateLimitBucket.upsert({ where: { key }, update: { count: 1, resetAt: new Date(now.getTime() + windowMs) }, create: { key, count: 1, resetAt: new Date(now.getTime() + windowMs) } })
+      : await prisma.rateLimitBucket.update({ where: { key }, data: { count: { increment: 1 } } });
+    const limited = bucket.count > limit;
     if (limited) return response.status(429).json({ error: "Too many requests. Please try again shortly." });
     next();
   } catch (error) {
-    next(error);
+    console.warn("rate_limit.unavailable", error instanceof Error ? error.message : error);
+    next();
   }
 };

@@ -19,7 +19,7 @@ export async function GET() {
   } catch (error) {
     console.error("stats.load_failed", error);
     return NextResponse.json(
-      { error: "Could not load PostgreSQL stats. Check DATABASE_URL or POSTGRES_URL in Vercel." },
+      { error: "Live Supabase stats are unavailable right now." },
       { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }

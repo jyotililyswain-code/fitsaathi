@@ -29,7 +29,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { readJsonResponseBody } from "@/lib/http";
 import { API_URL } from "@/lib/local-api";
 import { socialApi, socialAsset } from "@/lib/social";
-import { useCoaches, useDojos } from "@/lib/hooks";
+import { useCoaches, useDojos, usePlatformStats } from "@/lib/hooks";
 
 const generalSearches = ["Coaches", "Dojos", "Classes", "Shop", "Seller", "Booking"];
 const interestSearches = ["Karate", "Gym", "Yoga", "Running", "Boxing", "Dance"];
@@ -68,6 +68,7 @@ type InterestMatch = {
 
 export default function HomePage() {
   const router = useRouter();
+  const stats = usePlatformStats();
   const coaches = useCoaches(true);
   const dojos = useDojos(true);
   const [interestQuery, setInterestQuery] = useState("");
@@ -134,7 +135,7 @@ export default function HomePage() {
 
   return (
     <main className="overflow-hidden">
-      <section className="relative mx-auto grid min-h-[78vh] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:px-8">
+      <section className="relative mx-auto grid min-h-[78vh] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.06fr_.94fr] lg:px-8">
         <div className="absolute left-1/3 top-10 h-72 w-72 rounded-full bg-acid/10 blur-3xl" />
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="relative">
           <p className="inline-flex items-center gap-2 rounded-full border border-acid/30 bg-acid/10 px-4 py-2 text-sm text-acid">
@@ -186,6 +187,9 @@ export default function HomePage() {
             </Link>
           </div>
         </motion.div>
+        <motion.aside initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="relative">
+          <LiveSupabaseStats stats={stats.data} loading={stats.loading} unavailable={Boolean(stats.error)} />
+        </motion.aside>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -370,5 +374,49 @@ function ProviderSection({ title, href, loading, empty, children }: { title: str
         <EmptyState title={empty} body="New verified profiles will appear automatically." />
       )}
     </section>
+  );
+}
+
+function LiveSupabaseStats({
+  stats,
+  loading,
+  unavailable
+}: {
+  stats: { users: number; coaches: number; dojos: number; sellers: number; bookings: number };
+  loading: boolean;
+  unavailable: boolean;
+}) {
+  const items = [
+    { label: "Users registered", value: stats.users, icon: Users },
+    { label: "Coaches registered", value: stats.coaches, icon: Dumbbell },
+    { label: "Dojos registered", value: stats.dojos, icon: Trophy },
+    { label: "Sellers registered", value: stats.sellers, icon: Store },
+    { label: "Bookings tracked", value: stats.bookings, icon: CalendarCheck }
+  ];
+
+  return (
+    <div className="rounded-[2rem] border border-white/10 bg-white/[.05] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-acid">
+            <Sparkles className="h-4 w-4" />
+            Live from Supabase
+          </p>
+          <h2 className="mt-2 text-2xl font-black text-white">FitSaathi activity</h2>
+        </div>
+        <span className={`rounded-full border px-3 py-1 text-xs ${unavailable ? "border-amber-300/30 text-amber-200" : "border-acid/30 text-acid"}`}>
+          {loading ? "Loading" : unavailable ? "Unavailable" : "Live"}
+        </span>
+      </div>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        {items.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="min-h-28 rounded-2xl border border-white/10 bg-ink/60 p-4">
+            <Icon className="h-5 w-5 text-acid" />
+            <p className="mt-3 text-3xl font-black text-white">{loading ? "..." : value.toLocaleString("en-IN")}</p>
+            <p className="mt-1 text-xs leading-5 text-zinc-400">{label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

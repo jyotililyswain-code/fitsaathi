@@ -102,10 +102,15 @@ app.post("/api/auth/change-password", authenticate, asyncRoute(async (request: A
 }));
 
 app.get("/api/stats", asyncRoute(async (_request, response) => {
-  const [coaches, dojos, bookings, users, products, sellers] = await prisma.$transaction([
-    prisma.coach.count(), prisma.dojo.count(), prisma.booking.count(), prisma.user.count(), prisma.product.count({ where: { status: "approved" } }), prisma.seller.count()
-  ]);
-  response.set("Cache-Control", "no-store").json({ coaches, dojos, bookings, users, products, sellers });
+  try {
+    const [coaches, dojos, bookings, users, products, sellers] = await prisma.$transaction([
+      prisma.coach.count(), prisma.dojo.count(), prisma.booking.count(), prisma.user.count(), prisma.product.count({ where: { status: "approved" } }), prisma.seller.count()
+    ]);
+    response.set("Cache-Control", "no-store").json({ coaches, dojos, bookings, users, products, sellers });
+  } catch (error) {
+    console.error("stats.load_failed", error);
+    response.status(500).set("Cache-Control", "no-store").json({ error: "Live Supabase stats are unavailable right now." });
+  }
 }));
 
 app.get("/api/coaches", asyncRoute(async (request, response) => {
