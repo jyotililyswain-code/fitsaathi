@@ -26,17 +26,18 @@ import { useRouter } from "next/navigation";
 import { Children, type FormEvent, type ReactNode, useState } from "react";
 import { CoachCard, DojoCard } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
+import { StatGrid } from "@/components/StatGrid";
 import { readJsonResponseBody } from "@/lib/http";
 import { API_URL } from "@/lib/local-api";
 import { socialApi, socialAsset } from "@/lib/social";
-import { useCoaches, useDojos } from "@/lib/hooks";
+import { useCoaches, useDojos, usePlatformStats } from "@/lib/hooks";
 
 const generalSearches = ["Coaches", "Dojos", "Classes", "Shop", "Seller", "Booking"];
 const interestSearches = ["Karate", "Gym", "Yoga", "Running", "Boxing", "Dance"];
 
 const featureCards = [
   { title: "Find Fitness Partner", body: "Match with verified people who share your sport, goal, age preference and city.", href: "/life", icon: UsersRound },
-  { title: "Find Coach", body: "Browse trainers by specialty, city, pricing and verification status.", href: "/coaches", icon: Search },
+  { title: "Find Coach", body: "Browse trainers by specialty, city, pricing and live PostgreSQL verification status.", href: "/coaches", icon: Search },
   { title: "Become a Coach", body: "Register your coaching profile, submit documents and start receiving bookings.", href: "/become-a-coach", icon: Dumbbell },
   { title: "Register as Seller", body: "Open a trusted seller profile and list fitness products for approval.", href: "/seller", icon: Store },
   { title: "Browse Dojos", body: "Discover approved academies for karate, martial arts, yoga and group training.", href: "/dojos", icon: Trophy },
@@ -50,7 +51,7 @@ const featureCards = [
 
 const oldUiBlocks = [
   ["Verified community", "Private ID review keeps documents hidden while showing trust badges publicly."],
-  ["Trusted marketplace", "Coaches, dojos, sellers, bookings and products stay connected across the platform."],
+  ["Live marketplace", "Coaches, dojos, sellers, bookings and product counts are loaded from PostgreSQL."],
   ["Safe connections", "Invite acceptance gates chat, with report, block and emergency safety options."],
   ["One fitness hub", "Partners, coaches, dojos, bookings, shop, cart, checkout and dashboards stay connected."]
 ];
@@ -68,6 +69,7 @@ type InterestMatch = {
 
 export default function HomePage() {
   const router = useRouter();
+  const stats = usePlatformStats();
   const coaches = useCoaches(true);
   const dojos = useDojos(true);
   const [interestQuery, setInterestQuery] = useState("");
@@ -134,7 +136,7 @@ export default function HomePage() {
 
   return (
     <main className="overflow-hidden">
-      <section className="relative mx-auto grid min-h-[78vh] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:px-8">
+      <section className="relative mx-auto grid min-h-[78vh] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.08fr_.92fr] lg:px-8">
         <div className="absolute left-1/3 top-10 h-72 w-72 rounded-full bg-acid/10 blur-3xl" />
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} className="relative">
           <p className="inline-flex items-center gap-2 rounded-full border border-acid/30 bg-acid/10 px-4 py-2 text-sm text-acid">
@@ -186,6 +188,12 @@ export default function HomePage() {
             </Link>
           </div>
         </motion.div>
+        <div className="relative rounded-[2rem] border border-white/10 bg-white/[.05] p-6">
+          <p className="text-sm text-zinc-400">Live from PostgreSQL</p>
+          <div className="mt-5">
+            {stats.loading ? <div className="h-40 animate-pulse rounded-2xl bg-white/5" /> : stats.error ? <p className="text-red-300">{stats.error}</p> : <StatGrid stats={stats.data} />}
+          </div>
+        </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -306,7 +314,7 @@ export default function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-white/[.06] to-acid/[.05] p-6 sm:p-8">
           <p className="text-sm font-semibold uppercase tracking-[.2em] text-acid">Classic homepage blocks restored</p>
-          <h2 className="mt-2 text-3xl font-black text-white">All original entry points, cleaned up and ready to use.</h2>
+          <h2 className="mt-2 text-3xl font-black text-white">All original entry points, now connected to PostgreSQL.</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {oldUiBlocks.map(([title, body]) => (
               <article key={title} className="rounded-2xl border border-white/10 bg-ink/50 p-5">
