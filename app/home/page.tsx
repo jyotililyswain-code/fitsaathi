@@ -1,4 +1,4 @@
-"use client";
+"use client"; 
 
 /* eslint-disable @next/next/no-img-element -- match photos are served by the local API */
 import { motion } from "framer-motion";
@@ -22,7 +22,7 @@ import {
   UsersRound
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation" /*important */
 import { Children, type FormEvent, type ReactNode, useState } from "react";
 import { CoachCard, DojoCard } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
