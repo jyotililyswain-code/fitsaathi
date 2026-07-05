@@ -4,6 +4,7 @@ import { Crown, CreditCard, History, IndianRupee, ShieldCheck, Wallet } from "lu
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { useSessionUser } from "@/lib/auth-client";
+import { readJsonResponse } from "@/lib/http";
 import { localApi } from "@/lib/local-api";
 import { formatPaise, socialApi } from "@/lib/social";
 
@@ -136,8 +137,7 @@ export default function WalletPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ purpose: "premium", plan, receipt: `premium_${Date.now()}` })
       });
-      const order = await orderResponse.json() as LegacyRazorpayOrder & { error?: string };
-      if (!orderResponse.ok) throw new Error(order.error || "Could not create payment order.");
+      const order = await readJsonResponse<LegacyRazorpayOrder>(orderResponse, "Could not create payment order.");
       const paymentId = await openCheckout({
         key: order.razorpayKeyId,
         amount: order.amount,
@@ -147,8 +147,7 @@ export default function WalletPage() {
         description: "Premium membership",
         verify: async (response) => {
           const verified = await fetch("/api/razorpay/verify", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(response) });
-          const result = await verified.json();
-          if (!verified.ok) throw new Error(result.error || "Payment verification failed.");
+          const result = await readJsonResponse(verified, "Payment verification failed.");
           return result;
         }
       });

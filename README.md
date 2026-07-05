@@ -19,7 +19,7 @@ You can still run the standalone Express backend for local debugging with `npm r
 
 Copy `.env.example` to `.env` and configure:
 
-- `DATABASE_URL`: PostgreSQL connection string used by Prisma.
+- `DATABASE_URL`: PostgreSQL connection string used by Prisma. On Vercel, use your production Postgres URL. The app also falls back to `POSTGRES_PRISMA_URL`, `POSTGRES_URL`, or `POSTGRES_URL_NON_POOLING` when `DATABASE_URL` is not set.
 - `JWT_SECRET`: long random access-token signing secret.
 - `JWT_REFRESH_SECRET`: separate long random refresh-token signing secret.
 - `ATTENDANCE_QR_SECRET`: separate long random HMAC secret for attendance QR codes.
@@ -71,7 +71,7 @@ Razorpay server routes create and verify payment orders, persist payment state t
 
 This repo is now designed to deploy as a single Vercel Next.js project:
 
-1. Connect a PostgreSQL database and set `DATABASE_URL`.
+1. Connect a PostgreSQL database. Set `DATABASE_URL`, or connect Vercel Postgres so `POSTGRES_PRISMA_URL` / `POSTGRES_URL` are injected.
 2. Connect a Vercel Blob store and keep `BLOB_READ_WRITE_TOKEN` available to the project.
 3. Set `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ATTENDANCE_QR_SECRET`, Razorpay keys, and `NEXT_PUBLIC_SITE_URL`.
 4. Do not set `NEXT_PUBLIC_API_URL` unless you intentionally want to call a separate external API.

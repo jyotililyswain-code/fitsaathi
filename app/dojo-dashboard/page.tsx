@@ -7,6 +7,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
 import { useSessionUser } from "@/lib/auth-client";
 import { formatMoney } from "@/lib/format";
+import { readJsonResponse } from "@/lib/http";
 import { useCollectionCount, useProviderBookings } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
 
@@ -22,12 +23,11 @@ export default function DojoDashboardPage() {
     if (!user) return setMessage("Please sign in again.");
     try {
       const response = await fetch("/api/bookings/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: id, status }) });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) return setMessage(result.error || "Could not update booking.");
+      await readJsonResponse(response, "Could not update booking.");
       bookings.reload();
       setMessage(status === "accepted" ? "Dojo booking accepted. Contact info is visible." : "Dojo booking rejected.");
-    } catch {
-      setMessage("Could not reach the booking service. Please try again.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not reach the booking service. Please try again.");
     }
   }
 

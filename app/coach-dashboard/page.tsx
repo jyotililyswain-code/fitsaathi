@@ -7,6 +7,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
 import { useSessionUser } from "@/lib/auth-client";
 import { formatMoney } from "@/lib/format";
+import { readJsonResponse } from "@/lib/http";
 import { useCollectionCount, useProviderBookings, useReviews } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
 
@@ -26,12 +27,11 @@ export default function CoachDashboardPage() {
     if (!user) return setMessage("Please sign in again.");
     try {
       const response = await fetch("/api/bookings/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: id, status }) });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) return setMessage(result.error || "Could not update booking.");
+      await readJsonResponse(response, "Could not update booking.");
       bookings.reload();
       setMessage(status === "accepted" ? "Booking accepted. The customer was notified and contact numbers are now visible." : "Booking rejected. The customer was notified.");
-    } catch {
-      setMessage("Could not reach the booking service. Please try again.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not reach the booking service. Please try again.");
     }
   }
   return (

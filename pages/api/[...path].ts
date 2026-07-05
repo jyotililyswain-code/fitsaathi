@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { app } from "@/server/src/app";
 
 export const config = {
   api: {
@@ -8,6 +7,16 @@ export const config = {
   }
 };
 
-export default function handler(request: NextApiRequest, response: NextApiResponse) {
-  return app(request, response);
+export default async function handler(request: NextApiRequest, response: NextApiResponse) {
+  try {
+    const { app } = await import("@/server/src/app");
+    return app(request, response);
+  } catch (error) {
+    console.error("api.catch_all_failed", error);
+    if (!response.headersSent) {
+      response.status(500).json({
+        error: "The API could not start. Check DATABASE_URL or POSTGRES_URL in Vercel environment variables."
+      });
+    }
+  }
 }

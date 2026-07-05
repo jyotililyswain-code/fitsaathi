@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSessionUser } from "@/lib/auth-client";
 import { getCoach, getDojo } from "@/lib/data";
 import { formatMoney } from "@/lib/format";
+import { readJsonResponse } from "@/lib/http";
 import { getCoachBaseFee, getPriceBreakdown } from "@/lib/pricing";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
@@ -85,8 +86,7 @@ export default function BookingPage() {
           razorpayOrderId: paymentResult.orderId,
         })
       });
-      const booking = await bookingResponse.json();
-      if (!bookingResponse.ok) throw new Error(booking.error || "Could not create booking.");
+      const booking = await readJsonResponse<{ bookingId: string }>(bookingResponse, "Could not create booking.");
       setMessage(`Booking request created and payment marked ${paymentResult.status}. Coach will be notified to accept or reject.`);
       router.push(`/payment-success?bookingId=${encodeURIComponent(booking.bookingId)}`);
     } catch (error) {
@@ -209,8 +209,7 @@ async function collectPayment({ targetType, targetId, name, phone, email }: { ta
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ purpose: "booking", targetType, targetId, receipt: `booking_${Date.now()}` })
   });
-  const order = await orderResponse.json();
-  if (!orderResponse.ok) throw new Error(order.error || "Could not create Razorpay order.");
+  const order = await readJsonResponse<{ id: string; razorpayKeyId: string; amount: number; currency?: string }>(orderResponse, "Could not create Razorpay order.");
   const key = String(order.razorpayKeyId || "");
   if (!key) throw new Error("Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, then restart the app.");
 
@@ -238,8 +237,8 @@ async function collectPayment({ targetType, targetId, name, phone, email }: { ta
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(response)
         });
-        const verification = await verifyResponse.json();
-        if (!verifyResponse.ok || !verification.verified) {
+        const verification = await readJsonResponse<{ verified: boolean; paymentId: string }>(verifyResponse, "Payment signature verification failed.");
+        if (!verification.verified) {
           reject(new Error("Payment signature verification failed."));
           return;
         }

@@ -3,6 +3,7 @@
 import { QrCode, ScanLine } from "lucide-react";
 import { useState } from "react";
 import { useSessionUser } from "@/lib/auth-client";
+import { readJsonResponse } from "@/lib/http";
 
 export default function AttendancePage() {
   const { user } = useSessionUser();
@@ -23,11 +24,7 @@ export default function AttendancePage() {
       headers: authHeaders(),
       body: JSON.stringify({ bookingId: bookingId.trim() })
     });
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error || "Could not generate QR.");
-      return;
-    }
+    const data = await readJsonResponse<{ token: string }>(response, "Could not generate QR.");
     setToken(data.token);
     setMessage("Temporary attendance QR generated for 2 minutes.");
   }
@@ -38,8 +35,8 @@ export default function AttendancePage() {
       headers: authHeaders(),
       body: JSON.stringify({ token })
     });
-    const data = await response.json();
-    setMessage(response.ok ? `Attendance marked: ${data.attendanceId}` : data.error || "Attendance scan failed.");
+    const data = await readJsonResponse<{ attendanceId: string }>(response, "Attendance scan failed.");
+    setMessage(`Attendance marked: ${data.attendanceId}`);
   }
 
   return (

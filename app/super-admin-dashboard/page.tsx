@@ -10,6 +10,7 @@ import { AuthGuard } from "@/components/AuthGuard";
 import { logoutSession, useSessionUser } from "@/lib/auth-client";
 import { mapProduct } from "@/lib/data";
 import { formatMoney } from "@/lib/format";
+import { readJsonResponse } from "@/lib/http";
 import { localApi } from "@/lib/local-api";
 import type { Product, Seller } from "@/lib/marketplace";
 
@@ -78,17 +79,25 @@ export default function SuperAdminDashboard() {
 
   async function act(action: string, targetId: string, value = "", reason = "") {
     if (!user) return setMessage("Admin session expired. Sign in again.");
-    const response = await fetch("/api/admin/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, targetId, value, reason }) });
-    const result = await response.json();
-    setMessage(response.ok ? "Admin action completed and audited." : result.error || "Action failed.");
-    setConfirmAction(null);
-    if (response.ok) setVersion(current => current + 1);
+    try {
+      const response = await fetch("/api/admin/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, targetId, value, reason }) });
+      await readJsonResponse(response, "Action failed.");
+      setMessage("Admin action completed and audited.");
+      setConfirmAction(null);
+      setVersion(current => current + 1);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Action failed.");
+    }
   }
   async function saveSettings(value: Record<string, unknown>) {
     if (!user) return setMessage("Admin session expired. Sign in again.");
-    const response = await fetch("/api/admin/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "platform_settings", targetId: "global", settings: value }) });
-    const result = await response.json();
-    setMessage(response.ok ? "Platform settings saved and audited." : result.error || "Settings could not be saved.");
+    try {
+      const response = await fetch("/api/admin/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "platform_settings", targetId: "global", settings: value }) });
+      await readJsonResponse(response, "Settings could not be saved.");
+      setMessage("Platform settings saved and audited.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Settings could not be saved.");
+    }
   }
   function ask(action: string, id: string, label: string, value = "") { setConfirmAction({ action, id, value, label }); }
   function exportCsv() {

@@ -1,3 +1,5 @@
+import { readJsonResponse } from "@/lib/http";
+
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "/api").replace(/\/$/, "");
 const AUTH_EVENT = "fitsaathi-auth";
 
@@ -37,9 +39,7 @@ export async function localApi<T>(path: string, init: RequestInit = {}, retry = 
     notifyAuthChanged();
   }
 
-  const result = response.status === 204 ? null : await response.json();
-  if (!response.ok) throw new Error(result?.error || "API request failed.");
-  return result as T;
+  return readJsonResponse<T>(response, "API request failed.");
 }
 
 export const apiFetch = localApi;

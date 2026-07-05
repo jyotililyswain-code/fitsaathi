@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CategorySelect } from "@/components/CategorySelect";
 import { useSessionUser } from "@/lib/auth-client";
+import { readJsonResponse } from "@/lib/http";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { DOJO_REGISTRATION_FEE, getPriceBreakdown } from "@/lib/pricing";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
@@ -37,8 +38,7 @@ export default function RegisterDojoPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ purpose: "dojo_registration", receipt: `dojo_${Date.now()}` })
       });
-      const order = await orderResponse.json();
-      if (!orderResponse.ok) throw new Error(order.error || "Could not create registration payment.");
+      const order = await readJsonResponse<any>(orderResponse, "Could not create registration payment.");
       const key = String(order.razorpayKeyId || "");
       if (!key) throw new Error("Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, then restart the app.");
       const paymentId = await new Promise<string>((resolve, reject) => {
@@ -56,7 +56,7 @@ export default function RegisterDojoPage() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(response)
             });
-            if (!verified.ok) return reject(new Error("Payment verification failed."));
+            await readJsonResponse(verified, "Payment verification failed.");
             resolve(response.razorpay_payment_id);
           },
           modal: { ondismiss: async () => {

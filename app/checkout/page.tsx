@@ -6,6 +6,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useSessionUser } from "@/lib/auth-client";
 import { useCart } from "@/lib/cart";
 import { formatMoney } from "@/lib/format";
+import { readJsonResponse } from "@/lib/http";
 import { customerProductPrice } from "@/lib/marketplace";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
@@ -42,8 +43,7 @@ export default function CheckoutPage() {
           receipt: `store_${Date.now()}`
         })
       });
-      const razorOrder = await orderResponse.json();
-      if (!orderResponse.ok) throw new Error(razorOrder.error || "Could not create payment order.");
+      const razorOrder = await readJsonResponse<any>(orderResponse, "Could not create payment order.");
       const key = String(razorOrder.razorpayKeyId || "");
       if (!key) throw new Error("Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, then restart the app.");
 
@@ -58,8 +58,7 @@ export default function CheckoutPage() {
           prefill: { name: String(form.get("customerName")), email: user.email, contact: phone },
           handler: async (response: Record<string, string>) => {
             const verified = await fetch("/api/razorpay/verify", { method: "POST", headers, body: JSON.stringify(response) });
-            const result = await verified.json();
-            if (!verified.ok) return reject(new Error(result.error || "Payment verification failed."));
+            const result = await readJsonResponse<{ paymentId: string }>(verified, "Payment verification failed.");
             resolve(result.paymentId);
           }
         });
@@ -78,8 +77,7 @@ export default function CheckoutPage() {
           shippingAddress: String(form.get("shippingAddress"))
         })
       });
-      const created = await createResponse.json();
-      if (!createResponse.ok) throw new Error(created.error || "Could not create order.");
+      const created = await readJsonResponse<{ orderId: string }>(createResponse, "Could not create order.");
       await cart.clear();
       router.push(`/payment-success?orderId=${encodeURIComponent(created.orderId)}`);
     } catch (error) {
