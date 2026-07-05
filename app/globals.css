@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  position: relative;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: #0b0b0f;
+  color: white;
+}
+
+.focus-ring {
+  @apply outline-none ring-0 focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-ink;
+}
+
+.field {
+  @apply w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-white outline-none ring-0 placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-ink;
+}
+
+.admin-shell {
+  --admin-bg: #09090b;
+  --admin-sidebar: #0d0d11;
+  --admin-header: rgba(9, 9, 11, 0.88);
+  --admin-card: rgba(255, 255, 255, 0.035);
+  --admin-soft: rgba(255, 255, 255, 0.055);
+  --admin-border: rgba(255, 255, 255, 0.09);
+  --admin-text: #fafafa;
+  --admin-muted: #8b8b95;
+  color-scheme: dark;
+}
+
+.admin-shell.admin-light {
+  --admin-bg: #f4f4f5;
+  --admin-sidebar: #ffffff;
+  --admin-header: rgba(244, 244, 245, 0.88);
+  --admin-card: #ffffff;
+  --admin-soft: #f4f4f5;
+  --admin-border: rgba(24, 24, 27, 0.1);
+  --admin-text: #18181b;
+  --admin-muted: #71717a;
+  color-scheme: light;
+}
+
+.admin-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.admin-light .text-white { color: var(--admin-text); }
+.admin-light .text-zinc-300,
+.admin-light .text-zinc-400 { color: #52525b; }
+.admin-light .text-zinc-500,
+.admin-light .text-zinc-600 { color: #71717a; }
+.admin-light .border-white\/10 { border-color: var(--admin-border); }
+.admin-light .bg-white\/\[\.04\],
+.admin-light .bg-white\/\[\.05\] { background-color: var(--admin-card); }
+
+@media print {
+  .admin-shell aside,
+  .admin-shell header,
+  .admin-shell button { display: none !important; }
+  .admin-shell { --admin-bg: white; --admin-card: white; --admin-text: black; --admin-muted: #555; --admin-border: #ddd; }
+}

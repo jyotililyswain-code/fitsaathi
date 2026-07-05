@@ -1,0 +1,237 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { POLICY_VERSION } from "@/lib/policies";
+import { localApi, notifyAuthChanged } from "@/lib/local-api";
+import { SOCIAL_INTERESTS } from "@/lib/social";
+import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
+
+const maxInterestLength = 50;
+
+export default function SignupPage() {
+  const router = useRouter();
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [birthDate, setBirthDate] = useState("");
+  const [interests, setInterests] = useState<string[]>([]);
+  const [showOther, setShowOther] = useState(false);
+  const [customInterest, setCustomInterest] = useState("");
+  const age = useMemo(() => calculateAge(birthDate), [birthDate]);
+
+  useEffect(() => {
+    const selected = new URLSearchParams(window.location.search).get("interests");
+    if (!selected) return;
+    const seeded = selected.split(",").map(normalizeInterestValue).filter(Boolean);
+    setInterests(uniqueInterests(seeded));
+  }, []);
+
+  function toggleInterest(interest: string) {
+    setInterests((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest]);
+  }
+
+  function addCustomInterest() {
+    const interest = normalizeInterestValue(customInterest);
+    if (!interest) return setMessage("Write your fitness interest before adding it.");
+    if (interest.length > maxInterestLength) return setMessage("Custom interests must be 50 characters or fewer.");
+    if (!isInterestSafe(interest)) return setMessage("Use letters, numbers, spaces, and simple punctuation for interests.");
+    if (interests.some((item) => item.toLowerCase() === interest.toLowerCase())) return setMessage(`${interest} is already selected.`);
+    setInterests((current) => [...current, interest]);
+    setCustomInterest("");
+    setMessage("");
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password"));
+    const confirmation = String(form.get("passwordConfirmation"));
+    const phone = normalizePhone(String(form.get("phone")));
+    const cleanInterests = uniqueInterests(interests.map(normalizeInterestValue).filter(Boolean));
+
+    if (!acceptedTerms || !acceptedPrivacy) return setMessage("Accept the Terms and Privacy Policy to continue.");
+    if (!isStrongPassword(password)) return setMessage("Use 8+ characters with uppercase, lowercase, number and symbol.");
+    if (password !== confirmation) return setMessage("Passwords do not match.");
+    if (!isValidIndianPhone(phone)) return setMessage("Enter a valid 10 digit Indian mobile number.");
+    if (age == null || age < 18) return setMessage("FitSaathi social profiles are available to adults aged 18 and above.");
+    if (!cleanInterests.length) return setMessage("Choose at least one fitness interest.");
+    if (cleanInterests.some((item) => item.length > maxInterestLength || !isInterestSafe(item))) return setMessage("Please remove invalid custom interests before continuing.");
+
+    setLoading(true);
+    setMessage("");
+    try {
+      await localApi("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: String(form.get("name")).trim(),
+          email: String(form.get("email")).trim().toLowerCase(),
+          password,
+          phone,
+          gender: form.get("gender"),
+          birthDate,
+          city: form.get("city"),
+          state: form.get("state"),
+          country: form.get("country"),
+          heightCm: Number(form.get("heightCm")),
+          weightKg: Number(form.get("weightKg")),
+          fitnessGoal: form.get("fitnessGoal"),
+          relationshipPreference: form.get("relationshipPreference") || undefined,
+          profileBio: form.get("profileBio"),
+          fitnessLevel: form.get("fitnessLevel"),
+          preferredAgeMin: Number(form.get("preferredAgeMin")),
+          preferredAgeMax: Number(form.get("preferredAgeMax")),
+          interests: cleanInterests,
+          acceptedPolicies: true,
+          acceptedPolicyVersion: POLICY_VERSION
+        })
+      });
+      notifyAuthChanged();
+      router.replace("/verification");
+      router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Signup failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <div className="mb-8">
+        <p className="text-sm font-semibold uppercase tracking-[.22em] text-acid">Create your FitSaathi identity</p>
+        <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">Tell us how you move.</h1>
+        <p className="mt-3 text-zinc-400">Your public profile is separate from private verification documents.</p>
+        <div className="mt-6 grid gap-2 sm:grid-cols-4">
+          {["Account", "Interests", "Verification", "Payment"].map((step, index) => (
+            <div key={step} className={`rounded-2xl border px-4 py-3 text-sm ${index === 0 ? "border-acid bg-acid/10 text-acid" : "border-white/10 text-zinc-400"}`}>
+              <span className="mr-2 font-black">{index + 1}</span>{step}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <form onSubmit={submit} className="rounded-[2rem] border border-white/10 bg-white/[.04] p-5 sm:p-8">
+        <Section title="Account">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field name="name" placeholder="Full name" />
+            <Field name="email" type="email" placeholder="Email" />
+            <Field name="phone" type="tel" placeholder="Phone number" />
+            <select name="gender" required className="field">
+              <option value="">Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+            <label className="text-sm text-zinc-400">Birth date<input name="birthDate" type="date" required value={birthDate} onChange={(event) => setBirthDate(event.target.value)} className="field mt-1" /></label>
+            <label className="text-sm text-zinc-400">Age<input readOnly value={age ?? ""} placeholder="Calculated automatically" className="field mt-1 opacity-70" /></label>
+            <div className="relative"><Field name="password" type={showPassword ? "text" : "password"} placeholder="Password" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-3 text-xs font-bold text-acid">{showPassword ? "Hide" : "Show"}</button></div>
+            <Field name="passwordConfirmation" type={showPassword ? "text" : "password"} placeholder="Confirm password" />
+          </div>
+        </Section>
+
+        <Section title="Location & body">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field name="city" placeholder="City" />
+            <Field name="state" placeholder="State" />
+            <Field name="country" defaultValue="India" placeholder="Country" />
+            <Field name="heightCm" type="number" min="100" max="250" placeholder="Height (cm)" />
+            <Field name="weightKg" type="number" min="25" max="350" step="0.1" placeholder="Weight (kg)" />
+            <select name="fitnessLevel" required className="field">
+              <option value="">Fitness level</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+              <option value="athlete">Athlete</option>
+            </select>
+          </div>
+        </Section>
+
+        <Section title="Goals & preferences">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field name="fitnessGoal" placeholder="Fitness goal" />
+            <Field name="relationshipPreference" required={false} placeholder="Relationship preference (optional)" />
+            <Field name="preferredAgeMin" type="number" min="18" max="100" defaultValue={age ? Math.max(18, age - 2) : 18} placeholder="Preferred minimum age" />
+            <Field name="preferredAgeMax" type="number" min="18" max="100" defaultValue={age ? age + 2 : 30} placeholder="Preferred maximum age" />
+            <textarea name="profileBio" required minLength={20} maxLength={1200} rows={4} placeholder="Profile bio - your training style, experience and what you are looking for" className="field sm:col-span-2" />
+          </div>
+        </Section>
+
+        <Section title="Fitness interests">
+          <div className="flex flex-wrap gap-2">
+            {SOCIAL_INTERESTS.map((interest) => <InterestChip key={interest} selected={interests.includes(interest)} onClick={() => toggleInterest(interest)}>{interest}</InterestChip>)}
+            <InterestChip selected={showOther} onClick={() => setShowOther((value) => !value)}>Other</InterestChip>
+          </div>
+          {showOther ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+              <input value={customInterest} onChange={(event) => setCustomInterest(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addCustomInterest(); } }} maxLength={maxInterestLength} placeholder="Write your fitness interest" className="field" />
+              <button type="button" onClick={addCustomInterest} className="rounded-xl border border-acid/40 px-5 py-3 text-sm font-bold text-acid">Add interest</button>
+            </div>
+          ) : null}
+          {interests.length ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {interests.map((interest) => <button type="button" key={interest} onClick={() => toggleInterest(interest)} className="rounded-full bg-acid px-3 py-1.5 text-xs font-semibold text-ink">{interest} x</button>)}
+            </div>
+          ) : null}
+        </Section>
+
+        <div className="mt-7 grid gap-3 text-sm text-zinc-300">
+          <Agreement checked={acceptedTerms} setChecked={setAcceptedTerms}>I accept the <Link className="text-acid" href="/policies/terms">Terms & Conditions</Link>.</Agreement>
+          <Agreement checked={acceptedPrivacy} setChecked={setAcceptedPrivacy}>I accept the <Link className="text-acid" href="/policies/privacy">Privacy Policy</Link> and private verification processing.</Agreement>
+        </div>
+        <button disabled={loading} className="mt-7 w-full rounded-xl bg-acid px-5 py-4 font-bold text-ink disabled:opacity-50">{loading ? "Creating secure profile..." : "Continue to verification"}</button>
+        {message ? <p role="alert" className="mt-4 text-sm text-red-300">{message}</p> : null}
+      </form>
+    </main>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return <section className="border-b border-white/10 py-6 first:pt-0 last:border-0"><h2 className="mb-4 text-lg font-bold text-white">{title}</h2>{children}</section>;
+}
+
+function Field({ required = true, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { required?: boolean }) {
+  return <input required={required} className="field" {...props} />;
+}
+
+function InterestChip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+  return <button type="button" onClick={onClick} className={`rounded-full border px-3 py-2 text-sm ${selected ? "border-acid bg-acid text-ink" : "border-white/10 text-zinc-300"}`}>{children}</button>;
+}
+
+function Agreement({ checked, setChecked, children }: { checked: boolean; setChecked: (value: boolean) => void; children: React.ReactNode }) {
+  return <label className="flex gap-3 rounded-xl border border-white/10 p-4"><input type="checkbox" checked={checked} onChange={(event) => setChecked(event.target.checked)} className="h-5 w-5 accent-acid" /><span>{children}</span></label>;
+}
+
+function normalizeInterestValue(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function uniqueInterests(values: string[]) {
+  const seen = new Set<string>();
+  return values.filter((item) => {
+    const key = item.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return item.length <= maxInterestLength && isInterestSafe(item);
+  });
+}
+
+function isInterestSafe(value: string) {
+  return /^[\p{L}\p{N}][\p{L}\p{N}\s&'./+-]{1,49}$/u.test(value);
+}
+
+function calculateAge(value: string) {
+  if (!value) return null;
+  const birth = new Date(value);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+  return age;
+}
+
+function isStrongPassword(password: string) {
+  return password.length >= 8 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password) && /[^A-Za-z0-9]/.test(password);
+}

@@ -1,0 +1,13 @@
+.next
+node_modules
+.env*.local
+dist
+coverage
+*.tsbuildinfo
+*.log
+.codex-logs
+server/uploads/*
+!server/uploads/.gitkeep
+server/private/*
+server/.env
+.env
