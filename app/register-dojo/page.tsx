@@ -48,7 +48,7 @@ export default function RegisterDojoPage() {
       setStage("uploading_attachments");
       await localApi<{ session: { accessToken: string; refreshToken: string; user: unknown } }>("/dojos", { method: "POST", body: formData });
       notifyAuthChanged();
-      setMessage("Dojo submitted for approval. UPI payment is pending admin verification.");
+      setMessage("Payment submitted successfully. Your booking/registration is confirmed.");
       router.push("/dojo-dashboard");
       router.refresh();
     } catch (error) {
@@ -90,7 +90,7 @@ export default function RegisterDojoPage() {
         <div className="mt-4 rounded-xl border border-acid/30 bg-acid/10 p-4">
           <p className="text-sm font-semibold text-white">One-time registration payment</p>
           <p className="mt-1 text-2xl font-semibold text-white">Rs. {DOJO_REGISTRATION_FEE}</p>
-          <p className="mt-1 text-sm text-zinc-300">Required before submission. Admin will verify the UPI transaction manually.</p>
+          <p className="mt-1 text-sm text-zinc-300">Required before submission. Enter the UPI transaction ID after payment.</p>
         </div>
         <ManualUpiPayment amountLabel={`Rs. ${DOJO_REGISTRATION_FEE}`} className="mt-4" />
         <FileField name="photo" label="Dojo photo" accept="image/png,image/jpeg,image/webp" />

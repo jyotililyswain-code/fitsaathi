@@ -69,7 +69,7 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     dojoId = dojoResult.profile.id;
     const dojoPayment = await prisma.payment.findUniqueOrThrow({ where: { transactionId: dojoTransactionId } });
     dojoPaymentId = dojoPayment.id;
-    assert.equal(dojoPayment.paymentStatus, "pending_verification");
+    assert.equal(dojoPayment.paymentStatus, "paid");
     const dojoToken = dojoResult.session.accessToken;
     const publicDojo = await request(apiUrl, `/dojos/${dojoId}`);
     assert.equal(publicDojo.id, dojoId);
@@ -80,7 +80,6 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     const admin = await register(stamp, "admin"); userIds.push(admin.id);
     await prisma.user.update({ where: { id: admin.id }, data: { role: "admin" } });
     const adminSession = await request(apiUrl, "/auth/login", json("POST", { email: admin.email, password: "AuditPass123!" }));
-    await request(nextUrl, "/api/admin/action", json("POST", { action: "verify_payment", targetId: dojoPaymentId }, adminSession.accessToken));
     assert.equal((await prisma.dojo.findUniqueOrThrow({ where: { id: dojoId } })).registrationPaymentStatus, "paid");
     assert.equal((await request(apiUrl, `/admin/providers/coach/${coachId}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).verified, true);
     assert.equal((await request(apiUrl, `/admin/providers/dojo/${dojoId}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).approved, true);
@@ -94,8 +93,7 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     bookingId = booking.bookingId;
     const payment = await prisma.payment.findUniqueOrThrow({ where: { transactionId: bookingTransactionId } });
     paymentId = payment.id;
-    assert.equal(payment.paymentStatus, "pending_verification");
-    await request(nextUrl, "/api/admin/action", json("POST", { action: "verify_payment", targetId: paymentId }, adminSession.accessToken));
+    assert.equal(payment.paymentStatus, "paid");
     const confirmedBooking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
     assert.equal(confirmedBooking.paymentStatus, "paid");
     assert.equal(confirmedBooking.status, "confirmed");

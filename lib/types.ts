@@ -63,6 +63,7 @@ export type Booking = {
   providerOwnerId?: string;
   status?: string;
   amount?: number;
+  amountPaid?: number;
   originalPrice?: number;
   platformFee?: number;
   totalPrice?: number;

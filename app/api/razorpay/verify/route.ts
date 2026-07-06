@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export async function POST() {
   return NextResponse.json(
-    { error: "Razorpay verification is disabled. Manual UPI payments are verified by an administrator." },
+    { error: "This legacy verification endpoint is disabled. Use the PhonePe / UPI payment form." },
     { status: 410, headers: { "Cache-Control": "no-store" } }
   );
 }

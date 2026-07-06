@@ -240,7 +240,7 @@ socialRouter.get("/wallet", asyncRoute(async (request: AuthRequest, response) =>
 
 socialRouter.post("/wallet/recharge", asyncRoute(async (request: AuthRequest, response) => {
   void request;
-  response.status(410).json({ error: "Direct wallet activation is disabled. Submit a manual UPI payment from the wallet page and wait for admin verification." });
+  response.status(410).json({ error: "Use the PhonePe / UPI payment form on the wallet page." });
 }));
 
 socialRouter.post("/verification/payment", asyncRoute(async (request: AuthRequest, response) => {

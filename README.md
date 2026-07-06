@@ -62,7 +62,7 @@ The integration suites cover every Prisma model plus authentication, provider re
 
 ## Payments
 
-Payments use manual PhonePe / UPI transfer to `7065223868-2@ibl`. Customers submit a unique UPI transaction/reference ID and can attach a screenshot. Payments remain `pending_verification`; only an administrator can mark them paid or rejected. A verified booking/order becomes `confirmed`. Razorpay credentials and webhooks are not required.
+Payments use manual PhonePe / UPI transfer to `7065223868-2@ibl`. Every payment screen displays the supplied scanner QR, UPI ID, amount, transaction ID field, and optional screenshot upload. A valid submission is stored as `paid` and its booking, order, registration, wallet recharge, verification, or premium plan is activated immediately. Legacy checkout credentials and webhooks are not required.
 
 ## Supabase database
 

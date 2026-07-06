@@ -41,6 +41,7 @@ export async function POST(request: Request) {
           preferredDate: paymentValue(body, "preferredDate", 20),
           preferredTime: paymentValue(body, "preferredTime", 20),
           notes: paymentValue(body, "notes", 1000),
+          status: "confirmed",
           amount: pricing.finalPrice,
           originalPrice: pricing.originalPrice,
           platformFee: pricing.platformFee,
@@ -49,7 +50,8 @@ export async function POST(request: Request) {
           payoutAmount: coach ? pricing.coachPayout : pricing.originalPrice,
           commissionAmount: pricing.platformFee,
           acceptedPolicies: true,
-          paymentStatus: "pending_verification",
+          paymentStatus: "paid",
+          contactVisible: true,
           customerPhone: paymentValue(body, "phone", 20),
           providerPhone: provider.phoneNumber,
           payoutMonth: new Date().toISOString().slice(0, 7)
@@ -68,13 +70,13 @@ export async function POST(request: Request) {
           originalPrice: pricing.originalPrice,
           platformFee: pricing.platformFee,
           coachPayout: coach ? pricing.coachPayout : pricing.originalPrice,
-          ...manualPaymentData(transactionId, screenshotPath || undefined)
+          ...manualPaymentData(transactionId, pricing.finalPrice, screenshotPath || undefined)
         }
       });
       await tx.notification.createMany({
         data: [
-          { userId: provider.ownerId, bookingId: booking.id, type: "new_booking", title: "New booking request", message: `${booking.customerName} sent a booking request with manual UPI payment pending verification.` },
-          { userId: user.id, bookingId: booking.id, type: "payment_pending", title: "Payment pending verification", message: `Your UPI payment of Rs. ${pricing.finalPrice} is pending admin verification. UPI ID: ${MANUAL_UPI_ID}.` }
+          { userId: provider.ownerId, bookingId: booking.id, type: "booking_confirmed", title: "New confirmed booking", message: `${booking.customerName} submitted a confirmed booking with manual UPI payment.` },
+          { userId: user.id, bookingId: booking.id, type: "payment_success", title: "Payment successful", message: `Your UPI payment of Rs. ${pricing.finalPrice} was recorded and your booking is confirmed. UPI ID: ${MANUAL_UPI_ID}.` }
         ]
       });
       return booking;

@@ -52,8 +52,8 @@ export async function POST(request: Request) {
           shippingAddress: paymentValue(body, "shippingAddress", 500),
           total,
           platformRevenue,
-          paymentStatus: "pending_verification",
-          status: "pending",
+          paymentStatus: "paid",
+          status: "confirmed",
           items: {
             create: lineItems.map(item => ({
               productId: String(item.productId),
@@ -87,17 +87,15 @@ export async function POST(request: Request) {
           platformFee: platformRevenue,
           sellerPayout,
           lineItems: lineItems as Prisma.InputJsonValue,
-          ...manualPaymentData(transactionId, screenshotPath || undefined)
+          ...manualPaymentData(transactionId, total, screenshotPath || undefined)
         }
       });
-      await tx.notification.create({
-        data: {
-          userId: user.id,
-          orderId: created.id,
-          type: "payment_pending",
-          title: "Order payment pending verification",
-          message: `Your order #${created.id.slice(0, 8)} will be confirmed after admin verifies the UPI payment.`
-        }
+      const sellerOwnerIds = Array.from(new Set(lineItems.map(item => item.sellerOwnerId)));
+      await tx.notification.createMany({
+        data: [
+          { userId: user.id, orderId: created.id, type: "payment_success", title: "Order confirmed", message: `Payment submitted successfully. Order #${created.id.slice(0, 8)} is confirmed.` },
+          ...sellerOwnerIds.map(ownerId => ({ userId: ownerId, orderId: created.id, type: "marketplace_order", title: "New confirmed order", message: `Order #${created.id.slice(0, 8)} is ready to process.` }))
+        ]
       });
       return created;
     });

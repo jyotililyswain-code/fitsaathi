@@ -19,18 +19,9 @@ type WalletTransaction = {
   createdAt: string;
 };
 
-type PendingPayment = {
-  id: string;
-  purpose: string;
-  amount: number;
-  transactionId?: string | null;
-  createdAt: string;
-};
-
 type WalletData = {
   wallet: { balancePaise: number; active: boolean };
   transactions: WalletTransaction[];
-  pendingPayments: PendingPayment[];
   verification?: { paid: boolean; validUntil?: string | null; verificationStatus: string };
   dailyConnectionFeePaise: number;
 };
@@ -63,21 +54,18 @@ export default function WalletPage() {
     if (processing) return;
     if (!user) return setMessage("Please sign in first.");
     const form = new FormData(event.currentTarget);
-    const transactionId = String(form.get("transactionId") || "").trim();
+    form.set("purpose", purpose);
+    if (purpose === "WALLET_RECHARGE") form.set("amount", String(Math.round(Number(rechargeAmount))));
+    if (purpose === "premium") form.set("plan", premiumPlan);
     setProcessing(true);
     setMessage("");
     try {
       await localApi("/payments/manual", {
         method: "POST",
-        body: JSON.stringify({
-          purpose,
-          transactionId,
-          ...(purpose === "WALLET_RECHARGE" ? { amount: Math.round(Number(rechargeAmount)) } : {}),
-          ...(purpose === "premium" ? { plan: premiumPlan } : {})
-        })
+        body: form
       });
       event.currentTarget.reset();
-      setMessage("Payment submitted. It will activate only after admin verification.");
+      setMessage("Payment submitted successfully. Your booking/registration is confirmed.");
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not submit payment.");
@@ -123,7 +111,7 @@ export default function WalletPage() {
                   </button>
                 ))}
               </div>
-              <ManualUpiPayment amountLabel={`Rs. ${rechargeRupees}`} showScreenshot={false} className="mt-4" />
+              <ManualUpiPayment amountLabel={`Rs. ${rechargeRupees}`} className="mt-4" />
               <button disabled={processing} className="mt-4 w-full rounded-xl bg-acid px-5 py-3 font-bold text-ink disabled:opacity-50">I have paid</button>
             </form>
             {message ? <p className="mt-5 rounded-xl border border-white/10 bg-white/[.04] p-4 text-sm text-zinc-300">{message}</p> : null}
@@ -140,7 +128,7 @@ export default function WalletPage() {
                 <p className="mt-2">Review <span className="float-right capitalize text-zinc-300">{verification?.verificationStatus?.replace(/_/g, " ") || "not submitted"}</span></p>
                 <p className="mt-2">Valid until <span className="float-right text-zinc-400">{verification?.validUntil ? new Date(verification.validUntil).toLocaleDateString() : "Not paid"}</span></p>
               </div>
-              <ManualUpiPayment amountLabel="Rs. 300" showScreenshot={false} className="mt-4" />
+              <ManualUpiPayment amountLabel="Rs. 300" className="mt-4" />
               <button disabled={processing} className="mt-4 w-full rounded-xl bg-acid px-4 py-3 text-sm font-bold text-ink disabled:opacity-50">I have paid</button>
             </form>
 
@@ -157,26 +145,11 @@ export default function WalletPage() {
                   <option value="annual">Annual - Rs. 1499</option>
                 </select>
               </label>
-              <ManualUpiPayment amountLabel={`Rs. ${premiumPrice}`} showScreenshot={false} className="mt-4" />
+              <ManualUpiPayment amountLabel={`Rs. ${premiumPrice}`} className="mt-4" />
               <button disabled={processing} className="mt-4 w-full rounded-xl bg-acid px-4 py-3 text-sm font-bold text-ink disabled:opacity-50">I have paid</button>
             </form>
           </aside>
         </div>
-
-        {data?.pendingPayments?.length ? (
-          <section className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/5 p-6">
-            <h2 className="text-xl font-bold text-white">Pending payment verification</h2>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {data.pendingPayments.map(payment => (
-                <div key={payment.id} className="rounded-xl border border-white/10 p-4 text-sm">
-                  <p className="font-semibold capitalize text-white">{payment.purpose.replace(/_/g, " ").toLowerCase()}</p>
-                  <p className="mt-1 text-zinc-400">Rs. {payment.amount} - Ref: {payment.transactionId}</p>
-                  <p className="mt-1 text-amber-200">Pending admin verification</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         <section className="mt-8 rounded-2xl border border-white/10 bg-white/[.04] p-6 sm:p-7">
           <div className="mb-4 flex items-center gap-3">

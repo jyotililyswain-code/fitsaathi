@@ -66,7 +66,7 @@ export default function BookingPage() {
         body: formData
       });
       const booking = await readJsonResponse<{ bookingId: string }>(bookingResponse, "Could not create booking.");
-      setMessage("Booking request created. Your payment is pending admin verification.");
+      setMessage("Payment submitted successfully. Your booking/registration is confirmed.");
       router.push(`/payment-success?bookingId=${encodeURIComponent(booking.bookingId)}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not create booking right now.");

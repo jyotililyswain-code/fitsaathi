@@ -818,7 +818,8 @@ model Payment {
   paymentMethod         String    @default("upi_manual")
   upiId                 String?
   transactionId         String?   @unique
-  paymentStatus         String    @default("pending_verification")
+  paymentStatus         String    @default("paid")
+  amountPaid            Int       @default(0)
   paymentScreenshotPath String?
   platformFee           Int
   sellerPayout          Int       @default(0)
