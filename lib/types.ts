@@ -51,7 +51,7 @@ export type Dojo = {
   phoneNumber?: string;
   isPhoneVerified?: boolean;
   approvalStatus?: "pending" | "approved" | "rejected";
-  registrationPaymentStatus?: "pending" | "paid" | "failed";
+  registrationPaymentStatus?: "pending" | "pending_verification" | "paid" | "rejected" | "failed";
 };
 
 export type Booking = {
@@ -67,7 +67,7 @@ export type Booking = {
   platformFee?: number;
   totalPrice?: number;
   finalPrice?: number;
-  paymentStatus?: "pending" | "paid" | "failed" | "refunded";
+  paymentStatus?: "pending" | "pending_verification" | "paid" | "rejected" | "failed" | "refunded";
   payoutStatus?: "not_due" | "pending" | "processed" | "held";
   payoutAmount?: number;
   payoutMonth?: string;
@@ -100,11 +100,19 @@ export type Payment = {
   id: string;
   userId?: string;
   bookingId?: string;
-  purpose?: "booking" | "dojo_registration";
-  razorpayOrderId?: string;
-  razorpayPaymentId?: string;
+  orderId?: string;
+  purpose?: "booking" | "dojo_registration" | "marketplace_order" | "WALLET_RECHARGE" | "YEARLY_VERIFICATION" | "premium";
+  paymentMethod?: "upi_manual";
+  upiId?: string;
+  transactionId?: string;
+  paymentStatus?: "pending_verification" | "paid" | "rejected";
+  paymentScreenshotPath?: string;
   amount?: number;
-  status?: "created" | "paid" | "failed" | "refunded";
+  status?: "created" | "pending_verification" | "paid" | "rejected" | "failed" | "refunded";
+  paidAt?: string;
+  verifiedAt?: string;
+  verifiedBy?: string;
+  rejectionReason?: string;
   refundId?: string;
   failureReason?: string;
   createdAt?: string;

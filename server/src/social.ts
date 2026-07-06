@@ -239,46 +239,18 @@ socialRouter.get("/wallet", asyncRoute(async (request: AuthRequest, response) =>
 }));
 
 socialRouter.post("/wallet/recharge", asyncRoute(async (request: AuthRequest, response) => {
-  const razorpayOrderId = z.object({ razorpayOrderId: z.string().min(5) }).parse(request.body).razorpayOrderId;
-  const payment = await prisma.payment.findUnique({ where: { razorpayOrderId } });
-  if (!payment || payment.userId !== request.user!.id || payment.status !== "paid" || payment.purpose !== "wallet_recharge" || Number(payment.amountPaise || 0) < 10000) return response.status(409).json({ error: "A verified wallet recharge of at least ₹100 is required." });
-  const reference = `wallet:${payment.id}`;
-  const existing = await prisma.walletTransaction.findUnique({ where: { reference } });
-  if (existing) return response.json(existing);
-  const transaction = await prisma.$transaction(async tx => {
-    const wallet = await tx.wallet.upsert({ where: { userId: request.user!.id }, update: { balancePaise: { increment: payment.amountPaise! } }, create: { userId: request.user!.id, balancePaise: payment.amountPaise! } });
-    return tx.walletTransaction.create({ data: { userId: request.user!.id, type: "recharge", amountPaise: payment.amountPaise!, balanceAfterPaise: wallet.balancePaise, reference, description: "Wallet recharge" } });
-  });
-  response.status(201).json(transaction);
+  void request;
+  response.status(410).json({ error: "Direct wallet activation is disabled. Submit a manual UPI payment from the wallet page and wait for admin verification." });
 }));
 
 socialRouter.post("/verification/payment", asyncRoute(async (request: AuthRequest, response) => {
-  const razorpayOrderId = z.object({ razorpayOrderId: z.string().min(5) }).parse(request.body).razorpayOrderId;
-  const payment = await prisma.payment.findUnique({ where: { razorpayOrderId } });
-  if (!payment || payment.userId !== request.user!.id || payment.status !== "paid" || payment.purpose !== "verification_fee" || Number(payment.amountPaise || 0) !== 30000) return response.status(409).json({ error: "A verified yearly verification payment of Rs. 300 is required." });
-  const existingTx = await prisma.walletTransaction.findUnique({ where: { reference: `verification:${payment.id}` } });
-  const startsAt = payment.paidAt || new Date();
-  const expiresAt = new Date(startsAt.getTime() + 365 * 86400_000);
-  const verification = await prisma.$transaction(async tx => {
-    const current = await tx.socialVerification.findUnique({ where: { userId: request.user!.id } });
-    if (!current) throw Object.assign(new Error("Submit verification documents before paying the yearly verification fee."), { status: 409 });
-    const wallet = await tx.wallet.upsert({ where: { userId: request.user!.id }, update: {}, create: { userId: request.user!.id } });
-    const updated = await tx.socialVerification.update({ where: { userId: request.user!.id }, data: { paymentStatus: "paid", paymentId: payment.id, paidAt: startsAt, expiresAt } });
-    await tx.user.update({ where: { id: request.user!.id }, data: { verificationPaymentStatus: "paid", verificationPaidUntil: expiresAt } });
-    if (!existingTx) await tx.walletTransaction.create({ data: { userId: request.user!.id, type: "verification_fee", amountPaise: -30000, balanceAfterPaise: wallet.balancePaise, reference: `verification:${payment.id}`, description: "Yearly verification fee paid by Razorpay" } });
-    return updated;
-  });
-  response.status(201).json({ status: verification.status, paymentStatus: verification.paymentStatus, expiresAt: verification.expiresAt });
+  void request;
+  response.status(410).json({ error: "Direct verification activation is disabled. Admin verification of the manual UPI payment is required." });
 }));
 
 socialRouter.post("/premium", asyncRoute(async (request: AuthRequest, response) => {
-  const input = z.object({ razorpayOrderId: z.string().min(5), plan: z.enum(["monthly", "quarterly", "annual"]) }).parse(request.body);
-  const payment = await prisma.payment.findUnique({ where: { razorpayOrderId: input.razorpayOrderId } });
-  if (!payment || payment.userId !== request.user!.id || payment.status !== "paid" || payment.purpose !== "premium") return response.status(409).json({ error: "Verified Premium payment not found." });
-  const days = input.plan === "monthly" ? 30 : input.plan === "quarterly" ? 90 : 365;
-  const startsAt = new Date(); const endsAt = new Date(startsAt.getTime() + days * 86400_000);
-  const subscription = await prisma.$transaction(async tx => { await tx.premiumSubscription.updateMany({ where: { userId: request.user!.id, active: true }, data: { active: false } }); const item = await tx.premiumSubscription.create({ data: { userId: request.user!.id, plan: input.plan, startsAt, endsAt, amountPaise: payment.amountPaise || payment.amount * 100, paymentId: payment.id } }); await tx.user.update({ where: { id: request.user!.id }, data: { premiumUntil: endsAt } }); return item; });
-  response.status(201).json(subscription);
+  void request;
+  response.status(410).json({ error: "Direct Premium activation is disabled. Admin verification of the manual UPI payment is required." });
 }));
 
 socialRouter.get("/profile-views", asyncRoute(async (request: AuthRequest, response) => {

@@ -41,6 +41,7 @@ enum ProductStatus {
 
 enum OrderStatus {
   pending
+  confirmed
   paid
   processing
   shipped
@@ -51,6 +52,7 @@ enum OrderStatus {
 
 enum BookingStatus {
   pending
+  confirmed
   accepted
   rejected
   completed
@@ -794,44 +796,54 @@ model Attendance {
 }
 
 model Payment {
-  id                String    @id @default(uuid())
-  userId            String?
-  orderId           String?   @unique
-  bookingId         String?
-  sellerId          String?
-  purpose           String?
-  targetType        String?
-  targetId          String?
-  razorpayOrderId   String?   @unique
-  razorpayPaymentId String?   @unique
-  razorpaySignature String?
-  amount            Int
-  amountPaise       Int?
-  currency          String    @default("INR")
-  provider          String    @default("RAZORPAY")
-  providerOrderId   String?
-  providerPaymentId String?
-  originalPrice     Int       @default(0)
-  status            String
-  platformFee       Int
-  sellerPayout      Int       @default(0)
-  coachPayout       Int       @default(0)
-  lineItems         Json?
-  refundId          String?
-  failureReason     String?
-  errorCode         String?
-  webhookEvent      String?
-  paidAt            DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  user              User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  order             Order?    @relation(fields: [orderId], references: [id])
-  booking           Booking?  @relation(fields: [bookingId], references: [id])
-  seller            Seller?   @relation(fields: [sellerId], references: [id])
+  id                    String    @id @default(uuid())
+  userId                String?
+  orderId               String?   @unique
+  bookingId             String?
+  sellerId              String?
+  purpose               String?
+  targetType            String?
+  targetId              String?
+  razorpayOrderId       String?   @unique
+  razorpayPaymentId     String?   @unique
+  razorpaySignature     String?
+  amount                Int
+  amountPaise           Int?
+  currency              String    @default("INR")
+  provider              String    @default("UPI_MANUAL")
+  providerOrderId       String?
+  providerPaymentId     String?
+  originalPrice         Int       @default(0)
+  status                String
+  paymentMethod         String    @default("upi_manual")
+  upiId                 String?
+  transactionId         String?   @unique
+  paymentStatus         String    @default("pending_verification")
+  paymentScreenshotPath String?
+  platformFee           Int
+  sellerPayout          Int       @default(0)
+  coachPayout           Int       @default(0)
+  lineItems             Json?
+  refundId              String?
+  failureReason         String?
+  errorCode             String?
+  webhookEvent          String?
+  paidAt                DateTime?
+  verifiedAt            DateTime?
+  verifiedBy            String?
+  rejectionReason       String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  order                 Order?    @relation(fields: [orderId], references: [id])
+  booking               Booking?  @relation(fields: [bookingId], references: [id])
+  seller                Seller?   @relation(fields: [sellerId], references: [id])
 
   @@index([status, createdAt])
+  @@index([paymentStatus, createdAt])
   @@index([userId, purpose])
   @@index([bookingId])
+  @@index([verifiedBy])
   @@map("payments")
 }
 

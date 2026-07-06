@@ -7,7 +7,7 @@ const faqs = [
   ["Are home classes refundable?", "Home classes are not refundable. A one-time trainer replacement may be available within the first week after review."],
   ["Are dojo packages refundable?", "Dojo and training class packages may qualify for partial refund review only for the first package or first month, with platform service fees retained."],
   ["Can I book martial arts or traditional arts?", "Yes. FitSaathi supports categories such as Karate, MMA, Boxing, Taekwondo, Kalaripayattu, yoga, gymnastics, calisthenics, and personal training."],
-  ["How do payments work?", "Payment orders are created through Razorpay when credentials are configured. Successful payments should be verified through the secure signature verification API."],
+  ["How do payments work?", "Pay with PhonePe or another UPI app, then enter the transaction/reference ID. An administrator verifies the payment before the booking, order, or service is confirmed."],
   ["Can coaches earn badges?", "Yes. Verified, Elite, and Legendary badge tiers are designed around real activity, reliability, customer outcomes, and policy compliance."],
   ["How do I delete my data?", "Contact FitSaathi support. Eligible account data can be reviewed for correction or deletion subject to legal, payment, safety, and dispute retention needs."]
 ];

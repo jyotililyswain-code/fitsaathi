@@ -10,7 +10,7 @@ import { accessToken, allowRoles, authenticate, hashToken, refreshToken, type Au
 import { config } from "./config";
 import { prisma } from "./db";
 import { validateInterestList } from "./interests";
-import { paymentsRouter, razorpayWebhookHandler, walletRouter } from "./payments";
+import { paymentsRouter, walletRouter } from "./payments";
 import { databaseRateLimit } from "./rate-limit";
 import { socialRouter } from "./social";
 import { createSupabaseAuthUser, rememberSupabaseAuthLogin, sendSupabasePasswordReset } from "./supabase-auth";
@@ -21,6 +21,9 @@ const app = express();
 const admins = ["admin", "super_admin", "moderator", "support_admin"];
 const asyncRoute = (handler: (request: any, response: any) => Promise<unknown>) => (request: any, response: any, next: any) => Promise.resolve(handler(request, response)).catch(next);
 const pricing = (value: unknown) => { const sellerPrice = Math.max(0, Math.round(Number(value) || 0)); return { sellerPrice, customerPrice: sellerPrice + 100, sellerPayout: sellerPrice + 50, platformFee: 50 }; };
+const manualUpiId = "7065223868-2@ibl";
+const manualPaymentStatus = "pending_verification";
+const dojoRegistrationFee = 700;
 const publicUser = { id: true, name: true, email: true, phone: true, role: true, accountStatus: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
 const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, ...coach }: any) => coach;
 const publicDojo = ({ email: _email, phoneNumber: _phone, isPhoneVerified: _phoneVerified, gstNumber: _gst, accountHolder: _holder, accountNumberLast4: _account, ifsc: _ifsc, ...dojo }: any) => dojo;
@@ -42,7 +45,6 @@ async function issueSession(record: { id: string; name: string; email: string; r
 fs.mkdirSync(config.uploadRoot, { recursive: true });
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: config.frontendOrigin, credentials: true }));
-app.post("/api/webhooks/razorpay", express.raw({ type: "application/json", limit: "1mb" }), razorpayWebhookHandler);
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 app.use("/uploads", express.static(config.uploadRoot, { maxAge: "1d", fallthrough: false }));
@@ -185,27 +187,24 @@ app.get("/api/dojos/:id", asyncRoute(async (request, response) => {
   const item = await prisma.dojo.findUnique({ where: { id: String(request.params.id) }, include: { reviews: true } });
   item ? response.json(publicDojo(item)) : response.status(404).json({ error: "Dojo not found." });
 }));
-app.post("/api/dojos", authenticate, upload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
+app.post("/api/dojos", authenticate, upload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }, { name: "paymentScreenshot", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
   const files = request.files as Record<string, Express.Multer.File[]>;
   const incomingFiles = Object.values(files || {}).flat();
-  const parsed = z.object({ name: z.string().min(2), ownerName: z.string().min(2), email: z.string().email(), phoneNumber: z.string().min(10), category: z.string().min(2), customCategory: z.string().optional(), address: z.string().min(5), city: z.string().min(2), state: z.string().min(2), pincode: z.string().regex(/^\d{6}$/), price: z.coerce.number().min(0), experience: z.string().min(2), gstNumber: z.string().optional(), accountHolder: z.string().min(2), accountNumber: z.string().min(4).max(34), ifsc: z.string().min(4).max(20), description: z.string().max(2000).optional(), razorpayOrderId: z.string().min(3) }).safeParse(request.body);
+  const parsed = z.object({ name: z.string().min(2), ownerName: z.string().min(2), email: z.string().email(), phoneNumber: z.string().min(10), category: z.string().min(2), customCategory: z.string().optional(), address: z.string().min(5), city: z.string().min(2), state: z.string().min(2), pincode: z.string().regex(/^\d{6}$/), price: z.coerce.number().min(0), experience: z.string().min(2), gstNumber: z.string().optional(), accountHolder: z.string().min(2), accountNumber: z.string().min(4).max(34), ifsc: z.string().min(4).max(20), description: z.string().max(2000).optional(), transactionId: z.string().trim().min(6).max(80) }).safeParse(request.body);
   if (!parsed.success) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Please correct the dojo registration fields.", issues: parsed.error.issues }); }
   const input = parsed.data;
   const existing = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, status: true } });
   if (existing) { discardIncomingUploads(incomingFiles); return response.status(409).json({ error: "This account already has a dojo profile.", code: "DOJO_PROFILE_EXISTS", field: "ownerId", profileId: existing.id, status: existing.status }); }
-  const payment = await prisma.payment.findUnique({ where: { razorpayOrderId: input.razorpayOrderId } });
-  if (!payment || payment.userId !== request.user!.id || payment.purpose !== "dojo_registration" || payment.status !== "paid") { discardIncomingUploads(incomingFiles); return response.status(409).json({ error: "A verified dojo registration payment is required.", code: "DOJO_PAYMENT_REQUIRED" }); }
-  if (payment.targetId) { discardIncomingUploads(incomingFiles); return response.status(409).json({ error: "This registration payment has already been used.", code: "DOJO_PAYMENT_USED" }); }
   if (!files?.aadharFront?.length) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Aadhaar front image is required." }); }
-  const [photo, certificate, aadhaarFront, aadhaarBack] = await Promise.all([
-    optimizeUploads(files.photo || [], "providers"), optimizeUploads(files.certificate || [], "providers"), optimizeUploads(files.aadharFront || [], "aadhaar"), optimizeUploads(files.aadharBack || [], "aadhaar")
+  const [photo, certificate, aadhaarFront, aadhaarBack, paymentScreenshot] = await Promise.all([
+    optimizeUploads(files.photo || [], "providers"), optimizeUploads(files.certificate || [], "providers"), optimizeUploads(files.aadharFront || [], "aadhaar"), optimizeUploads(files.aadharBack || [], "aadhaar"), optimizeUploads(files.paymentScreenshot || [], "payments")
   ]);
   const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
   const price = Math.round(input.price);
   const result = await prisma.$transaction(async tx => {
-    const dojo = await tx.dojo.create({ data: { ownerId: request.user!.id, name: input.name, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber.slice(-4), ifsc: input.ifsc.toUpperCase(), description: input.description, originalPrice: price, finalPrice: price, imagePath: photo[0]?.path, registrationPaymentStatus: "paid" } });
+    const dojo = await tx.dojo.create({ data: { ownerId: request.user!.id, name: input.name, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber.slice(-4), ifsc: input.ifsc.toUpperCase(), description: input.description, originalPrice: price, finalPrice: price, imagePath: photo[0]?.path, registrationPaymentStatus: manualPaymentStatus } });
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: certificate[0]?.path } });
-    await tx.payment.update({ where: { id: payment.id }, data: { targetType: "dojo", targetId: dojo.id } });
+    await tx.payment.create({ data: { userId: request.user!.id, purpose: "dojo_registration", targetType: "dojo", targetId: dojo.id, amount: dojoRegistrationFee, amountPaise: dojoRegistrationFee * 100, currency: "INR", provider: "UPI_MANUAL", originalPrice: dojoRegistrationFee, platformFee: 0, status: manualPaymentStatus, paymentMethod: "upi_manual", upiId: manualUpiId, transactionId: input.transactionId, paymentStatus: manualPaymentStatus, paymentScreenshotPath: paymentScreenshot[0]?.path } });
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
     return { dojo, user };
   });
@@ -368,7 +367,7 @@ app.get("/api/admin/snapshot", authenticate, allowRoles(...admins), asyncRoute(a
     prisma.product.findMany({ include: { images: true, seller: { include: { owner: { select: publicUser } } } }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.order.findMany({ include: { items: true, user: { select: publicUser } }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.report.findMany({ orderBy: { createdAt: "desc" }, take: 300 }),
-    prisma.payment.findMany({ orderBy: { createdAt: "desc" }, take: 300 }),
+    prisma.payment.findMany({ include: { user: { select: publicUser }, order: { include: { items: true } }, booking: true, seller: true }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.adminLog.findMany({ include: { actor: { select: publicUser } }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.notification.findMany({ orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.platformSettings.findUnique({ where: { id: "global" } }),
@@ -422,7 +421,7 @@ app.use((error: any, _request: express.Request, response: express.Response, _nex
   if (error?.code === "P2002") {
     const fields = Array.isArray(error?.meta?.target) ? error.meta.target.map(String) : error?.meta?.target ? [String(error.meta.target)] : [];
     const field = fields[0] || "record";
-    const labels: Record<string, string> = { email: "email address", phone: "phone number", ownerId: "owner account", tokenHash: "session token", razorpayOrderId: "payment order", razorpayPaymentId: "payment" };
+    const labels: Record<string, string> = { email: "email address", phone: "phone number", ownerId: "owner account", tokenHash: "session token", razorpayOrderId: "payment order", razorpayPaymentId: "payment", transactionId: "UPI transaction ID" };
     return response.status(409).json({ error: `A record with this ${labels[field] || field} already exists.`, code: `DUPLICATE_${field.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}`, field, fields });
   }
   console.error(error);

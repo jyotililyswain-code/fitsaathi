@@ -100,7 +100,7 @@ export const policies: Policy[] = [
       {
         id: "payment-information",
         title: "Payment Information",
-        body: ["Payments may be processed through Razorpay. FitSaathi does not ask users to share card passwords or full sensitive payment credentials with coaches or support staff. Payment records, refund status, internal commission, and payout tracking may be stored for accounting, safety, and dispute handling."]
+        body: ["Payments are currently submitted through manual UPI. FitSaathi does not ask users to share UPI PINs, card passwords, or other sensitive payment credentials with coaches or support staff. Transaction references, verification status, refund status, internal commission, and payout tracking may be stored for accounting, safety, and dispute handling."]
       },
       {
         id: "contact-visibility",
@@ -120,7 +120,7 @@ export const policies: Policy[] = [
       {
         id: "third-party-services",
         title: "Third-Party Services",
-        body: ["FitSaathi uses PostgreSQL for application and account data, local server storage for uploaded files, and Razorpay for payments. These providers process data under their own terms and security practices."]
+        body: ["FitSaathi uses PostgreSQL for application and account data and configured storage services for uploaded files. Manual UPI payments are reviewed by authorized administrators before activation."]
       },
       {
         id: "user-rights",
@@ -265,9 +265,9 @@ export const policies: Policy[] = [
     lastUpdated: "June 29, 2026",
     sections: [
       {
-        id: "razorpay",
-        title: "Razorpay Payments",
-        body: ["FitSaathi may use Razorpay for payment collection. Users should complete payments only through official checkout flows and verified payment links. Customer-facing prices show the final payable amount while platform commission is tracked internally."]
+        id: "manual-upi",
+        title: "Manual UPI Payments",
+        body: ["FitSaathi currently accepts manual UPI payments to the UPI ID shown on the payment screen. Users must enter the matching transaction/reference ID. A booking, order, registration, wallet recharge, verification fee, or membership is activated only after administrator verification."]
       },
       {
         id: "subscriptions",
@@ -287,7 +287,7 @@ export const policies: Policy[] = [
       {
         id: "refunds-disputes",
         title: "Refunds & Payment Disputes",
-        body: ["Refund timelines depend on approval, Razorpay processing, and the user's bank or payment method. Disputes are reviewed against booking, package, and attendance records."]
+        body: ["Refund timelines depend on approval and the user's bank or UPI provider. Disputes are reviewed against the submitted transaction reference, booking, package, order, and attendance records."]
       }
     ]
   },

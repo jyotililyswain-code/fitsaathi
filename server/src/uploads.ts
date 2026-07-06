@@ -16,7 +16,7 @@ export const socialUpload = multer({
   fileFilter: (_request, file, done) => done(null, ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm", "audio/mpeg", "audio/webm", "audio/ogg"].includes(file.mimetype))
 });
 
-export async function optimizeUploads(files: Express.Multer.File[], folder: "products" | "sellers" | "providers" | "aadhaar" | "social") {
+export async function optimizeUploads(files: Express.Multer.File[], folder: "products" | "sellers" | "providers" | "aadhaar" | "social" | "payments") {
   const target = path.join(config.uploadRoot, folder); fs.mkdirSync(target, { recursive: true });
   return Promise.all(files.map(async (file, index) => {
     const name = `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}.webp`;

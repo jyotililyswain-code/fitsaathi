@@ -4,18 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
+import { ManualUpiPayment } from "@/components/ManualUpiPayment";
 import { useSessionUser } from "@/lib/auth-client";
 import { getCoach, getDojo } from "@/lib/data";
 import { formatMoney } from "@/lib/format";
 import { readJsonResponse } from "@/lib/http";
 import { getCoachBaseFee, getPriceBreakdown } from "@/lib/pricing";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
-
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void; on: (event: string, handler: (response: any) => void) => void };
-  }
-}
 
 export default function BookingPage() {
   const router = useRouter();
@@ -61,33 +56,17 @@ export default function BookingPage() {
     setMessage("");
 
     try {
-      const paymentResult = await collectPayment({
-        targetType: params.get("coachId") ? "coach" : "dojo",
-        targetId: params.get("coachId") || params.get("dojoId") || "",
-        name: String(formData.get("name")),
-        phone,
-        email: user.email || ""
-      });
+      formData.set("targetType", params.get("coachId") ? "coach" : "dojo");
+      formData.set("targetId", params.get("coachId") || params.get("dojoId") || "");
+      formData.set("phone", phone);
+      formData.set("acceptedTerms", "true");
+      formData.set("acceptedPrivacy", "true");
       const bookingResponse = await fetch("/api/bookings/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          targetType: params.get("coachId") ? "coach" : "dojo",
-          targetId: params.get("coachId") || params.get("dojoId"),
-          customerName: String(formData.get("name")),
-          city: String(formData.get("city")),
-          classType: String(formData.get("classType")),
-          packageType: String(formData.get("packageType")),
-          preferredDate: String(formData.get("preferredDate")),
-          preferredTime: String(formData.get("preferredTime")),
-          notes: String(formData.get("notes")),
-          acceptedTerms: true,
-          acceptedPrivacy: true,
-          razorpayOrderId: paymentResult.orderId,
-        })
+        body: formData
       });
       const booking = await readJsonResponse<{ bookingId: string }>(bookingResponse, "Could not create booking.");
-      setMessage(`Booking request created and payment marked ${paymentResult.status}. Coach will be notified to accept or reject.`);
+      setMessage("Booking request created. Your payment is pending admin verification.");
       router.push(`/payment-success?bookingId=${encodeURIComponent(booking.bookingId)}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not create booking right now.");
@@ -136,8 +115,9 @@ export default function BookingPage() {
         <div className="mt-4 rounded-xl border border-white/10 bg-ink p-4">
           <p className="text-sm font-semibold text-white">Payment summary</p>
           <p className="mt-3 text-3xl font-semibold text-white">{formatMoney(breakdown.finalPrice)}</p>
-          <p className="mt-1 text-sm text-zinc-400">Total payable. Payments are handled securely through FitSaathi.</p>
+          <p className="mt-1 text-sm text-zinc-400">Total payable. Submit the UPI reference ID after payment.</p>
         </div>
+        <ManualUpiPayment amountLabel={formatMoney(breakdown.finalPrice)} className="mt-4" />
         <div className="mt-4 grid gap-3 text-sm text-zinc-300">
           <PolicyCheck
             checked={acceptedTerms}
@@ -171,7 +151,7 @@ export default function BookingPage() {
           disabled={loading || !providerReady || !acceptedTerms || !acceptedPrivacy}
           className="mt-5 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
         >
-          {loading ? "Processing secure payment…" : "Pay and create booking"}
+          {loading ? "Submitting payment..." : "I have paid"}
         </button>
         {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
       </form>
@@ -201,62 +181,4 @@ function PolicyCheck({
       </span>
     </label>
   );
-}
-
-async function collectPayment({ targetType, targetId, name, phone, email }: { targetType: "coach" | "dojo"; targetId: string; name: string; phone: string; email: string }) {
-  const orderResponse = await fetch("/api/razorpay/order", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ purpose: "booking", targetType, targetId, receipt: `booking_${Date.now()}` })
-  });
-  const order = await readJsonResponse<{ id: string; razorpayKeyId: string; amount: number; currency?: string }>(orderResponse, "Could not create Razorpay order.");
-  const key = String(order.razorpayKeyId || "");
-  if (!key) throw new Error("Razorpay is not configured. Add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, then restart the app.");
-
-  let verifiedPaymentId = "";
-  await new Promise<void>((resolve, reject) => {
-    if (!window.Razorpay) {
-      reject(new Error("Razorpay checkout script is not loaded."));
-      return;
-    }
-    let settled = false;
-    const reportFailure = async (reason: string, paymentId = "", errorCode = "") => {
-      await fetch("/api/razorpay/failure", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id, reason, paymentId, errorCode }) }).catch(() => undefined);
-    };
-    const checkout = new window.Razorpay({
-      key,
-      amount: order.amount,
-      currency: order.currency || "INR",
-      name: "FitSaathi",
-      description: "Class booking",
-      order_id: order.id,
-      prefill: { name, email, contact: phone },
-      handler: async (response: Record<string, string>) => {
-        const verifyResponse = await fetch("/api/razorpay/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(response)
-        });
-        const verification = await readJsonResponse<{ verified: boolean; paymentId: string }>(verifyResponse, "Payment signature verification failed.");
-        if (!verification.verified) {
-          reject(new Error("Payment signature verification failed."));
-          return;
-        }
-        verifiedPaymentId = verification.paymentId;
-        settled = true;
-        resolve();
-      },
-      modal: { ondismiss: async () => { if (settled) return; await reportFailure("checkout_dismissed"); reject(new Error("Payment was cancelled. No booking was created; you can retry safely.")); } },
-      retry: { enabled: true, max_count: 2 },
-      timeout: 600
-    });
-    checkout.on("payment.failed", async (response: any) => {
-      if (settled) return;
-      const reason = String(response?.error?.description || response?.error?.reason || "payment_failed");
-      await reportFailure(reason, String(response?.error?.metadata?.payment_id || ""), String(response?.error?.code || ""));
-    });
-    checkout.open();
-  });
-
-  return { status: "paid" as const, orderId: order.id as string, paymentId: verifiedPaymentId };
 }

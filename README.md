@@ -1,6 +1,6 @@
 # FitSaathi
 
-FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, Razorpay, and Vercel Blob. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
+FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, manual UPI payments, and Vercel Blob. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
 
 ## Run locally
 
@@ -33,9 +33,6 @@ Copy `.env.example` to `.env` and configure:
 
 Optional external services:
 
-- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`: Razorpay server credentials.
-- `NEXT_PUBLIC_RAZORPAY_KEY_ID`: the same Razorpay key ID exposed to checkout.
-- `RAZORPAY_WEBHOOK_SECRET`: secret assigned to the Razorpay webhook.
 - `NEXT_PUBLIC_SITE_URL`: canonical production site URL.
 - `NEXT_PUBLIC_GA_ID`: optional Google Analytics measurement ID.
 
@@ -65,7 +62,7 @@ The integration suites cover every Prisma model plus authentication, provider re
 
 ## Payments
 
-Razorpay server routes create and verify payment orders, persist payment state through Prisma, and reject duplicate booking/order consumption. Configure a webhook for `/api/razorpay/webhook` and subscribe to payment, order, and refund events. Use Test Mode credentials for local QA.
+Payments use manual PhonePe / UPI transfer to `7065223868-2@ibl`. Customers submit a unique UPI transaction/reference ID and can attach a screenshot. Payments remain `pending_verification`; only an administrator can mark them paid or rejected. A verified booking/order becomes `confirmed`. Razorpay credentials and webhooks are not required.
 
 ## Supabase database
 
@@ -87,7 +84,7 @@ This repo is now designed to deploy as a single Vercel Next.js project:
 
 1. Create a Supabase project and copy its PostgreSQL connection string into Vercel as `DATABASE_URL`.
 2. Connect a Vercel Blob store and keep `BLOB_READ_WRITE_TOKEN` available to the project.
-3. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ATTENDANCE_QR_SECRET`, Razorpay keys, and `NEXT_PUBLIC_SITE_URL`.
+3. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ATTENDANCE_QR_SECRET`, and `NEXT_PUBLIC_SITE_URL`.
 4. Do not set `NEXT_PUBLIC_API_URL` unless you intentionally want to call a separate external API.
 5. Vercel should use `npm run build`, which runs `prisma generate` before `next build`.
 
