@@ -51,7 +51,7 @@ export type Dojo = {
   phoneNumber?: string;
   isPhoneVerified?: boolean;
   approvalStatus?: "pending" | "approved" | "rejected";
-  registrationPaymentStatus?: "pending" | "pending_verification" | "paid" | "rejected" | "failed";
+  registrationPaymentStatus?: "pending" | "paid" | "rejected" | "failed";
 };
 
 export type Booking = {
@@ -63,12 +63,11 @@ export type Booking = {
   providerOwnerId?: string;
   status?: string;
   amount?: number;
-  amountPaid?: number;
   originalPrice?: number;
   platformFee?: number;
   totalPrice?: number;
   finalPrice?: number;
-  paymentStatus?: "pending" | "pending_verification" | "paid" | "rejected" | "failed" | "refunded";
+  paymentStatus?: "pending" | "paid" | "rejected" | "failed" | "refunded";
   payoutStatus?: "not_due" | "pending" | "processed" | "held";
   payoutAmount?: number;
   payoutMonth?: string;
@@ -106,10 +105,11 @@ export type Payment = {
   paymentMethod?: "upi_manual";
   upiId?: string;
   transactionId?: string;
-  paymentStatus?: "pending_verification" | "paid" | "rejected";
+  paymentStatus?: "paid" | "rejected";
   paymentScreenshotPath?: string;
   amount?: number;
-  status?: "created" | "pending_verification" | "paid" | "rejected" | "failed" | "refunded";
+  amountPaid?: number;
+  status?: "created" | "paid" | "rejected" | "failed" | "refunded";
   paidAt?: string;
   verifiedAt?: string;
   verifiedBy?: string;

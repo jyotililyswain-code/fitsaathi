@@ -5,6 +5,7 @@ import { Bell, Calendar, Heart, IndianRupee, MapPin, MessageCircle, QrCode, Star
 import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
+import { ReportProblemButton } from "@/components/ReportProblem";
 import { useCollectionCount, useUserBookings } from "@/lib/hooks";
 import { useSessionUser } from "@/lib/auth-client";
 
@@ -35,7 +36,10 @@ export default function CustomerDashboardPage() {
           <ActionTile icon={<MessageCircle />} title="Contact coach" href="/contact" />
         </div>
         <div className="mt-4">
-          <ActionTile icon={<Store />} title="Register as Seller" href="/seller/register" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <ActionTile icon={<Store />} title="Register as Seller" href="/seller/register" />
+            <ReportProblemButton variant="dashboard" />
+          </div>
         </div>
         <div className="mt-8">
           {bookings.loading ? (
