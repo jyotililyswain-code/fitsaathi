@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CustomerCareButton } from "@/components/CustomerCareModal";
 import { ReportProblemButton } from "@/components/ReportProblem";
 
 export function Footer() {
@@ -20,6 +21,7 @@ export function Footer() {
           <Link href="/faq" className="text-sm text-zinc-400 transition hover:text-acid">FAQ</Link>
           <Link href="/policies/privacy" className="text-sm text-zinc-400 transition hover:text-acid">Privacy</Link>
           <Link href="/policies/terms" className="text-sm text-zinc-400 transition hover:text-acid">Terms</Link>
+          <CustomerCareButton />
           <ReportProblemButton />
         </nav>
       </div>

@@ -1,5 +1,12 @@
 "use client";
-import { BadgeCheck, Boxes, IndianRupee, PackageCheck, ShoppingBag, Trash2 } from "lucide-react";
+import {
+  BadgeCheck,
+  Boxes,
+  IndianRupee,
+  PackageCheck,
+  ShoppingBag,
+  Trash2,
+} from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -8,6 +15,346 @@ import { mapProduct } from "@/lib/data";
 import { formatMoney } from "@/lib/format";
 import { localApi } from "@/lib/local-api";
 import type { Product, Seller } from "@/lib/marketplace";
-type StoreOrder={id:string;status?:string;total?:number;customerName?:string;items?:Array<{sellerPayout:number;quantity:number}>};type Tab="overview"|"products"|"orders"|"earnings"|"verification";
-export default function SellerDashboard(){const[seller,setSeller]=useState<Seller|null>(null);const[products,setProducts]=useState<Product[]>([]);const[orders,setOrders]=useState<StoreOrder[]>([]);const[tab,setTab]=useState<Tab>("overview");const[message,setMessage]=useState("");const[loading,setLoading]=useState(false);const load=useCallback(async()=>{try{const data=await localApi<any>("/seller/dashboard");setSeller({id:data.seller.id,ownerId:data.seller.ownerId,fullName:data.seller.owner?.name||"",storeName:data.seller.storeName,status:data.seller.status,verified:data.seller.verified,trusted:data.seller.trusted,rating:data.seller.rating,salesCount:data.seller.salesCount});setProducts(data.products.map(mapProduct));setOrders(data.orders)}catch(error){setMessage(error instanceof Error?error.message:"Could not load dashboard.")}},[]);useEffect(()=>{void load()},[load]);const payout=(order:StoreOrder)=>order.items?.reduce((sum,item)=>sum+item.sellerPayout*item.quantity,0)||0;const earnings=orders.filter(order=>order.status==="delivered").reduce((sum,order)=>sum+payout(order),0);const inventory=products.reduce((sum,product)=>sum+product.stock,0);async function addProduct(event:FormEvent<HTMLFormElement>){event.preventDefault();if(!seller||!["verified","trusted"].includes(seller.status))return setMessage("Admin verification is required before publishing products.");const form=new FormData(event.currentTarget);const files=form.getAll("images").filter((value):value is File=>value instanceof File&&value.size>0);if(files.length<3)return setMessage("Upload at least 3 product images.");form.set("sellerPrice",String(form.get("price")));setLoading(true);try{await localApi("/products",{method:"POST",body:form});event.currentTarget.reset();setMessage("Product submitted for admin approval.");await load()}catch(error){setMessage(error instanceof Error?error.message:"Could not add product.")}finally{setLoading(false)}}async function orderStatus(id:string,status:string){try{await localApi(`/seller/orders/${id}/status`,{method:"PATCH",body:JSON.stringify({status})});await load()}catch(error){setMessage(error instanceof Error?error.message:"Could not update order.")}}async function removeProduct(id:string){try{await localApi(`/products/${id}`,{method:"DELETE"});await load()}catch(error){setMessage(error instanceof Error?error.message:"Could not delete product.")}}return <AuthGuard role="seller"><main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"><div><p className="text-sm text-acid">Seller Central</p><h1 className="mt-2 text-4xl font-bold text-white">{seller?.storeName||"Seller dashboard"}</h1><Status seller={seller}/></div><div className="mt-8 flex gap-2 overflow-x-auto">{(["overview","products","orders","earnings","verification"]as Tab[]).map(item=><button key={item} onClick={()=>setTab(item)} className={`rounded-full px-4 py-2 text-sm capitalize ${tab===item?"bg-acid text-ink":"border border-white/10 text-zinc-300"}`}>{item}</button>)}</div>{message?<p className="mt-5 rounded-xl border border-acid/30 p-3 text-sm text-acid">{message}</p>:null}{tab==="overview"?<div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><Metric icon={<IndianRupee/>} value={formatMoney(earnings)} label="Delivered earnings"/><Metric icon={<ShoppingBag/>} value={orders.length} label="Orders"/><Metric icon={<Boxes/>} value={products.length} label="Products"/><Metric icon={<PackageCheck/>} value={inventory} label="Units in stock"/></div>:null}{tab==="products"?<div className="mt-8 grid gap-6 xl:grid-cols-2"><ProductForm onSubmit={addProduct} loading={loading}/><Panel title="Your products">{products.length?products.map(product=><div key={product.id} className="flex items-center gap-3 rounded-xl border border-white/10 p-3"><div className="flex-1"><p className="font-medium text-white">{product.title}</p><p className="text-xs text-zinc-400">Stock {product.stock} · {product.status}</p></div><button onClick={()=>removeProduct(product.id)} className="text-red-400"><Trash2/></button></div>):<EmptyState title="No products" body="Add your first product."/>}</Panel></div>:null}{tab==="orders"?<Panel title="Order management">{orders.length?orders.map(order=><div key={order.id} className="rounded-xl border border-white/10 p-4"><p className="font-medium text-white">Order {order.id.slice(0,8)} · {formatMoney(order.total)}</p><p className="text-xs text-acid">{order.status}</p><div className="mt-3 flex gap-2">{["processing","shipped","delivered","cancelled"].map(status=><button key={status} onClick={()=>orderStatus(order.id,status)} className="rounded-full border border-white/10 px-3 py-1 text-xs">{status}</button>)}</div></div>):<EmptyState title="No orders yet" body="Paid orders appear here."/>}</Panel>:null}{tab==="earnings"?<Metric icon={<IndianRupee/>} value={formatMoney(earnings)} label="Available payout"/>:null}{tab==="verification"?<Panel title="Seller verification"><Status seller={seller}/><p className="text-zinc-400">Verification is stored in PostgreSQL and reviewed by administrators.</p></Panel>:null}</main></AuthGuard>}
-function Status({seller}:{seller:Seller|null}){return <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-acid/30 px-4 py-2 text-sm text-acid"><BadgeCheck className="h-4 w-4"/>{seller?.status||"pending"}</span>}function Metric({icon,value,label}:{icon:ReactNode;value:ReactNode;label:string}){return <div className="rounded-2xl border border-white/10 bg-white/[.04] p-5 text-white"><div className="text-acid">{icon}</div><p className="mt-4 text-2xl font-bold">{value}</p><p className="text-sm text-zinc-400">{label}</p></div>}function Panel({title,children}:{title:string;children:ReactNode}){return <section className="mt-8 rounded-2xl border border-white/10 bg-white/[.04] p-5"><h2 className="mb-4 text-xl font-semibold text-white">{title}</h2><div className="space-y-3">{children}</div></section>}function ProductForm({onSubmit,loading}:{onSubmit:(event:FormEvent<HTMLFormElement>)=>void;loading:boolean}){return <form onSubmit={onSubmit} className="rounded-2xl border border-white/10 p-5"><h2 className="text-xl font-semibold text-white">Add product</h2><input name="title" required placeholder="Product title" className="field mt-4"/><input name="category" required placeholder="Category" className="field mt-3"/><input name="brand" required placeholder="Brand" className="field mt-3"/><input name="price" type="number" min="1" required placeholder="Your price" className="field mt-3"/><input name="stock" type="number" min="0" required placeholder="Stock" className="field mt-3"/><textarea name="description" required minLength={10} placeholder="Description" className="field mt-3"/><input name="images" type="file" multiple required accept="image/jpeg,image/png,image/webp" className="mt-3 block w-full text-zinc-300"/><button disabled={loading} className="mt-4 w-full rounded-xl bg-acid px-5 py-3 font-semibold text-ink">{loading?"Uploading…":"Submit for approval"}</button></form>}
+type StoreOrder = {
+  id: string;
+  status?: string;
+  total?: number;
+  customerName?: string;
+  items?: Array<{ sellerPayout: number; quantity: number }>;
+};
+type Tab = "overview" | "products" | "orders" | "earnings" | "verification";
+export default function SellerDashboard() {
+  const [seller, setSeller] = useState<Seller | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<StoreOrder[]>([]);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const load = useCallback(async () => {
+    try {
+      const data = await localApi<any>("/seller/dashboard");
+      setSeller({
+        id: data.seller.id,
+        ownerId: data.seller.ownerId,
+        fullName: data.seller.owner?.name || "",
+        storeName: data.seller.storeName,
+        status: data.seller.status,
+        verified: data.seller.verified,
+        trusted: data.seller.trusted,
+        rating: data.seller.rating,
+        salesCount: data.seller.salesCount,
+      });
+      setProducts(data.products.map(mapProduct));
+      setOrders(data.orders);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not load dashboard.",
+      );
+    }
+  }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  const payout = (order: StoreOrder) =>
+    order.items?.reduce(
+      (sum, item) => sum + item.sellerPayout * item.quantity,
+      0,
+    ) || 0;
+  const earnings = orders
+    .filter((order) => order.status === "delivered")
+    .reduce((sum, order) => sum + payout(order), 0);
+  const inventory = products.reduce((sum, product) => sum + product.stock, 0);
+  async function addProduct(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!seller || !["verified", "trusted"].includes(seller.status))
+      return setMessage(
+        "Admin verification is required before publishing products.",
+      );
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const files = form
+      .getAll("images")
+      .filter(
+        (value): value is File => value instanceof File && value.size > 0,
+      );
+    if (files.length < 3)
+      return setMessage("Upload at least 3 product images.");
+    form.set("sellerPrice", String(form.get("price")));
+    setLoading(true);
+    try {
+      await localApi("/products", { method: "POST", body: form });
+      formElement.reset();
+      setMessage("Product submitted for admin approval.");
+      await load();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not add product.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+  async function orderStatus(id: string, status: string) {
+    try {
+      await localApi(`/seller/orders/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      await load();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not update order.",
+      );
+    }
+  }
+  async function removeProduct(id: string) {
+    try {
+      await localApi(`/products/${id}`, { method: "DELETE" });
+      await load();
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Could not delete product.",
+      );
+    }
+  }
+  return (
+    <AuthGuard role="seller">
+      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div>
+          <p className="text-sm text-acid">Seller Central</p>
+          <h1 className="mt-2 text-4xl font-bold text-white">
+            {seller?.storeName || "Seller dashboard"}
+          </h1>
+          <Status seller={seller} />
+        </div>
+        <div className="mt-8 flex gap-2 overflow-x-auto">
+          {(
+            [
+              "overview",
+              "products",
+              "orders",
+              "earnings",
+              "verification",
+            ] as Tab[]
+          ).map((item) => (
+            <button
+              key={item}
+              onClick={() => setTab(item)}
+              className={`rounded-full px-4 py-2 text-sm capitalize ${tab === item ? "bg-acid text-ink" : "border border-white/10 text-zinc-300"}`}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        {message ? (
+          <p className="mt-5 rounded-xl border border-acid/30 p-3 text-sm text-acid">
+            {message}
+          </p>
+        ) : null}
+        {tab === "overview" ? (
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric
+              icon={<IndianRupee />}
+              value={formatMoney(earnings)}
+              label="Delivered earnings"
+            />
+            <Metric
+              icon={<ShoppingBag />}
+              value={orders.length}
+              label="Orders"
+            />
+            <Metric icon={<Boxes />} value={products.length} label="Products" />
+            <Metric
+              icon={<PackageCheck />}
+              value={inventory}
+              label="Units in stock"
+            />
+          </div>
+        ) : null}
+        {tab === "products" ? (
+          <div className="mt-8 grid gap-6 xl:grid-cols-2">
+            <ProductForm onSubmit={addProduct} loading={loading} />
+            <Panel title="Your products">
+              {products.length ? (
+                products.map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 p-3"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-white">{product.title}</p>
+                      <p className="text-xs text-zinc-400">
+                        Stock {product.stock} · {product.status}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => removeProduct(product.id)}
+                      className="text-red-400"
+                    >
+                      <Trash2 />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <EmptyState
+                  title="No products"
+                  body="Add your first product."
+                />
+              )}
+            </Panel>
+          </div>
+        ) : null}
+        {tab === "orders" ? (
+          <Panel title="Order management">
+            {orders.length ? (
+              orders.map((order) => (
+                <div
+                  key={order.id}
+                  className="rounded-xl border border-white/10 p-4"
+                >
+                  <p className="font-medium text-white">
+                    Order {order.id.slice(0, 8)} · {formatMoney(order.total)}
+                  </p>
+                  <p className="text-xs text-acid">{order.status}</p>
+                  <div className="mt-3 flex gap-2">
+                    {["processing", "shipped", "delivered", "cancelled"].map(
+                      (status) => (
+                        <button
+                          key={status}
+                          onClick={() => orderStatus(order.id, status)}
+                          className="rounded-full border border-white/10 px-3 py-1 text-xs"
+                        >
+                          {status}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <EmptyState
+                title="No orders yet"
+                body="Paid orders appear here."
+              />
+            )}
+          </Panel>
+        ) : null}
+        {tab === "earnings" ? (
+          <Metric
+            icon={<IndianRupee />}
+            value={formatMoney(earnings)}
+            label="Available payout"
+          />
+        ) : null}
+        {tab === "verification" ? (
+          <Panel title="Seller verification">
+            <Status seller={seller} />
+            <p className="text-zinc-400">
+              Verification is stored in PostgreSQL and reviewed by
+              administrators.
+            </p>
+          </Panel>
+        ) : null}
+      </main>
+    </AuthGuard>
+  );
+}
+function Status({ seller }: { seller: Seller | null }) {
+  return (
+    <span className="mt-3 inline-flex items-center gap-2 rounded-full border border-acid/30 px-4 py-2 text-sm text-acid">
+      <BadgeCheck className="h-4 w-4" />
+      {seller?.status || "pending"}
+    </span>
+  );
+}
+function Metric({
+  icon,
+  value,
+  label,
+}: {
+  icon: ReactNode;
+  value: ReactNode;
+  label: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[.04] p-5 text-white">
+      <div className="text-acid">{icon}</div>
+      <p className="mt-4 text-2xl font-bold">{value}</p>
+      <p className="text-sm text-zinc-400">{label}</p>
+    </div>
+  );
+}
+function Panel({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="mt-8 rounded-2xl border border-white/10 bg-white/[.04] p-5">
+      <h2 className="mb-4 text-xl font-semibold text-white">{title}</h2>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
+function ProductForm({
+  onSubmit,
+  loading,
+}: {
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  loading: boolean;
+}) {
+  return (
+    <form
+      onSubmit={onSubmit}
+      className="rounded-2xl border border-white/10 p-5"
+    >
+      <h2 className="text-xl font-semibold text-white">Add product</h2>
+      <input
+        name="title"
+        required
+        placeholder="Product title"
+        className="field mt-4"
+      />
+      <input
+        name="category"
+        required
+        placeholder="Category"
+        className="field mt-3"
+      />
+      <input name="brand" required placeholder="Brand" className="field mt-3" />
+      <input
+        name="price"
+        type="number"
+        min="1"
+        required
+        placeholder="Your price"
+        className="field mt-3"
+      />
+      <input
+        name="stock"
+        type="number"
+        min="0"
+        required
+        placeholder="Stock"
+        className="field mt-3"
+      />
+      <textarea
+        name="description"
+        required
+        minLength={10}
+        placeholder="Description"
+        className="field mt-3"
+      />
+      <input
+        name="images"
+        type="file"
+        multiple
+        required
+        accept="image/jpeg,image/png,image/webp"
+        className="mt-3 block w-full text-zinc-300"
+      />
+      <button
+        disabled={loading}
+        className="mt-4 w-full rounded-xl bg-acid px-5 py-3 font-semibold text-ink"
+      >
+        {loading ? "Uploading…" : "Submit for approval"}
+      </button>
+    </form>
+  );
+}

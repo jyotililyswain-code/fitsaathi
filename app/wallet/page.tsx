@@ -53,7 +53,8 @@ export default function WalletPage() {
     event.preventDefault();
     if (processing) return;
     if (!user) return setMessage("Please sign in first.");
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     form.set("purpose", purpose);
     if (purpose === "WALLET_RECHARGE") form.set("amount", String(Math.round(Number(rechargeAmount))));
     if (purpose === "premium") form.set("plan", premiumPlan);
@@ -64,7 +65,7 @@ export default function WalletPage() {
         method: "POST",
         body: form
       });
-      event.currentTarget.reset();
+      formElement.reset();
       setMessage("Payment submitted successfully. Your booking/registration is confirmed.");
       await load();
     } catch (error) {

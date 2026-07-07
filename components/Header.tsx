@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { CustomerCareButton } from "@/components/CustomerCareModal";
 import { logoutSession, useSessionUser } from "@/lib/auth-client";
 import { dashboardPathForRole } from "@/lib/roles";
 import { OwnerPopover } from "@/components/OwnerPopover";
@@ -75,7 +76,7 @@ export function Header() {
         <Link href="/home" className="text-xl font-bold tracking-tight text-white">
           Fit<span className="text-acid">Saathi</span>
         </Link>
-        <div className="hidden min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto px-3 text-[11px] font-medium text-zinc-300 xl:flex 2xl:gap-3 2xl:text-xs" aria-label="Primary navigation">
+        <div className="hidden min-w-0 flex-1 items-center justify-center gap-3 overflow-hidden px-3 text-xs font-medium text-zinc-300 2xl:flex" aria-label="Primary navigation">
           {nav.map(([label, href]) => (
             <Link
               key={href}
@@ -87,21 +88,23 @@ export function Header() {
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-2 sm:flex">{checkingAuth ? null : authControls}</div>
+          <div className="hidden items-center gap-2 2xl:flex">{checkingAuth ? null : authControls}</div>
+          <CustomerCareButton variant="header" />
           <OwnerPopover />
-          <button onClick={() => setOpen((value) => !value)} className="rounded-xl border border-white/10 p-2 text-white xl:hidden" aria-label="Toggle menu">
+          <button type="button" onClick={() => setOpen((value) => !value)} className="rounded-xl border border-white/10 p-2 text-white 2xl:hidden" aria-label="Toggle menu">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </nav>
       {open ? (
-        <div className="border-t border-white/10 bg-ink px-4 py-4 xl:hidden">
+        <div className="border-t border-white/10 bg-ink px-4 py-4 2xl:hidden">
           <div className="mx-auto grid max-w-7xl gap-3 text-sm text-zinc-300">
             {nav.map(([label, href]) => (
               <Link key={href} href={href} onClick={() => setOpen(false)} className="rounded-xl border border-white/10 px-4 py-3">
                 {label}
               </Link>
             ))}
+            <CustomerCareButton variant="menu" />
             {checkingAuth ? null : signedIn ? (
               <>
                 {["admin", "super_admin", "moderator", "support_admin"].includes(role) ? (
