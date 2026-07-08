@@ -1,40 +1,66 @@
 import type { MetadataRoute } from "next";
-import { policies } from "@/lib/policies";
+import { prisma } from "@/lib/prisma";
+import { absoluteUrl } from "@/lib/seo";
 
-const staticRoutes = [
-  "",
-  "/coaches",
-  "/dojos",
-  "/booking",
-  "/become-a-coach",
-  "/register-dojo",
-  "/marketplace",
-  "/products",
-  "/seller/register",
-  "/about",
-  "/contact",
-  "/faq",
-  "/policies",
-  "/login",
-  "/signup"
+const publicRoutes = [
+  { path: "/", changeFrequency: "weekly" as const, priority: 1 },
+  { path: "/home", changeFrequency: "weekly" as const, priority: 0.9 },
+  { path: "/find-coach", changeFrequency: "daily" as const, priority: 0.9 },
+  { path: "/dojos", changeFrequency: "daily" as const, priority: 0.9 },
+  { path: "/booking", changeFrequency: "monthly" as const, priority: 0.8 },
+  {
+    path: "/become-a-coach",
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  },
+  {
+    path: "/register-seller",
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  },
+  { path: "/shop", changeFrequency: "daily" as const, priority: 0.7 },
+  { path: "/faq", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/contact", changeFrequency: "monthly" as const, priority: 0.6 },
+  { path: "/privacy", changeFrequency: "yearly" as const, priority: 0.3 },
+  { path: "/terms", changeFrequency: "yearly" as const, priority: 0.3 },
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-  const lastModified = new Date("2026-06-29");
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const lastModified = new Date();
+  const staticItems: MetadataRoute.Sitemap = publicRoutes.map((route) => ({
+    url: absoluteUrl(route.path),
+    lastModified,
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
+  }));
 
-  return [
-    ...staticRoutes.map((route) => ({
-      url: `${siteUrl}${route}`,
-      lastModified,
-      changeFrequency: route === "" ? "weekly" as const : "monthly" as const,
-      priority: route === "" ? 1 : 0.7
-    })),
-    ...policies.map((policy) => ({
-      url: `${siteUrl}/policies/${policy.slug}`,
-      lastModified,
-      changeFrequency: "yearly" as const,
-      priority: 0.5
-    }))
-  ];
+  try {
+    const [coaches, dojos] = await Promise.all([
+      prisma.coach.findMany({
+        where: { verified: true, status: "approved" },
+        select: { id: true, updatedAt: true },
+      }),
+      prisma.dojo.findMany({
+        where: { approved: true, status: "approved" },
+        select: { id: true, updatedAt: true },
+      }),
+    ]);
+    return [
+      ...staticItems,
+      ...coaches.map((coach) => ({
+        url: absoluteUrl(`/coaches/${coach.id}`),
+        lastModified: coach.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      })),
+      ...dojos.map((dojo) => ({
+        url: absoluteUrl(`/dojos/${dojo.id}`),
+        lastModified: dojo.updatedAt,
+        changeFrequency: "weekly" as const,
+        priority: 0.7,
+      })),
+    ];
+  } catch {
+    return staticItems;
+  }
 }
