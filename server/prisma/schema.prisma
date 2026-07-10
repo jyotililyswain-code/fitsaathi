@@ -163,6 +163,7 @@ model User {
   providerBookings          Booking[]                 @relation("BookingProvider")
   attendanceAsCustomer      Attendance[]              @relation("AttendanceCustomer")
   attendanceScans           Attendance[]              @relation("AttendanceScanner")
+  attendanceCodes           AttendanceCode[]
   verificationFiles         ProviderVerification[]    @relation("VerificationOwner")
   reviewedVerifications     ProviderVerification[]    @relation("VerificationReviewer")
   chatRequests              ChatRequest[]
@@ -551,6 +552,8 @@ model Dojo {
   id                        String           @id @default(uuid())
   ownerId                   String           @unique
   name                      String
+  establishmentType         String           @default("DOJO")
+  customEstablishmentType   String?
   ownerName                 String?
   category                  String
   city                      String?
@@ -767,6 +770,7 @@ model Booking {
   dojo              Dojo?          @relation(fields: [dojoId], references: [id])
   payments          Payment[]
   attendance        Attendance[]
+  attendanceCodes   AttendanceCode[]
   notifications     Notification[]
 
   @@index([userId, createdAt])
@@ -777,22 +781,46 @@ model Booking {
 }
 
 model Attendance {
-  id                String   @id
+  id                String   @id @default(uuid())
   bookingId         String
   customerId        String
   scannedById       String
   providerProfileId String
-  nonceHash         String   @unique
+  nonceHash         String?  @unique
   location          String?
   status            String   @default("marked")
+  method            String   @default("OTP_CODE")
   scannedAt         DateTime @default(now())
+  sessionDate       String?
   booking           Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   customer          User     @relation("AttendanceCustomer", fields: [customerId], references: [id])
   scannedBy         User     @relation("AttendanceScanner", fields: [scannedById], references: [id])
 
+  @@unique([bookingId, sessionDate])
   @@index([bookingId, scannedAt])
   @@index([customerId, scannedAt])
   @@map("attendance")
+}
+
+model AttendanceCode {
+  id                String    @id @default(uuid())
+  bookingId         String
+  customerId        String
+  providerOwnerId   String
+  providerProfileId String
+  codeHash          String
+  sessionDate       String
+  status            String    @default("active")
+  expiresAt         DateTime
+  usedAt            DateTime?
+  createdAt         DateTime  @default(now())
+  booking           Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer          User      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, status, expiresAt])
+  @@index([providerOwnerId, codeHash])
+  @@index([customerId, createdAt])
+  @@map("attendance_codes")
 }
 
 model Payment {

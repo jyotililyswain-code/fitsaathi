@@ -1,0 +1,3 @@
+ALTER TABLE "dojos"
+ADD COLUMN IF NOT EXISTS "establishmentType" TEXT NOT NULL DEFAULT 'DOJO',
+ADD COLUMN IF NOT EXISTS "customEstablishmentType" TEXT;

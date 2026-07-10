@@ -67,6 +67,12 @@ body {
 .admin-light .bg-white\/\[\.05\] { background-color: var(--admin-card); }
 
 @media print {
+  @page { size: A4 portrait; margin: 0; }
+  body:has(.pamphlet-page) > header,
+  body:has(.pamphlet-page) > footer,
+  .pamphlet-toolbar { display: none !important; }
+  .pamphlet-page { margin: 0 !important; padding: 0 !important; background: white !important; }
+  .fitsaathi-poster { width: 210mm !important; height: 297mm !important; }
   .admin-shell aside,
   .admin-shell header,
   .admin-shell button { display: none !important; }

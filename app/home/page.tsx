@@ -634,7 +634,7 @@ export default function HomePage() {
               href="/register-dojo"
               className="rounded-lg border border-white/15 px-5 py-3 font-semibold text-white transition hover:border-acid/50 hover:text-acid"
             >
-              Register Dojo
+              Register Dojo / Gym
             </Link>
             <Link
               href="/shop"

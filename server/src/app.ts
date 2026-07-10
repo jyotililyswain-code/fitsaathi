@@ -24,6 +24,7 @@ const pricing = (value: unknown) => { const sellerPrice = Math.max(0, Math.round
 const manualUpiId = "7065223868-2@ibl";
 const manualPaymentStatus = "paid";
 const dojoRegistrationFee = 700;
+const establishmentTypes = ["DOJO", "GYM", "FITNESS_STUDIO", "YOGA_STUDIO", "MARTIAL_ARTS_ACADEMY", "OTHER"] as const;
 const publicUser = { id: true, name: true, email: true, phone: true, role: true, accountStatus: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
 const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, ...coach }: any) => coach;
 const publicDojo = ({ email: _email, phoneNumber: _phone, isPhoneVerified: _phoneVerified, gstNumber: _gst, accountHolder: _holder, accountNumberLast4: _account, ifsc: _ifsc, ...dojo }: any) => dojo;
@@ -190,21 +191,48 @@ app.get("/api/dojos/:id", asyncRoute(async (request, response) => {
 app.post("/api/dojos", authenticate, upload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }, { name: "paymentScreenshot", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
   const files = request.files as Record<string, Express.Multer.File[]>;
   const incomingFiles = Object.values(files || {}).flat();
-  const parsed = z.object({ name: z.string().min(2), ownerName: z.string().min(2), email: z.string().email(), phoneNumber: z.string().min(10), category: z.string().min(2), customCategory: z.string().optional(), address: z.string().min(5), city: z.string().min(2), state: z.string().min(2), pincode: z.string().regex(/^\d{6}$/), price: z.coerce.number().min(0), experience: z.string().min(2), gstNumber: z.string().optional(), accountHolder: z.string().min(2), accountNumber: z.string().min(4).max(34), ifsc: z.string().min(4).max(20), description: z.string().max(2000).optional(), transactionId: z.string().trim().min(6).max(80) }).safeParse(request.body);
-  if (!parsed.success) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Please correct the dojo registration fields.", issues: parsed.error.issues }); }
+  const parsed = z.object({
+    establishmentType: z.enum(establishmentTypes),
+    customEstablishmentType: z.string().trim().max(80).optional(),
+    name: z.string().min(2),
+    ownerName: z.string().min(2),
+    email: z.string().email(),
+    phoneNumber: z.string().min(10),
+    category: z.string().min(2),
+    customCategory: z.string().optional(),
+    address: z.string().min(5),
+    city: z.string().min(2),
+    state: z.string().min(2),
+    pincode: z.string().regex(/^\d{6}$/),
+    price: z.coerce.number().min(0),
+    experience: z.string().min(2),
+    gstNumber: z.string().optional(),
+    accountHolder: config.enableBankDetails ? z.string().min(2) : z.string().optional(),
+    accountNumber: config.enableBankDetails ? z.string().min(4).max(34) : z.string().optional(),
+    ifsc: config.enableBankDetails ? z.string().min(4).max(20) : z.string().optional(),
+    description: z.string().max(2000).optional(),
+    transactionId: config.enableDojoGymRegistrationPayment ? z.string().trim().min(6).max(80) : z.string().optional()
+  }).refine(input => input.establishmentType !== "OTHER" || Boolean(input.customEstablishmentType?.trim()), { path: ["customEstablishmentType"], message: "Enter the establishment type." }).safeParse(request.body);
+  if (!parsed.success) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Please correct the dojo or gym registration fields.", issues: parsed.error.issues }); }
   const input = parsed.data;
   const existing = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, status: true } });
-  if (existing) { discardIncomingUploads(incomingFiles); return response.status(409).json({ error: "This account already has a dojo profile.", code: "DOJO_PROFILE_EXISTS", field: "ownerId", profileId: existing.id, status: existing.status }); }
-  if (!files?.aadharFront?.length) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Aadhaar front image is required." }); }
+  if (existing) { discardIncomingUploads(incomingFiles); return response.status(409).json({ error: "This account already has a dojo or gym profile.", code: "DOJO_PROFILE_EXISTS", field: "ownerId", profileId: existing.id, status: existing.status }); }
+  if (config.enableAadhaarVerification && !files?.aadharFront?.length) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Aadhaar front image is required." }); }
   const [photo, certificate, aadhaarFront, aadhaarBack, paymentScreenshot] = await Promise.all([
-    optimizeUploads(files.photo || [], "providers"), optimizeUploads(files.certificate || [], "providers"), optimizeUploads(files.aadharFront || [], "aadhaar"), optimizeUploads(files.aadharBack || [], "aadhaar"), optimizeUploads(files.paymentScreenshot || [], "payments")
+    optimizeUploads(files.photo || [], "providers"),
+    optimizeUploads(files.certificate || [], "providers"),
+    config.enableAadhaarVerification ? optimizeUploads(files.aadharFront || [], "aadhaar") : Promise.resolve([]),
+    config.enableAadhaarVerification ? optimizeUploads(files.aadharBack || [], "aadhaar") : Promise.resolve([]),
+    config.enableDojoGymRegistrationPayment ? optimizeUploads(files.paymentScreenshot || [], "payments") : Promise.resolve([])
   ]);
   const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
   const price = Math.round(input.price);
   const result = await prisma.$transaction(async tx => {
-    const dojo = await tx.dojo.create({ data: { ownerId: request.user!.id, name: input.name, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber.slice(-4), ifsc: input.ifsc.toUpperCase(), description: input.description, originalPrice: price, finalPrice: price, imagePath: photo[0]?.path, registrationPaymentStatus: manualPaymentStatus } });
+    const dojo = await tx.dojo.create({ data: { ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber ? input.accountNumber.slice(-4) : undefined, ifsc: input.ifsc ? input.ifsc.toUpperCase() : undefined, description: input.description, originalPrice: price, finalPrice: price, imagePath: photo[0]?.path, registrationPaymentStatus: config.enableDojoGymRegistrationPayment ? manualPaymentStatus : "not_required" } });
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: certificate[0]?.path } });
-    await tx.payment.create({ data: { userId: request.user!.id, purpose: "dojo_registration", targetType: "dojo", targetId: dojo.id, amount: dojoRegistrationFee, amountPaise: dojoRegistrationFee * 100, amountPaid: dojoRegistrationFee, currency: "INR", provider: "UPI_MANUAL", originalPrice: dojoRegistrationFee, platformFee: 0, status: manualPaymentStatus, paymentMethod: "upi_manual", upiId: manualUpiId, transactionId: input.transactionId, paymentStatus: manualPaymentStatus, paymentScreenshotPath: paymentScreenshot[0]?.path, paidAt: new Date() } });
+    if (config.enableDojoGymRegistrationPayment) {
+      await tx.payment.create({ data: { userId: request.user!.id, purpose: "dojo_registration", targetType: "dojo", targetId: dojo.id, amount: dojoRegistrationFee, amountPaise: dojoRegistrationFee * 100, amountPaid: dojoRegistrationFee, currency: "INR", provider: "UPI_MANUAL", originalPrice: dojoRegistrationFee, platformFee: 0, status: manualPaymentStatus, paymentMethod: "upi_manual", upiId: manualUpiId, transactionId: input.transactionId, paymentStatus: manualPaymentStatus, paymentScreenshotPath: paymentScreenshot[0]?.path, paidAt: new Date() } });
+    }
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
     return { dojo, user };
   });

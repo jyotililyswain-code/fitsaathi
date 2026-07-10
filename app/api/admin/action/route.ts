@@ -24,6 +24,9 @@ export async function POST(request: Request) {
     if (action === "seller_status") {
       if (!canModerateMarketplace(role) || !["verified", "trusted", "rejected", "suspended"].includes(value)) return NextResponse.json({ error: "Marketplace moderation permission required." }, { status: 403 });
       await prisma.seller.update({ where: { id: targetId }, data: { status: value as any, verified: ["verified", "trusted"].includes(value), trusted: value === "trusted" } });
+    } else if (action === "provider_status") {
+      if (!canModerateMarketplace(role) || !["approved", "rejected", "suspended"].includes(value)) return NextResponse.json({ error: "Provider moderation permission required." }, { status: 403 });
+      await prisma.dojo.update({ where: { id: targetId }, data: { status: value as any, approved: value === "approved" } });
     } else if (action === "product_status") {
       if (!canModerateMarketplace(role) || !["approved", "rejected", "featured", "trending"].includes(value)) return NextResponse.json({ error: "Marketplace moderation permission required." }, { status: 403 });
       await prisma.product.update({ where: { id: targetId }, data: { status: ["featured", "trending"].includes(value) ? "approved" : value as any, featured: value === "featured", trending: value === "trending" } });

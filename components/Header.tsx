@@ -15,9 +15,11 @@ const nav = [
   ["Find Coach", "/find-coach"],
   ["Become a Coach", "/become-a-coach"],
   ["Register as Seller", "/register-seller"],
+  ["Register Dojo / Gym", "/register-dojo"],
   ["Dojos", "/dojos"],
   ["Booking", "/booking"],
   ["Shop", "/shop"],
+  ["Pamphlet", "/pamphlet"],
   ["Chat", "/chat"],
   ["Dashboard", "/dashboard"],
 ];

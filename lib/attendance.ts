@@ -1,51 +1,44 @@
 import crypto from "crypto";
 
-const QR_TTL_MS = 2 * 60 * 1000;
+export const ATTENDANCE_CODE_TTL_SECONDS = 5 * 60;
 
-export type AttendanceTokenPayload = {
+export function generateAttendanceCode() {
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+export function hashAttendanceCode(code: string) {
+  return crypto.createHash("sha256").update(code).digest("hex");
+}
+
+export function isSixDigitAttendanceCode(value: string) {
+  return /^\d{6}$/.test(value);
+}
+
+type AttendanceTokenPayload = {
   bookingId: string;
   coachId: string;
   customerId: string;
   classStartIso: string;
-  issuedAt: number;
-  expiresAt: number;
-  nonce: string;
 };
 
-export function createAttendanceToken(payload: Omit<AttendanceTokenPayload, "issuedAt" | "expiresAt" | "nonce">, secret: string) {
-  const issuedAt = Date.now();
-  const body: AttendanceTokenPayload = {
-    ...payload,
-    issuedAt,
-    expiresAt: issuedAt + QR_TTL_MS,
-    nonce: crypto.randomUUID()
-  };
-  const encoded = Buffer.from(JSON.stringify(body)).toString("base64url");
-  const signature = sign(encoded, secret);
-  return `${encoded}.${signature}`;
+export function createAttendanceToken(payload: AttendanceTokenPayload, secret: string) {
+  const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  const signature = crypto.createHmac("sha256", secret).update(body).digest("base64url");
+  return `${body}.${signature}`;
 }
 
 export function verifyAttendanceToken(token: string, secret: string, now = Date.now()) {
-  const [encoded, signature] = token.split(".");
-  if (!encoded || !signature || sign(encoded, secret) !== signature) {
-    return { ok: false as const, reason: "Invalid attendance QR." };
+  const [body, signature] = token.split(".");
+  if (!body || !signature) return { ok: false as const };
+  const expected = crypto.createHmac("sha256", secret).update(body).digest("base64url");
+  if (signature.length !== expected.length) return { ok: false as const };
+  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return { ok: false as const };
+  try {
+    const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as AttendanceTokenPayload;
+    const classStart = Date.parse(payload.classStartIso);
+    if (!Number.isFinite(classStart) || Math.abs(now - classStart) > 120_000) return { ok: false as const };
+    return { ok: true as const, payload };
+  } catch {
+    return { ok: false as const };
   }
-
-  const payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8")) as AttendanceTokenPayload;
-  if (payload.expiresAt < now) {
-    return { ok: false as const, reason: "Attendance QR expired. Generate a fresh code." };
-  }
-
-  const classTime = new Date(payload.classStartIso).getTime();
-  const allowedStart = classTime - 30 * 60 * 1000;
-  const allowedEnd = classTime + 90 * 60 * 1000;
-  if (Number.isFinite(classTime) && (now < allowedStart || now > allowedEnd)) {
-    return { ok: false as const, reason: "Attendance can only be marked near the active class timing." };
-  }
-
-  return { ok: true as const, payload };
-}
-
-function sign(value: string, secret: string) {
-  return crypto.createHmac("sha256", secret).update(value).digest("hex");
 }

@@ -43,7 +43,7 @@ export default function DojosPage() {
           className="mt-6 inline-flex items-center gap-2 rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink"
         >
           <Building2 className="h-4 w-4" />
-          Register a dojo
+          Register Dojo / Gym
         </Link>
       </section>
       <div className="mt-6 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(16rem,24rem)]">
@@ -97,8 +97,8 @@ export default function DojosPage() {
           <EmptyState
             title={
               dojos.data.length
-                ? "No dojos match this category"
-                : "No dojos registered yet"
+                ? "No dojos or gyms match this category"
+                : "No dojos or gyms registered yet"
             }
             body={
               dojos.data.length
@@ -110,7 +110,7 @@ export default function DojosPage() {
                 href="/register-dojo"
                 className="rounded-full bg-acid px-5 py-2.5 text-sm font-semibold text-ink"
               >
-                Register a dojo
+                Register Dojo / Gym
               </Link>
             }
           />
@@ -130,7 +130,7 @@ export default function DojosPage() {
           href="/register-dojo"
           className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-acid/50 hover:text-acid"
         >
-          Register your dojo
+          Register your dojo or gym
         </Link>
         <Link
           href="/contact"
