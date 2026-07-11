@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, LogOut, Menu, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import { CustomerCareButton } from "@/components/CustomerCareModal";
 import { logoutSession, useSessionUser } from "@/lib/auth-client";
@@ -39,7 +39,7 @@ export function Header() {
   }
 
   const signedIn = Boolean(user);
-  const authControls = signedIn ? (
+  const menuAuthControls = signedIn ? (
     <>
       <span className="max-w-40 truncate text-sm text-zinc-300">
         {user?.email}
@@ -68,30 +68,17 @@ export function Header() {
       </button>
     </>
   ) : (
-    <>
-      <Link
-        href="/login"
-        className="rounded-full px-4 py-2 text-sm text-zinc-300 transition hover:text-white"
-      >
-        Login
-      </Link>
-      <Link
-        href="/signup"
-        className="rounded-full bg-acid px-4 py-2 text-sm font-semibold text-ink shadow-glow transition hover:bg-white"
-      >
-        Sign up
-      </Link>
-    </>
+    <LoginShortcut onNavigate={() => setOpen(false)} />
   );
 
   if (pathname.startsWith("/super-admin-dashboard")) return null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-ink/75 backdrop-blur-xl">
-      <nav className="mx-auto flex max-w-screen-2xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+      <nav className="mx-auto flex max-w-screen-2xl items-center justify-between gap-2 px-2 py-4 min-[380px]:px-3 sm:px-6 lg:px-8">
         <Link
           href="/home"
-          className="text-xl font-bold tracking-tight text-white"
+          className="shrink-0 text-xl font-bold tracking-tight text-white"
         >
           Fit<span className="text-acid">Saathi</span>
         </Link>
@@ -109,16 +96,14 @@ export function Header() {
             </Link>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden items-center gap-2 2xl:flex">
-            {checkingAuth ? null : authControls}
-          </div>
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <CustomerCareButton variant="header" />
+          <HeaderAuthShortcut userRole={role} signedIn={signedIn} checkingAuth={checkingAuth} />
           <OwnerPopover />
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="rounded-xl border border-white/10 p-2 text-white 2xl:hidden"
+            className="rounded-xl border border-white/10 p-2 text-white transition hover:border-acid/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid 2xl:hidden"
             aria-label="Toggle menu"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -139,7 +124,9 @@ export function Header() {
               </Link>
             ))}
             <CustomerCareButton variant="menu" />
-            {checkingAuth ? null : signedIn ? (
+            {checkingAuth ? (
+              <div className="h-12 animate-pulse rounded-xl border border-acid/20 bg-acid/[0.06]" aria-hidden="true" />
+            ) : signedIn ? (
               <>
                 {[
                   "admin",
@@ -172,22 +159,7 @@ export function Header() {
                 </button>
               </>
             ) : (
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <Link
-                  href="/login"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-white/10 px-4 py-3 text-center"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl bg-acid px-4 py-3 text-center font-semibold text-ink"
-                >
-                  Sign up
-                </Link>
-              </div>
+              menuAuthControls
             )}
           </div>
         </div>
@@ -195,6 +167,62 @@ export function Header() {
     </header>
   );
 }
+
+function HeaderAuthShortcut({
+  userRole,
+  signedIn,
+  checkingAuth,
+}: {
+  userRole: string;
+  signedIn: boolean;
+  checkingAuth: boolean;
+}) {
+  if (checkingAuth) {
+    return (
+      <span
+        className="inline-flex h-10 w-10 shrink-0 animate-pulse rounded-lg border border-acid/20 bg-acid/[0.06] min-[380px]:w-[5.5rem] md:w-[9.25rem]"
+        aria-hidden="true"
+      />
+    );
+  }
+
+  if (signedIn) {
+    return <DashboardShortcut role={userRole} />;
+  }
+
+  return <LoginShortcut />;
+}
+
+function LoginShortcut({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <Link
+      href="/login"
+      onClick={onNavigate}
+      aria-label="Login or create an account"
+      className={headerShortcutClassName}
+    >
+      <UserRound className="h-4 w-4" aria-hidden="true" />
+      <span className="hidden text-sm font-semibold min-[380px]:inline md:hidden">Login</span>
+      <span className="hidden text-sm font-semibold md:inline">Login / Sign Up</span>
+    </Link>
+  );
+}
+
+function DashboardShortcut({ role }: { role: string }) {
+  return (
+    <Link
+      href={dashboardHref(role)}
+      aria-label={dashboardLabel(role)}
+      className={headerShortcutClassName}
+    >
+      <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+      <span className="hidden text-sm font-semibold min-[380px]:inline">Dashboard</span>
+    </Link>
+  );
+}
+
+const headerShortcutClassName =
+  "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-acid/30 bg-acid/[0.06] px-2.5 text-acid transition hover:border-acid/60 hover:bg-acid/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid sm:px-3";
 
 function dashboardHref(role: string) {
   return dashboardPathForRole(role);
