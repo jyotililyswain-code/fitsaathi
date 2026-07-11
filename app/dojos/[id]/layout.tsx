@@ -33,7 +33,7 @@ export async function generateMetadata({
       title: `${dojo.name} - Dojo / Academy on FitSaathi`,
       description: `View ${dojo.name}'s ${dojo.category} training details${dojo.city ? ` in ${dojo.city}` : ""} and booking options on FitSaathi.`,
       path: `/dojos/${id}`,
-      image: dojo.imagePath || undefined,
+      image: dojo.imagePath?.startsWith("http") ? dojo.imagePath : undefined,
       keywords: [
         dojo.name,
         dojo.category,

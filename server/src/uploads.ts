@@ -39,9 +39,9 @@ export async function optimizeUploads(files: Express.Multer.File[], folder: "pro
       const image = await sharp(source).rotate().resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
       const thumbnail = folder === "products" ? await sharp(source).rotate().resize(320, 320, { fit: "cover" }).webp({ quality: 72 }).toBuffer() : undefined;
       if (blobEnabled) {
-        const blob = await put(`uploads/${folder}/${name}`, image, { access: "public", contentType: "image/webp" });
-        const thumbnailBlob = thumbnail ? await put(`uploads/${folder}/${thumb}`, thumbnail, { access: "public", contentType: "image/webp" }) : undefined;
-        return { path: blob.url, thumbnail: thumbnailBlob?.url };
+        const blob = await put(`uploads/${folder}/${name}`, image, { access: "private", contentType: "image/webp", addRandomSuffix: true });
+        const thumbnailBlob = thumbnail ? await put(`uploads/${folder}/${thumb}`, thumbnail, { access: "private", contentType: "image/webp", addRandomSuffix: true }) : undefined;
+        return { path: blob.pathname, thumbnail: thumbnailBlob?.pathname };
       }
       if (config.vercelRuntime) throw new Error("Persistent uploads on Vercel require a Vercel Blob store. Set BLOB_READ_WRITE_TOKEN in the project environment.");
       await fs.promises.writeFile(path.join(target, name), image);
@@ -59,16 +59,16 @@ function extensionFor(mimeType: string) {
 
 export async function uploadDojoRegistrationFiles(photo: Express.Multer.File, certificate: Express.Multer.File) {
   if (!blobEnabled) throw Object.assign(new Error("File storage is not configured. Connect a Vercel Blob store to this project and try again."), { status: 503 });
-  const uploadId = crypto.randomUUID();
-  const photoPathname = `dojo-business-photos/${uploadId}.${extensionFor(photo.mimetype)}`;
-  const certificatePathname = `dojo-verification-documents/${uploadId}.${extensionFor(certificate.mimetype)}`;
+  const registrationId = crypto.randomUUID();
+  const photoPathname = `dojo/${registrationId}/business-photo/photo.${extensionFor(photo.mimetype)}`;
+  const certificatePathname = `dojo/${registrationId}/ownership-proof/document.${extensionFor(certificate.mimetype)}`;
   const created: string[] = [];
   try {
-    const businessPhoto = await put(photoPathname, photo.buffer, { access: "public", contentType: photo.mimetype, addRandomSuffix: false });
+    const businessPhoto = await put(photoPathname, photo.buffer, { access: "private", contentType: photo.mimetype, addRandomSuffix: true });
     created.push(businessPhoto.url);
-    const verificationDocument = await put(certificatePathname, certificate.buffer, { access: "private", contentType: certificate.mimetype, addRandomSuffix: false });
+    const verificationDocument = await put(certificatePathname, certificate.buffer, { access: "private", contentType: certificate.mimetype, addRandomSuffix: true });
     created.push(verificationDocument.url);
-    return { businessPhotoUrl: businessPhoto.url, verificationDocumentPathname: verificationDocument.pathname, created };
+    return { registrationId, businessPhotoPathname: businessPhoto.pathname, verificationDocumentPathname: verificationDocument.pathname, created };
   } catch (error) {
     if (created.length) await del(created).catch(() => undefined);
     throw error;
@@ -86,7 +86,7 @@ export async function readPrivateBlob(pathname: string) {
 }
 
 export function removeUploads(paths: Array<string | null | undefined>) {
-  const blobPaths = paths.filter((storedPath): storedPath is string => Boolean(storedPath?.startsWith("http")));
+  const blobPaths = paths.filter((storedPath): storedPath is string => Boolean(storedPath && (storedPath.startsWith("http") || storedPath.startsWith("uploads/") || storedPath.startsWith("dojo/") || storedPath.startsWith("private/") || storedPath.startsWith("payments/"))));
   if (blobPaths.length && blobEnabled) void del(blobPaths).catch(error => console.warn("blob.delete_failed", error));
   const uploadRoot = path.resolve(config.uploadRoot);
   for (const storedPath of paths) {

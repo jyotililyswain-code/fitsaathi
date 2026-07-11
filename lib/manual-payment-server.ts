@@ -1,3 +1,4 @@
+import "server-only";
 import { put } from "@vercel/blob";
 import { sanitizeText } from "@/lib/security";
 
@@ -42,8 +43,9 @@ export async function storePaymentScreenshot(body: PaymentRequestBody, fieldName
   if (!blobEnabled) return null;
   const safeFolder = folder.replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
   const blob = await put(`payments/${safeFolder}/${Date.now()}-${crypto.randomUUID()}.${extension}`, value, {
-    access: "public",
-    contentType: value.type
+    access: "private",
+    contentType: value.type,
+    addRandomSuffix: true
   });
-  return blob.url;
+  return blob.pathname;
 }

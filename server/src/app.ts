@@ -28,7 +28,7 @@ const dojoRegistrationFee = 700;
 const establishmentTypes = ["DOJO", "GYM", "FITNESS_STUDIO", "YOGA_STUDIO", "MARTIAL_ARTS_ACADEMY", "OTHER"] as const;
 const publicUser = { id: true, name: true, email: true, phone: true, role: true, accountStatus: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
 const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, ...coach }: any) => coach;
-const publicDojo = ({ email: _email, phoneNumber: _phone, isPhoneVerified: _phoneVerified, gstNumber: _gst, accountHolder: _holder, accountNumberLast4: _account, ifsc: _ifsc, ...dojo }: any) => dojo;
+const publicDojo = ({ email: _email, phoneNumber: _phone, isPhoneVerified: _phoneVerified, gstNumber: _gst, accountHolder: _holder, accountNumberLast4: _account, ifsc: _ifsc, imagePath: _privateImage, ...dojo }: any) => dojo;
 const publicSellerRecord = ({ phone: _phone, aadhaarPath: _aadhaar, gstNumber: _gst, owner, ...seller }: any) => ({ ...seller, ...(owner ? { owner: { id: owner.id, name: owner.name } } : {}) });
 const publicProductRecord = ({ sellerPrice: _sellerPrice, sellerPayout: _sellerPayout, platformFee: _platformFee, seller, ...product }: any) => ({ ...product, ...(seller ? { seller: publicSellerRecord(seller) } : {}) });
 
@@ -234,23 +234,26 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
   if (!files?.certificate?.[0]?.size) return response.status(400).json({ error: "Select a non-empty registration certificate or ownership proof." });
   if (config.enableAadhaarVerification && !files?.aadharFront?.length) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Aadhaar front image is required." }); }
   const dojoFiles = await uploadDojoRegistrationFiles(files.photo[0], files.certificate[0]);
-  const [aadhaarFront, aadhaarBack, paymentScreenshot] = await Promise.all([
-    config.enableAadhaarVerification ? optimizeUploads(files.aadharFront || [], "aadhaar") : Promise.resolve([]),
-    config.enableAadhaarVerification ? optimizeUploads(files.aadharBack || [], "aadhaar") : Promise.resolve([]),
-    config.enableDojoGymRegistrationPayment ? optimizeUploads(files.paymentScreenshot || [], "payments") : Promise.resolve([])
-  ]);
   const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
   const price = Math.round(input.price);
   let result;
-  try { result = await prisma.$transaction(async tx => {
-    const dojo = await tx.dojo.create({ data: { ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber ? input.accountNumber.slice(-4) : undefined, ifsc: input.ifsc ? input.ifsc.toUpperCase() : undefined, description: input.description, originalPrice: price, finalPrice: price, imagePath: dojoFiles.businessPhotoUrl, registrationPaymentStatus: config.enableDojoGymRegistrationPayment ? manualPaymentStatus : "not_required" } });
+  const auxiliaryBlobPaths: string[] = [];
+  try {
+    const aadhaarFront = config.enableAadhaarVerification ? await optimizeUploads(files.aadharFront || [], "aadhaar") : [];
+    auxiliaryBlobPaths.push(...aadhaarFront.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
+    const aadhaarBack = config.enableAadhaarVerification ? await optimizeUploads(files.aadharBack || [], "aadhaar") : [];
+    auxiliaryBlobPaths.push(...aadhaarBack.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
+    const paymentScreenshot = config.enableDojoGymRegistrationPayment ? await optimizeUploads(files.paymentScreenshot || [], "payments") : [];
+    auxiliaryBlobPaths.push(...paymentScreenshot.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
+    result = await prisma.$transaction(async tx => {
+    const dojo = await tx.dojo.create({ data: { id: dojoFiles.registrationId, ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber ? input.accountNumber.slice(-4) : undefined, ifsc: input.ifsc ? input.ifsc.toUpperCase() : undefined, description: input.description, originalPrice: price, finalPrice: price, imagePath: dojoFiles.businessPhotoPathname, registrationPaymentStatus: config.enableDojoGymRegistrationPayment ? manualPaymentStatus : "not_required" } });
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: dojoFiles.verificationDocumentPathname } });
     if (config.enableDojoGymRegistrationPayment) {
       await tx.payment.create({ data: { userId: request.user!.id, purpose: "dojo_registration", targetType: "dojo", targetId: dojo.id, amount: dojoRegistrationFee, amountPaise: dojoRegistrationFee * 100, amountPaid: dojoRegistrationFee, currency: "INR", provider: "UPI_MANUAL", originalPrice: dojoRegistrationFee, platformFee: 0, status: manualPaymentStatus, paymentMethod: "upi_manual", upiId: manualUpiId, transactionId: input.transactionId, paymentStatus: manualPaymentStatus, paymentScreenshotPath: paymentScreenshot[0]?.path, paidAt: new Date() } });
     }
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
     return { dojo, user };
-  }); } catch (error) { await removeBlobUploads(dojoFiles.created); throw error; }
+  }); } catch (error) { removeUploads(auxiliaryBlobPaths); await removeBlobUploads(dojoFiles.created); throw error; }
   console.info("dojo.registration_created", { profileId: result.dojo.id, hasBusinessPhoto: true, hasVerificationDocument: true });
   response.status(201).json({ profile: result.dojo, session: await issueSession(result.user, response) });
 }));
