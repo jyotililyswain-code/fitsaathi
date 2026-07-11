@@ -48,7 +48,7 @@ export function OwnerPopover() {
         className="inline-flex items-center gap-1.5 rounded-full border border-acid/30 bg-acid/[0.08] px-3 py-2 text-xs font-semibold text-acid shadow-[0_0_20px_rgba(0,255,136,0.08)] transition duration-200 hover:border-acid/60 hover:bg-acid/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:px-4 sm:text-sm"
       >
         <Crown className="h-3.5 w-3.5" aria-hidden="true" />
-        <span className="sr-only min-[380px]:not-sr-only">Owner</span>
+        Owner
       </button>
 
       <div

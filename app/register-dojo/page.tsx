@@ -6,7 +6,7 @@ import { useState } from "react";
 import { CategorySelect } from "@/components/CategorySelect";
 import { ManualUpiPayment } from "@/components/ManualUpiPayment";
 import { useSessionUser } from "@/lib/auth-client";
-import { localApi, notifyAuthChanged } from "@/lib/local-api";
+import { API_URL, localApi, notifyAuthChanged } from "@/lib/local-api";
 import { DOJO_REGISTRATION_FEE } from "@/lib/pricing";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
@@ -39,6 +39,7 @@ export default function RegisterDojoPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<ProviderSubmissionStage | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [establishmentType, setEstablishmentType] = useState("DOJO");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -58,6 +59,10 @@ export default function RegisterDojoPage() {
       return setMessage("Enter a valid 10 digit Indian mobile number.");
     }
     formData.set("phoneNumber", phoneNumber);
+    const photo = formData.get("photo");
+    const certificate = formData.get("certificate");
+    const fileError = validateRequiredFile(photo, "business photo", false) || validateRequiredFile(certificate, "registration certificate or ownership proof", true);
+    if (fileError) { setLoading(false); setStage(null); return setMessage(fileError); }
     if (String(formData.get("establishmentType")) === "OTHER" && !String(formData.get("customEstablishmentType") || "").trim()) {
       setLoading(false);
       setStage(null);
@@ -65,8 +70,9 @@ export default function RegisterDojoPage() {
     }
 
     try {
+      await localApi("/auth/me");
       setStage("uploading_attachments");
-      await localApi<{ session: { accessToken: string; refreshToken: string; user: unknown } }>("/dojos", { method: "POST", body: formData });
+      await submitRegistration(formData, setUploadProgress);
       notifyAuthChanged();
       setMessage("Your dojo or gym registration has been submitted successfully.");
       router.push("/dojo-dashboard");
@@ -76,6 +82,7 @@ export default function RegisterDojoPage() {
     } finally {
       setLoading(false);
       setStage(null);
+      setUploadProgress(0);
     }
   }
 
@@ -126,8 +133,8 @@ export default function RegisterDojoPage() {
             <ManualUpiPayment amountLabel={`Rs. ${DOJO_REGISTRATION_FEE}`} className="mt-4" />
           </>
         ) : null}
-        <FileField name="photo" label="Business photo" accept="image/png,image/jpeg,image/webp" />
-        <FileField name="certificate" label="Registration certificate or ownership proof" accept="image/png,image/jpeg,image/webp" />
+        <FileField name="photo" label="Business photo" accept="image/png,image/jpeg,image/webp" required />
+        <FileField name="certificate" label="Registration certificate or ownership proof" accept="image/png,image/jpeg,image/webp,application/pdf" required />
         {ENABLE_AADHAAR ? (
           <>
             <FileField name="aadharFront" label="Aadhaar front image for business verification" accept="image/png,image/jpeg,image/webp" required />
@@ -137,11 +144,36 @@ export default function RegisterDojoPage() {
         <button disabled={loading} className="mt-5 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
           {loading ? "Submitting registration..." : "Register Dojo / Gym"}
         </button>
-        {loading && stage ? <p className="mt-3 text-sm text-acid">{stageLabels[stage]}</p> : null}
+        {loading && stage ? <p className="mt-3 text-sm text-acid">{stageLabels[stage]}{stage === "uploading_attachments" ? ` ${uploadProgress}%` : ""}</p> : null}
         {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
       </form>
     </main>
   );
+}
+
+const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+function validateRequiredFile(value: FormDataEntryValue | null, label: string, allowPdf: boolean) {
+  if (!(value instanceof File) || value.size === 0) return `Select a ${label}.`;
+  if (!allowedTypes.has(value.type) || (!allowPdf && value.type === "application/pdf")) return `The ${label} must be a JPEG, PNG, WebP${allowPdf ? ", or PDF" : ""} file.`;
+  if (value.size > 4 * 1024 * 1024) return `The ${label} must be 4 MB or smaller.`;
+  return "";
+}
+
+function submitRegistration(body: FormData, onProgress: (progress: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", `${API_URL}/dojos`);
+    request.withCredentials = true;
+    request.upload.onprogress = event => { if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100)); };
+    request.onerror = () => reject(new Error("Upload failed. Check your connection and try again."));
+    request.onload = () => {
+      let payload: { error?: string } = {};
+      try { payload = JSON.parse(request.responseText); } catch { /* handled by the fallback message */ }
+      if (request.status >= 200 && request.status < 300) resolve();
+      else reject(new Error(payload.error || "Could not submit the dojo or gym registration."));
+    };
+    request.send(body);
+  });
 }
 
 function FileField({ name, label, accept, required = false }: { name: string; label: string; accept: string; required?: boolean }) {
