@@ -41,7 +41,7 @@ function registrationBody() {
 
 async function login(email: string) {
   const response = await fetch(`${baseUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
-  assert.equal(response.status, 200, `Login failed: ${await response.text()}`);
+  if (response.status !== 200) throw new Error(`Login failed (${response.status}): ${await response.text()}`);
   return (await response.json() as { accessToken: string }).accessToken;
 }
 
@@ -58,7 +58,7 @@ async function main() {
   const adminToken = await login(admin.email);
 
   const registration = await fetch(`${baseUrl}/api/dojos`, { method: "POST", headers: { Authorization: `Bearer ${ownerToken}` }, body: registrationBody() });
-  assert.equal(registration.status, 201, `Registration failed: ${await registration.text()}`);
+  if (registration.status !== 201) throw new Error(`Registration failed (${registration.status}): ${await registration.text()}`);
   const payload = await registration.json() as { profile: { id: string } };
   dojoId = payload.profile.id;
 
@@ -100,7 +100,7 @@ async function main() {
   assert.equal((await fetch(`${baseUrl}/api/dojos/${dojoId}/verification-document`, { headers: { Authorization: `Bearer ${ownerToken}` } })).status, 200);
 
   const suspension = await fetch(`${baseUrl}/api/admin/action`, { method: "POST", headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ action: "provider_status", targetId: dojoId, value: "suspended", reason: "Automated rollback test" }) });
-  assert.equal(suspension.status, 200, `Suspension failed: ${await suspension.text()}`);
+  if (suspension.status !== 200) throw new Error(`Suspension failed (${suspension.status}): ${await suspension.text()}`);
   const suspended = await prisma.dojo.findUniqueOrThrow({ where: { id: dojoId } });
   assert.equal(suspended.status, "suspended");
   assert.equal(suspended.approved, false);
@@ -111,6 +111,9 @@ async function main() {
 
 main().finally(async () => {
   if (dojoId && ownerToken) await fetch(`${baseUrl}/api/dojos/${dojoId}`, { method: "DELETE", headers: { Authorization: `Bearer ${ownerToken}` } }).catch(() => undefined);
-  if (userIds.length) await prisma.user.deleteMany({ where: { id: { in: userIds } } }).catch(() => undefined);
+  if (userIds.length) {
+    await prisma.adminLog.deleteMany({ where: { actorId: { in: userIds } } });
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  }
   await prisma.$disconnect();
 });
