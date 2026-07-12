@@ -7,7 +7,7 @@ import helmet from "helmet";
 import multer from "multer";
 import morgan from "morgan";
 import { z } from "zod";
-import { dojoModerationData, PUBLIC_DOJO_SELECT, publicDojo, publicDojoWhere } from "../../lib/dojo-visibility";
+import { automaticDojoActivation, canManageDojo, dojoModerationData, PUBLIC_DOJO_SELECT, publicDojo, publicDojoWhere } from "../../lib/dojo-visibility";
 import { accessToken, allowRoles, authenticate, hashToken, refreshToken, type AuthRequest, type SessionUser } from "./auth";
 import { config } from "./config";
 import { prisma } from "./db";
@@ -187,7 +187,7 @@ app.get("/api/dojos", asyncRoute(async (request, response) => {
   response.set("Cache-Control", "no-store, max-age=0").json(items.map(publicDojo));
 }));
 app.get("/api/dojos/me", authenticate, asyncRoute(async (request: AuthRequest, response) => {
-  const dojo = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, name: true, status: true, approved: true } });
+  const dojo = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, name: true, status: true, approved: true, verified: true } });
   dojo ? response.set("Cache-Control", "no-store, max-age=0").json(dojo) : response.status(404).json({ error: "Dojo registration not found." });
 }));
 app.get("/api/dojos/:id", asyncRoute(async (request, response) => {
@@ -205,7 +205,7 @@ app.get("/api/dojos/:id/business-photo", asyncRoute(async (request, response) =>
 app.get("/api/dojos/:id/verification-document", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) }, select: { id: true, ownerId: true } });
   if (!dojo) return response.status(404).json({ error: "Dojo registration not found." });
-  if (dojo.ownerId !== request.user!.id && !admins.includes(request.user!.role)) return response.status(403).json({ error: "You cannot access documents for this registration." });
+  if (!canManageDojo(request.user!, dojo.ownerId)) return response.status(403).json({ error: "You cannot access documents for this registration." });
   const verification = await prisma.providerVerification.findUnique({ where: { profileType_profileId: { profileType: "dojo", profileId: dojo.id } }, select: { certificatePath: true } });
   if (!verification?.certificatePath) return response.status(404).json({ error: "Verification document not found." });
   const document = await readPrivateBlob(verification.certificatePath);
@@ -220,19 +220,19 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
   const parsed = z.object({
     establishmentType: z.enum(establishmentTypes),
     customEstablishmentType: z.string().trim().max(80).optional(),
-    name: z.string().min(2),
-    ownerName: z.string().min(2),
-    email: z.string().email(),
-    phoneNumber: z.string().min(10),
-    category: z.string().min(2),
-    customCategory: z.string().optional(),
-    address: z.string().min(5),
-    city: z.string().min(2),
-    state: z.string().min(2),
+    name: z.string().trim().min(2).max(120),
+    ownerName: z.string().trim().min(2).max(120),
+    email: z.string().trim().email().max(254),
+    phoneNumber: z.string().trim().regex(/^[6-9]\d{9}$/),
+    category: z.string().trim().min(2).max(80),
+    customCategory: z.string().trim().max(80).optional(),
+    address: z.string().trim().min(5).max(500),
+    city: z.string().trim().min(2).max(80),
+    state: z.string().trim().min(2).max(80),
     pincode: z.string().regex(/^\d{6}$/),
     price: z.coerce.number().min(0),
-    experience: z.string().min(2),
-    gstNumber: z.string().optional(),
+    experience: z.string().trim().min(2).max(100),
+    gstNumber: z.string().trim().max(30).optional(),
     accountHolder: config.enableBankDetails ? z.string().min(2) : z.string().optional(),
     accountNumber: config.enableBankDetails ? z.string().min(4).max(34) : z.string().optional(),
     ifsc: config.enableBankDetails ? z.string().min(4).max(20) : z.string().optional(),
@@ -246,6 +246,11 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
   if (!files?.photo?.[0]?.size) return response.status(400).json({ error: "Select a non-empty business photo." });
   if (!files?.certificate?.[0]?.size) return response.status(400).json({ error: "Select a non-empty registration certificate or ownership proof." });
   if (config.enableAadhaarVerification && !files?.aadharFront?.length) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Aadhaar front image is required." }); }
+  if (config.enableDojoGymRegistrationPayment && !files?.paymentScreenshot?.[0]?.size) return response.status(400).json({ error: "Upload the payment screenshot so the registration payment can be verified." });
+  if (config.enableDojoGymRegistrationPayment && input.transactionId) {
+    const usedPayment = await prisma.payment.findUnique({ where: { transactionId: input.transactionId }, select: { id: true } });
+    if (usedPayment) return response.status(409).json({ error: "This UPI transaction ID has already been used." });
+  }
   const dojoFiles = await uploadDojoRegistrationFiles(files.photo[0], files.certificate[0]);
   const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
   const price = Math.round(input.price);
@@ -259,7 +264,7 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
     const paymentScreenshot = config.enableDojoGymRegistrationPayment ? await optimizeUploads(files.paymentScreenshot || [], "payments") : [];
     auxiliaryBlobPaths.push(...paymentScreenshot.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
     result = await prisma.$transaction(async tx => {
-    const dojo = await tx.dojo.create({ data: { id: dojoFiles.registrationId, ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber ? input.accountNumber.slice(-4) : undefined, ifsc: input.ifsc ? input.ifsc.toUpperCase() : undefined, description: input.description, originalPrice: price, finalPrice: price, imagePath: dojoFiles.businessPhotoPathname, status: "pending", approved: false, registrationPaymentStatus: config.enableDojoGymRegistrationPayment ? manualPaymentStatus : "not_required" } });
+    const dojo = await tx.dojo.create({ data: { id: dojoFiles.registrationId, ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber ? input.accountNumber.slice(-4) : undefined, ifsc: input.ifsc ? input.ifsc.toUpperCase() : undefined, description: input.description, originalPrice: price, finalPrice: price, imagePath: dojoFiles.businessPhotoPathname, ...automaticDojoActivation(), registrationPaymentStatus: config.enableDojoGymRegistrationPayment ? manualPaymentStatus : "not_required" } });
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: dojoFiles.verificationDocumentPathname } });
     if (config.enableDojoGymRegistrationPayment) {
       await tx.payment.create({ data: { userId: request.user!.id, purpose: "dojo_registration", targetType: "dojo", targetId: dojo.id, amount: dojoRegistrationFee, amountPaise: dojoRegistrationFee * 100, amountPaid: dojoRegistrationFee, currency: "INR", provider: "UPI_MANUAL", originalPrice: dojoRegistrationFee, platformFee: 0, status: manualPaymentStatus, paymentMethod: "upi_manual", upiId: manualUpiId, transactionId: input.transactionId, paymentStatus: manualPaymentStatus, paymentScreenshotPath: paymentScreenshot[0]?.path, paidAt: new Date() } });
@@ -267,15 +272,15 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
     return { dojo, user };
   }); } catch (error) { removeUploads(auxiliaryBlobPaths); await removeBlobUploads(dojoFiles.created); throw error; }
-  console.info("dojo.registration_created", { profileId: result.dojo.id, status: result.dojo.status, approved: result.dojo.approved, hasBusinessPhoto: true, hasVerificationDocument: true });
+  console.info("dojo.registration_created", { profileId: result.dojo.id, status: result.dojo.status, approved: result.dojo.approved, verified: result.dojo.verified, autoActivated: true, hasBusinessPhoto: true, hasVerificationDocument: true });
   response.status(201).json({ profile: result.dojo, session: await issueSession(result.user, response) });
 }));
 app.put("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) } });
   if (!dojo) return response.status(404).json({ error: "Dojo not found." });
-  if (dojo.ownerId !== request.user!.id && !admins.includes(request.user!.role)) return response.status(403).json({ error: "Not your dojo profile." });
+  if (!canManageDojo(request.user!, dojo.ownerId)) return response.status(403).json({ error: "Not your dojo profile." });
   const input = z.object({ name: z.string().min(2).optional(), category: z.string().optional(), city: z.string().optional(), description: z.string().optional(), originalPrice: z.coerce.number().min(0).optional() }).parse(request.body);
-  response.json(await prisma.dojo.update({ where: { id: dojo.id }, data: { ...input, ...(input.originalPrice == null ? {} : { finalPrice: Math.round(input.originalPrice) }), approved: admins.includes(request.user!.role) ? dojo.approved : false, status: admins.includes(request.user!.role) ? dojo.status : "pending" } }));
+  response.json(await prisma.dojo.update({ where: { id: dojo.id }, data: { ...input, ...(input.originalPrice == null ? {} : { finalPrice: Math.round(input.originalPrice) }) } }));
 }));
 app.delete("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) } });
@@ -442,13 +447,23 @@ app.get("/api/admin/snapshot", authenticate, allowRoles(...admins), asyncRoute(a
 }));
 app.patch("/api/admin/providers/:type/:id/status", authenticate, allowRoles("admin", "super_admin", "moderator"), asyncRoute(async (request: AuthRequest, response) => {
   const type = z.enum(["coach", "dojo"]).parse(request.params.type);
-  const status = z.enum(["pending", "approved", "rejected", "suspended"]).parse(request.body.status);
+  const status = type === "dojo" ? z.enum(["active", "inactive", "suspended"]).parse(request.body.status) : z.enum(["pending", "approved", "rejected", "suspended"]).parse(request.body.status);
   const id = String(request.params.id);
   const result = type === "coach" ? await prisma.coach.update({ where: { id }, data: { status, verified: status === "approved" } }) : await prisma.dojo.update({ where: { id }, data: dojoModerationData(status) });
-  await prisma.providerVerification.updateMany({ where: { profileType: type, profileId: id }, data: { status, reviewedById: request.user!.id, reviewedAt: new Date() } });
   await prisma.adminLog.create({ data: { actorId: request.user!.id, action: "provider_status", targetId: id, details: { type, status }, ip: request.ip } });
-  console.info("provider.moderation_updated", { profileId: id, profileType: type, status, visible: type === "dojo" ? status === "approved" : undefined });
+  console.info("provider.moderation_updated", { profileId: id, profileType: type, status, visible: type === "dojo" ? status === "active" : undefined });
   response.json(result);
+}));
+app.patch("/api/admin/dojos/:id/verification", authenticate, allowRoles("admin", "super_admin", "moderator"), asyncRoute(async (request: AuthRequest, response) => {
+  const verified = z.object({ verified: z.boolean() }).parse(request.body).verified;
+  const id = String(request.params.id);
+  const [dojo] = await prisma.$transaction([
+    prisma.dojo.update({ where: { id }, data: { verified } }),
+    prisma.providerVerification.updateMany({ where: { profileType: "dojo", profileId: id }, data: { status: verified ? "approved" : "pending", reviewedById: request.user!.id, reviewedAt: new Date() } })
+  ]);
+  await prisma.adminLog.create({ data: { actorId: request.user!.id, action: "dojo_verification", targetId: id, details: { verified }, ip: request.ip } });
+  console.info("dojo.verification_updated", { profileId: id, verified });
+  response.json({ id: dojo.id, verified: dojo.verified });
 }));
 app.put("/api/admin/settings", authenticate, allowRoles("admin", "super_admin"), asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({ commissionPercent: z.coerce.number().min(0).max(50), highValueOrderThreshold: z.coerce.number().min(0).max(10_000_000), maintenanceMode: z.boolean(), manualSellerVerification: z.boolean() }).parse(request.body);

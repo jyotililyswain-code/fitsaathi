@@ -23,7 +23,7 @@ export async function generateMetadata({
         status: true,
       },
     });
-    if (!dojo || !dojo.approved || dojo.status !== "approved") {
+    if (!dojo || !dojo.approved || dojo.status !== "active") {
       return generateSeoMetadata({
         title: "Dojo Profile - FitSaathi",
         description: "This dojo profile is not available for search indexing.",

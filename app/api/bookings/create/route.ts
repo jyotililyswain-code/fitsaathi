@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const provider = coach || dojo;
     if (!provider || !customer) return NextResponse.json({ error: "Provider not found." }, { status: 404 });
     if (coach && !coach.verified) return NextResponse.json({ error: "This coach is not available for booking." }, { status: 409 });
-    if (dojo && !dojo.approved) return NextResponse.json({ error: "This dojo is not available for booking." }, { status: 409 });
+    if (dojo && (!dojo.approved || dojo.status !== "active")) return NextResponse.json({ error: "This dojo is not available for booking." }, { status: 409 });
 
     const baseFee = coach ? coach.baseFee : dojo!.originalPrice;
     const pricing = getPriceBreakdown(baseFee, coach ? coach.platformFee : dojo!.platformFee);

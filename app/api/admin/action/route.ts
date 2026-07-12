@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
 import { getClientIp, isRateLimited, sanitizeText } from "@/lib/security";
 import { dojoModerationData } from "@/lib/dojo-visibility";
+import { removeUploads } from "@/server/src/uploads";
 
 type ActionBody = { action?: unknown; targetId?: unknown; value?: unknown; reason?: unknown; settings?: unknown };
 
@@ -26,13 +27,18 @@ export async function POST(request: Request) {
       if (!canModerateMarketplace(role) || !["verified", "trusted", "rejected", "suspended"].includes(value)) return NextResponse.json({ error: "Marketplace moderation permission required." }, { status: 403 });
       await prisma.seller.update({ where: { id: targetId }, data: { status: value as any, verified: ["verified", "trusted"].includes(value), trusted: value === "trusted" } });
     } else if (action === "provider_status") {
-      if (!canModerateMarketplace(role) || !["approved", "rejected", "suspended"].includes(value)) return NextResponse.json({ error: "Provider moderation permission required." }, { status: 403 });
-      const status = value as "approved" | "rejected" | "suspended";
+      if (!canModerateMarketplace(role) || !["active", "inactive", "suspended"].includes(value)) return NextResponse.json({ error: "Provider moderation permission required." }, { status: 403 });
+      const status = value as "active" | "inactive" | "suspended";
+      const dojo = await prisma.dojo.update({ where: { id: targetId }, data: dojoModerationData(status) });
+      console.info("dojo.operational_status_updated", { profileId: dojo.id, status: dojo.status, visible: dojo.status === "active" && dojo.approved });
+    } else if (action === "dojo_verification") {
+      if (!canModerateMarketplace(role) || !["verified", "unverified"].includes(value)) return NextResponse.json({ error: "Provider verification permission required." }, { status: 403 });
+      const verified = value === "verified";
       const [dojo] = await prisma.$transaction([
-        prisma.dojo.update({ where: { id: targetId }, data: dojoModerationData(status) }),
-        prisma.providerVerification.updateMany({ where: { profileType: "dojo", profileId: targetId }, data: { status, reviewedById: actor.id, reviewedAt: new Date() } })
+        prisma.dojo.update({ where: { id: targetId }, data: { verified } }),
+        prisma.providerVerification.updateMany({ where: { profileType: "dojo", profileId: targetId }, data: { status: verified ? "approved" : "pending", reviewedById: actor.id, reviewedAt: new Date() } })
       ]);
-      console.info("dojo.approval_updated", { profileId: dojo.id, status: dojo.status, approved: dojo.approved });
+      console.info("dojo.verification_updated", { profileId: dojo.id, verified });
     } else if (action === "product_status") {
       if (!canModerateMarketplace(role) || !["approved", "rejected", "featured", "trending"].includes(value)) return NextResponse.json({ error: "Marketplace moderation permission required." }, { status: 403 });
       await prisma.product.update({ where: { id: targetId }, data: { status: ["featured", "trending"].includes(value) ? "approved" : value as any, featured: value === "featured", trending: value === "trending" } });
@@ -52,6 +58,13 @@ export async function POST(request: Request) {
     } else if (action === "delete_seller") {
       if (!canDelete(role)) return NextResponse.json({ error: "Delete permission required." }, { status: 403 });
       await prisma.seller.delete({ where: { id: targetId } });
+    } else if (action === "delete_dojo") {
+      if (!canDelete(role)) return NextResponse.json({ error: "Delete permission required." }, { status: 403 });
+      const dojo = await prisma.dojo.findUnique({ where: { id: targetId }, select: { id: true, imagePath: true } });
+      if (!dojo) return NextResponse.json({ error: "Dojo registration not found." }, { status: 404 });
+      const verification = await prisma.providerVerification.findUnique({ where: { profileType_profileId: { profileType: "dojo", profileId: dojo.id } }, select: { certificatePath: true, aadhaarFrontPath: true, aadhaarBackPath: true } });
+      await prisma.$transaction([prisma.providerVerification.deleteMany({ where: { profileType: "dojo", profileId: dojo.id } }), prisma.dojo.delete({ where: { id: dojo.id } })]);
+      removeUploads([dojo.imagePath, verification?.certificatePath, verification?.aadhaarFrontPath, verification?.aadhaarBackPath]);
     } else if (action === "delete_user") {
       if (!canDelete(role) || targetId === actor.id) return NextResponse.json({ error: "Delete permission required." }, { status: 403 });
       await prisma.user.delete({ where: { id: targetId } });

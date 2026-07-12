@@ -29,6 +29,8 @@ enum SellerStatus {
 enum ProviderStatus {
   pending
   approved
+  active
+  inactive
   rejected
   suspended
 }
@@ -578,6 +580,8 @@ model Dojo {
   availableTimings          String[]         @default([])
   status                    ProviderStatus   @default(pending)
   approved                  Boolean          @default(false)
+  approvedAt                DateTime?
+  verified                  Boolean          @default(false)
   registrationPaymentStatus String           @default("pending")
   createdAt                 DateTime         @default(now())
   updatedAt                 DateTime         @updatedAt
@@ -585,7 +589,7 @@ model Dojo {
   bookings                  Booking[]
   reviews                   ProviderReview[]
 
-  @@index([status, approved, category])
+  @@index([status, approved, verified, category])
   @@index([rating])
   @@map("dojos")
 }

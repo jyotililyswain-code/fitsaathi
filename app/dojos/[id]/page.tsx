@@ -20,7 +20,7 @@ export default function DojoProfilePage() {
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-8">
         {data?.imageUrl ? <div className="relative mb-7 h-64 overflow-hidden rounded-2xl bg-white/[0.03]"><Image src={data.imageUrl} alt={`${data.name} business photo`} fill unoptimized sizes="(max-width: 1024px) 100vw, 64rem" className="object-cover" /></div> : null}
-        <p className="text-sm text-acid">{data?.approved ? "Approved dojo" : "Approval not recorded"}</p>
+        <p className="text-sm text-acid">{data?.verified ? "Verified dojo" : "Active dojo"}</p>
         <h1 className="mt-3 text-4xl font-bold text-white">{data?.name || "Loading dojo profile"}</h1>
         <p className="mt-2 text-zinc-400">{data?.category || "Category not set"} {data?.city ? `in ${data.city}` : ""}</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">

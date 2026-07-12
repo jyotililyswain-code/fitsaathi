@@ -26,7 +26,7 @@ export type Coach = {
   photoUrl?: string;
   bio?: string;
   verified?: boolean;
-  status?: "pending" | "approved" | "rejected" | "suspended";
+  status?: "pending" | "approved" | "active" | "inactive" | "rejected" | "suspended";
   phoneNumber?: string;
   isPhoneVerified?: boolean;
   availableDays?: string[];
@@ -47,10 +47,11 @@ export type Dojo = {
   imageUrl?: string;
   description?: string;
   approved?: boolean;
+  verified?: boolean;
   ownerName?: string;
   phoneNumber?: string;
   isPhoneVerified?: boolean;
-  approvalStatus?: "pending" | "approved" | "rejected";
+  approvalStatus?: "pending" | "approved" | "active" | "inactive" | "rejected" | "suspended";
   registrationPaymentStatus?: "pending" | "paid" | "rejected" | "failed";
 };
 

@@ -77,7 +77,7 @@ const featureCards = [
   },
   {
     title: "Browse Dojos",
-    body: "Discover approved academies for karate, martial arts, yoga and group training.",
+    body: "Discover active academies for karate, martial arts, yoga and group training.",
     href: "/dojos",
     icon: Trophy,
   },
@@ -692,10 +692,10 @@ export default function HomePage() {
         ))}
       </ProviderSection>
       <ProviderSection
-        title="Approved dojos"
+        title="Active dojos"
         href="/dojos"
         loading={dojos.loading}
-        empty="No approved dojos yet."
+        empty="No active dojos yet."
       >
         {dojos.data.map((item) => (
           <DojoCard key={item.id} dojo={item} />

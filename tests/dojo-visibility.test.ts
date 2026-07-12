@@ -1,14 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { dojoModerationData, publicDojo, publicDojoWhere } from "../lib/dojo-visibility";
+import { automaticDojoActivation, canManageDojo, dojoModerationData, publicDojo, publicDojoWhere } from "../lib/dojo-visibility";
 
-test("public dojo queries require both approved status fields", () => {
+test("public dojo queries require active and approved status fields", () => {
   const where = publicDojoWhere({ search: "FitSaathi Test", city: "Pune", category: "Karate" });
-  assert.equal(where.status, "approved");
+  assert.equal(where.status, "active");
   assert.equal(where.approved, true);
   assert.ok(where.OR);
-  assert.deepEqual(dojoModerationData("approved"), { status: "approved", approved: true });
-  assert.deepEqual(dojoModerationData("rejected"), { status: "rejected", approved: false });
+  assert.equal(dojoModerationData("active").approved, true);
+  assert.equal(dojoModerationData("suspended").approved, false);
+  const activation = automaticDojoActivation(new Date("2026-07-12T12:00:00.000Z"));
+  assert.deepEqual(activation, { status: "active", approved: true, approvedAt: new Date("2026-07-12T12:00:00.000Z"), verified: false });
+});
+
+test("only the owner or an authorized admin can manage a dojo", () => {
+  assert.equal(canManageDojo({ id: "owner", role: "dojo" }, "owner"), true);
+  assert.equal(canManageDojo({ id: "other", role: "customer" }, "owner"), false);
+  assert.equal(canManageDojo({ id: "admin", role: "admin" }, "owner"), true);
 });
 
 test("public dojo projection excludes ownership and contact data", () => {
@@ -24,11 +32,12 @@ test("public dojo projection excludes ownership and contact data", () => {
     finalPrice: 1000,
     rating: 0,
     imagePath: "dojo/dojo-id/business-photo/private.webp",
-    status: "approved",
-    approved: true
+    status: "active",
+    approved: true,
+    verified: false
   });
   assert.equal(output.imagePath, "/api/dojos/dojo-id/business-photo");
-  assert.equal(output.verified, true);
+  assert.equal(output.verified, false);
   assert.ok(!("ownerId" in output));
   assert.ok(!("phoneNumber" in output));
   assert.ok(!("certificatePath" in output));

@@ -34,7 +34,7 @@ const features = [
   },
   {
     title: "Browse Dojos",
-    body: "Explore approved dojos and martial arts academies.",
+    body: "Explore active dojos and martial arts academies.",
     href: "/dojos",
     icon: Handshake
   },

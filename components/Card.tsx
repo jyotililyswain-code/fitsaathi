@@ -79,6 +79,7 @@ export function DojoCard({ dojo }: { dojo: Dojo }) {
     >
       {dojo.imageUrl ? <div className="relative h-36 bg-white/[0.03]"><Image src={dojo.imageUrl} alt={`${dojo.name} business photo`} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-105" /></div> : null}
       <div className="p-5">
+      <span className={`mb-3 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${dojo.verified ? "border-acid/30 bg-acid/15 text-acid" : "border-white/10 bg-white/[0.04] text-zinc-300"}`}>{dojo.verified ? <CheckCircle2 className="h-3 w-3" /> : null}{dojo.verified ? "Verified" : "Active"}</span>
       <h3 className="text-lg font-semibold text-white">
         {dojo.name || "Unnamed dojo"}
       </h3>

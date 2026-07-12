@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         select: { id: true, updatedAt: true },
       }),
       prisma.dojo.findMany({
-        where: { approved: true, status: "approved" },
+        where: { approved: true, status: "active" },
         select: { id: true, updatedAt: true },
       }),
     ]);

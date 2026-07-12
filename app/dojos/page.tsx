@@ -87,12 +87,12 @@ export default function DojosPage() {
             title={
               search || category
                 ? "No matching dojo found"
-                : "No approved dojos or gyms yet"
+                : "No active dojos or gyms yet"
             }
             body={
               search || category
                 ? "Try another name, city, sport, or category."
-                : "Submitted registrations remain pending until an administrator approves them."
+                : "Valid registrations appear here immediately after secure upload and payment checks complete."
             }
             action={
               <Link

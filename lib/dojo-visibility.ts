@@ -13,7 +13,8 @@ export const PUBLIC_DOJO_SELECT = {
   rating: true,
   imagePath: true,
   status: true,
-  approved: true
+  approved: true,
+  verified: true
 } satisfies Prisma.DojoSelect;
 
 export type PublicDojoRecord = Prisma.DojoGetPayload<{ select: typeof PUBLIC_DOJO_SELECT }>;
@@ -24,7 +25,7 @@ export function publicDojoWhere(filters: DojoSearchFilters = {}): Prisma.DojoWhe
   const category = filters.category?.trim();
   const city = filters.city?.trim();
   return {
-    status: "approved",
+    status: "active",
     approved: true,
     ...(category ? { category: { contains: category, mode: "insensitive" } } : {}),
     ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
@@ -53,10 +54,18 @@ export function publicDojo(record: PublicDojoRecord) {
     imagePath: record.imagePath ? `/api/dojos/${record.id}/business-photo` : undefined,
     status: record.status,
     approved: record.approved,
-    verified: record.status === "approved" && record.approved
+    verified: record.verified
   };
 }
 
 export function dojoModerationData(status: ProviderStatus) {
-  return { status, approved: status === "approved" } as const;
+  return { status, approved: status === "active", approvedAt: status === "active" ? new Date() : null } as const;
+}
+
+export function automaticDojoActivation(approvedAt = new Date()) {
+  return { status: "active" as const, approved: true, approvedAt, verified: false };
+}
+
+export function canManageDojo(user: { id: string; role: string }, ownerId: string) {
+  return user.id === ownerId || ["admin", "super_admin", "moderator", "support_admin"].includes(user.role);
 }

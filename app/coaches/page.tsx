@@ -66,7 +66,7 @@ export default function CoachesPage({ includeDojos = false }: { includeDojos?: b
               {includeDojos ? "Find your next coach, dojo, or gym" : "Find your next fitness coach"}
             </h1>
             <p className="mt-4 max-w-2xl leading-7 text-zinc-300">
-              {includeDojos ? "Search approved dojos and registered trainers by specialty and city." : "Browse registered trainers by specialty and city."} Verification status and activity metrics come directly from PostgreSQL records.
+              {includeDojos ? "Search active dojos and registered trainers by specialty and city." : "Browse registered trainers by specialty and city."} Verification status and activity metrics come directly from PostgreSQL records.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -155,19 +155,19 @@ export default function CoachesPage({ includeDojos = false }: { includeDojos?: b
               </p>
             </div>
             {visibleCoaches.length ? <div><h2 className="mb-4 text-xl font-semibold text-white">Coaches</h2><div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{visibleCoaches.map((coach) => <CoachCard key={coach.id} coach={coach} />)}</div></div> : null}
-            {includeDojos && dojos.data.length ? <div className={visibleCoaches.length ? "mt-9" : ""}><h2 className="mb-4 text-xl font-semibold text-white">Approved dojos and gyms</h2><div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{dojos.data.map((dojo) => <DojoCard key={dojo.id} dojo={dojo} />)}</div></div> : null}
+            {includeDojos && dojos.data.length ? <div className={visibleCoaches.length ? "mt-9" : ""}><h2 className="mb-4 text-xl font-semibold text-white">Active dojos and gyms</h2><div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{dojos.data.map((dojo) => <DojoCard key={dojo.id} dojo={dojo} />)}</div></div> : null}
           </>
         ) : (
           <EmptyState
             title={
               hasFilters
                 ? includeDojos ? "No coaches or dojos match these filters" : "No coaches match these filters"
-                : includeDojos ? "No coaches or approved dojos yet" : "No coaches registered yet"
+                : includeDojos ? "No coaches or active dojos yet" : "No coaches registered yet"
             }
             body={
               hasFilters
                 ? "Try clearing a filter or searching another specialty or city."
-                : includeDojos ? "Dojo registrations appear here after administrator approval." : "Be the first coach to submit a profile."
+                : includeDojos ? "Valid dojo registrations appear here immediately." : "Be the first coach to submit a profile."
             }
             action={
               hasFilters ? (

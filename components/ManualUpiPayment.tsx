@@ -10,6 +10,7 @@ type ManualUpiPaymentProps = {
   transactionName?: string;
   screenshotName?: string;
   showScreenshot?: boolean;
+  screenshotRequired?: boolean;
   className?: string;
 };
 
@@ -18,6 +19,7 @@ export function ManualUpiPayment({
   transactionName = "transactionId",
   screenshotName = "paymentScreenshot",
   showScreenshot = true,
+  screenshotRequired = false,
   className = ""
 }: ManualUpiPaymentProps) {
   const [copied, setCopied] = useState(false);
@@ -83,11 +85,12 @@ export function ManualUpiPayment({
       </label>
       {showScreenshot ? (
         <label className="mt-3 block rounded-xl border border-white/10 bg-ink/70 px-4 py-3 text-sm text-zinc-300">
-          <span className="block font-medium text-white">Upload payment screenshot (optional)</span>
+          <span className="block font-medium text-white">Upload payment screenshot{screenshotRequired ? "" : " (optional)"}</span>
           <input
             name={screenshotName}
             type="file"
             accept="image/png,image/jpeg,image/webp"
+            required={screenshotRequired}
             className="mt-2 block w-full text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-acid file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink"
           />
         </label>

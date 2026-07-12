@@ -74,7 +74,7 @@ export default function RegisterDojoPage() {
       setStage("uploading_attachments");
       await submitRegistration(formData, setUploadProgress);
       notifyAuthChanged();
-      setMessage("Your dojo or gym registration was submitted and is pending administrator approval.");
+      setMessage("Your dojo or gym is active and now appears in public search. Document verification remains under review.");
       router.push("/dojo-dashboard");
       router.refresh();
     } catch (error) {
@@ -91,7 +91,7 @@ export default function RegisterDojoPage() {
       <section className="mx-auto max-w-3xl text-center">
         <p className="text-sm text-acid">Dojo / Gym registration</p>
         <h1 className="mt-2 text-4xl font-bold text-white">Register Your Dojo or Gym</h1>
-        <p className="mt-4 leading-7 text-zinc-400">Approval, rating, student count, inquiries, and revenue begin empty or zero. They update only from real platform activity.</p>
+        <p className="mt-4 leading-7 text-zinc-400">Valid registrations go live immediately. The verified badge, rating, student count, inquiries, and revenue update separately from real platform activity.</p>
       </section>
       <form onSubmit={submit} className="mx-auto w-full max-w-3xl rounded-2xl border border-acid/25 bg-white/[0.05] p-5 sm:p-6">
         <label className="block text-sm font-medium text-zinc-300">
@@ -130,7 +130,7 @@ export default function RegisterDojoPage() {
               <p className="mt-1 text-2xl font-semibold text-white">Rs. {DOJO_REGISTRATION_FEE}</p>
               <p className="mt-1 text-sm text-zinc-300">Required before submission. Enter the UPI transaction ID after payment.</p>
             </div>
-            <ManualUpiPayment amountLabel={`Rs. ${DOJO_REGISTRATION_FEE}`} className="mt-4" />
+            <ManualUpiPayment amountLabel={`Rs. ${DOJO_REGISTRATION_FEE}`} className="mt-4" screenshotRequired />
           </>
         ) : null}
         <FileField name="photo" label="Business photo" accept="image/png,image/jpeg,image/webp" required />
