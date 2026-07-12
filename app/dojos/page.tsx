@@ -13,20 +13,9 @@ export default function DojosPage() {
   const params = useSearchParams();
   const initialCategory = params?.get("category") || "";
   const initialSearch = params?.get("search") || "";
-  const dojos = useDojos();
   const [category, setCategory] = useState(initialCategory);
   const [search, setSearch] = useState(initialSearch);
-  const visibleDojos = dojos.data.filter((dojo) => {
-    const matchesCategory =
-      !category ||
-      dojo.category?.toLowerCase().includes(category.toLowerCase());
-    const matchesSearch =
-      !search ||
-      `${dojo.name} ${dojo.category} ${dojo.description || ""} ${dojo.city || ""}`
-        .toLowerCase()
-        .includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const dojos = useDojos(false, { search, category });
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-royal/[0.08] p-6 sm:p-8">
@@ -81,14 +70,14 @@ export default function DojosPage() {
               Try again
             </button>
           </div>
-        ) : visibleDojos.length ? (
+        ) : dojos.data.length ? (
           <>
             <p className="mb-4 text-sm text-zinc-400">
-              Showing {visibleDojos.length} dojo
-              {visibleDojos.length === 1 ? "" : "s"}
+              Showing {dojos.data.length} dojo
+              {dojos.data.length === 1 ? "" : "s"}
             </p>
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {visibleDojos.map((dojo) => (
+              {dojos.data.map((dojo) => (
                 <DojoCard key={dojo.id} dojo={dojo} />
               ))}
             </div>
@@ -96,14 +85,14 @@ export default function DojosPage() {
         ) : (
           <EmptyState
             title={
-              dojos.data.length
-                ? "No dojos or gyms match this category"
-                : "No dojos or gyms registered yet"
+              search || category
+                ? "No matching dojo found"
+                : "No approved dojos or gyms yet"
             }
             body={
-              dojos.data.length
-                ? "Try another category."
-                : "Be the first academy to submit a profile for review."
+              search || category
+                ? "Try another name, city, sport, or category."
+                : "Submitted registrations remain pending until an administrator approves them."
             }
             action={
               <Link

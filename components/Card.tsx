@@ -75,8 +75,10 @@ export function DojoCard({ dojo }: { dojo: Dojo }) {
   return (
     <Link
       href={`/dojos/${dojo.id}`}
-      className="group rounded-2xl border border-white/10 bg-white/[0.05] p-5 transition hover:-translate-y-1 hover:border-royal/50"
+      className="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] transition hover:-translate-y-1 hover:border-royal/50"
     >
+      {dojo.imageUrl ? <div className="relative h-36 bg-white/[0.03]"><Image src={dojo.imageUrl} alt={`${dojo.name} business photo`} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition duration-500 group-hover:scale-105" /></div> : null}
+      <div className="p-5">
       <h3 className="text-lg font-semibold text-white">
         {dojo.name || "Unnamed dojo"}
       </h3>
@@ -93,6 +95,7 @@ export function DojoCard({ dojo }: { dojo: Dojo }) {
           {dojo.rating ?? "No rating"}
         </span>
         <span>{formatMoney(dojo.price)}</span>
+      </div>
       </div>
     </Link>
   );

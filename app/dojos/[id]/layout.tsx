@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { prisma } from "@/lib/prisma";
 import { generateSeoMetadata } from "@/lib/seo";
 
+export const revalidate = 0;
+
 export async function generateMetadata({
   params,
 }: {
@@ -33,7 +35,7 @@ export async function generateMetadata({
       title: `${dojo.name} - Dojo / Academy on FitSaathi`,
       description: `View ${dojo.name}'s ${dojo.category} training details${dojo.city ? ` in ${dojo.city}` : ""} and booking options on FitSaathi.`,
       path: `/dojos/${id}`,
-      image: dojo.imagePath?.startsWith("http") ? dojo.imagePath : undefined,
+      image: dojo.imagePath ? `/api/dojos/${id}/business-photo` : undefined,
       keywords: [
         dojo.name,
         dojo.category,

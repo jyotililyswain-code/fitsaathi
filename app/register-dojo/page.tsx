@@ -74,7 +74,7 @@ export default function RegisterDojoPage() {
       setStage("uploading_attachments");
       await submitRegistration(formData, setUploadProgress);
       notifyAuthChanged();
-      setMessage("Your dojo or gym registration has been submitted successfully.");
+      setMessage("Your dojo or gym registration was submitted and is pending administrator approval.");
       router.push("/dojo-dashboard");
       router.refresh();
     } catch (error) {

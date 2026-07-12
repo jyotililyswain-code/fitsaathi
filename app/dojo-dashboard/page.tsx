@@ -8,12 +8,13 @@ import { EmptyState } from "@/components/EmptyState";
 import { useSessionUser } from "@/lib/auth-client";
 import { formatMoney } from "@/lib/format";
 import { readJsonResponse } from "@/lib/http";
-import { useCollectionCount, useProviderBookings } from "@/lib/hooks";
+import { useCollectionCount, useMyDojoStatus, useProviderBookings } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
 
 export default function DojoDashboardPage() {
   const { user } = useSessionUser();
   const bookings = useProviderBookings(user?.id || null);
+  const registration = useMyDojoStatus(user?.id || null);
   const customers = useCollectionCount("students");
   const memberships = useCollectionCount("memberships");
   const [message, setMessage] = useState("");
@@ -36,6 +37,8 @@ export default function DojoDashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-white">Dojo dashboard</h1>
         <p className="mt-3 text-zinc-400">Manage academy profile, classes, timings, bookings, customers, earnings, analytics, and memberships.</p>
+        {registration.data?.status === "pending" ? <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100"><strong className="block text-white">Dojo pending approval</strong>Your registration is saved but will not appear in public search until an administrator approves it.</div> : null}
+        {registration.data?.status === "rejected" ? <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100"><strong className="block text-white">Registration needs attention</strong>Your dojo is not publicly listed. Contact support for review details.</div> : null}
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <Tile icon={<CalendarDays />} label="Bookings" value={String(bookings.data.length)} />
           <Tile icon={<Users />} label="Customers" value={String(customers.data)} />

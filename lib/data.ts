@@ -30,9 +30,16 @@ function mapDojo(item: any): Dojo {
 export async function getCoaches(max = 24) { return (await localApi<any[]>(`/coaches?limit=${max}`)).map(mapCoach); }
 export async function getFeaturedCoaches(max = 6) { return (await localApi<any[]>(`/coaches?featured=true&limit=${max}`)).map(mapCoach); }
 export async function getCoach(id: string) { return mapCoach(await localApi<any>(`/coaches/${id}`)); }
-export async function getDojos(max = 24) { return (await localApi<any[]>(`/dojos?limit=${max}`)).map(mapDojo); }
+export async function getDojos(filters: { search?: string; category?: string; city?: string; limit?: number } = {}) {
+  const query = new URLSearchParams({ limit: String(filters.limit || 48) });
+  if (filters.search?.trim()) query.set("search", filters.search.trim());
+  if (filters.category?.trim()) query.set("category", filters.category.trim());
+  if (filters.city?.trim()) query.set("city", filters.city.trim());
+  return (await localApi<any[]>(`/dojos?${query}`)).map(mapDojo);
+}
 export async function getFeaturedDojos(max = 6) { return (await localApi<any[]>(`/dojos?featured=true&limit=${max}`)).map(mapDojo); }
 export async function getDojo(id: string) { return mapDojo(await localApi<any>(`/dojos/${id}`)); }
+export async function getMyDojoStatus() { return localApi<{ id: string; name: string; status: "pending" | "approved" | "rejected" | "suspended"; approved: boolean }>("/dojos/me"); }
 export async function getBookings(_max = 50): Promise<Booking[]> { return localApi<Booking[]>("/bookings"); }
 export async function getUserBookings(_userId: string, _max = 50) { return getBookings(_max); }
 export async function getProviderBookings(_ownerId: string, _max = 50) { return getBookings(_max); }

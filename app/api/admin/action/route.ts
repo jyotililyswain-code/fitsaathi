@@ -4,6 +4,7 @@ import { canDelete, canManageFinance, canManageOrders, canManageUsers, canModera
 import { prisma } from "@/lib/prisma";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
 import { getClientIp, isRateLimited, sanitizeText } from "@/lib/security";
+import { dojoModerationData } from "@/lib/dojo-visibility";
 
 type ActionBody = { action?: unknown; targetId?: unknown; value?: unknown; reason?: unknown; settings?: unknown };
 
@@ -26,7 +27,12 @@ export async function POST(request: Request) {
       await prisma.seller.update({ where: { id: targetId }, data: { status: value as any, verified: ["verified", "trusted"].includes(value), trusted: value === "trusted" } });
     } else if (action === "provider_status") {
       if (!canModerateMarketplace(role) || !["approved", "rejected", "suspended"].includes(value)) return NextResponse.json({ error: "Provider moderation permission required." }, { status: 403 });
-      await prisma.dojo.update({ where: { id: targetId }, data: { status: value as any, approved: value === "approved" } });
+      const status = value as "approved" | "rejected" | "suspended";
+      const [dojo] = await prisma.$transaction([
+        prisma.dojo.update({ where: { id: targetId }, data: dojoModerationData(status) }),
+        prisma.providerVerification.updateMany({ where: { profileType: "dojo", profileId: targetId }, data: { status, reviewedById: actor.id, reviewedAt: new Date() } })
+      ]);
+      console.info("dojo.approval_updated", { profileId: dojo.id, status: dojo.status, approved: dojo.approved });
     } else if (action === "product_status") {
       if (!canModerateMarketplace(role) || !["approved", "rejected", "featured", "trending"].includes(value)) return NextResponse.json({ error: "Marketplace moderation permission required." }, { status: 403 });
       await prisma.product.update({ where: { id: targetId }, data: { status: ["featured", "trending"].includes(value) ? "approved" : value as any, featured: value === "featured", trending: value === "trending" } });

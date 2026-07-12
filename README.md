@@ -72,7 +72,7 @@ Run the Prisma migrations against your Supabase PostgreSQL database:
 npm run db:migrate
 ```
 
-The Prisma migrations create the app schema and map the physical table names to Supabase-friendly names such as `users`, `coaches`, `bookings`, `orders`, `payments`, `seller_accounts`, and `refresh_tokens`. After that, run `supabase/migrations/20260705161000_fitsaathi_rls.sql` in the Supabase SQL editor to enable Row Level Security policies for direct Supabase client access.
+The Prisma migrations create the app schema, map physical table names to Supabase-friendly names, and install Row Level Security policies. In particular, direct Supabase clients can select only approved public columns from `dojos`; verification-document records remain inaccessible to `anon` and `authenticated` roles.
 
 Supabase Auth is supported for new signups and password reset when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set. Existing custom JWT cookies remain in place so the current login UI and protected routes keep working.
 
@@ -88,4 +88,4 @@ This repo is now designed to deploy as a single Vercel Next.js project:
 4. Do not set `NEXT_PUBLIC_API_URL` unless you intentionally want to call a separate external API.
 5. Vercel should use `npm run build`, which runs `prisma generate` before `next build`.
 
-Public uploads are saved as Blob URLs. Sensitive verification/message files are encrypted first and saved in private Blob paths.
+Uploads use private Blob storage. Approved dojo business photos are streamed through the application API; verification documents remain behind authenticated owner/admin endpoints.
