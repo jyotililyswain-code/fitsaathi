@@ -1,4 +1,5 @@
 export const DEFAULT_PLATFORM_FEE = 700;
+export const BOOKING_FEE = 50;
 export const DOJO_REGISTRATION_FEE = 700;
 export const COACH_INCENTIVE_BONUS = 100;
 

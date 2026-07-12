@@ -53,7 +53,7 @@ export default function CustomerDashboardPage() {
                       <p className="font-semibold text-white">{booking.classType || "Class booking"}</p>
                       <p className="mt-1 text-sm text-zinc-400">{booking.preferredDate || "Date pending"} {booking.preferredTime || ""}</p>
                       <p className="mt-1 text-sm text-zinc-400">
-                        Contact: {["accepted", "completed"].includes(booking.status || "") ? booking.providerPhone || "Provider number pending" : "Hidden until coach or dojo accepts"}
+                        Owner contact: {booking.paymentStatus === "paid" ? booking.providerPhone || "Owner number pending" : "Visible after payment"}
                       </p>
                     </div>
                     <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.status || "pending"}</span>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { MANUAL_UPI_ID, manualPaymentData } from "@/lib/manual-upi";
 import { paymentBoolean, paymentValue, readPaymentRequest, requireTransactionId, storePaymentScreenshot } from "@/lib/manual-payment-server";
-import { getPriceBreakdown } from "@/lib/pricing";
+import { BOOKING_FEE } from "@/lib/pricing";
 import { prisma } from "@/lib/prisma";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
 
@@ -24,8 +24,9 @@ export async function POST(request: Request) {
     if (coach && !coach.verified) return NextResponse.json({ error: "This coach is not available for booking." }, { status: 409 });
     if (dojo && (!dojo.approved || dojo.status !== "active")) return NextResponse.json({ error: "This dojo is not available for booking." }, { status: 409 });
 
-    const baseFee = coach ? coach.baseFee : dojo!.originalPrice;
-    const pricing = getPriceBreakdown(baseFee, coach ? coach.platformFee : dojo!.platformFee);
+    // Booking payment is a fixed platform charge; provider package pricing is
+    // agreed separately and must not change the amount shown at checkout.
+    const bookingAmount = BOOKING_FEE;
     const screenshotPath = await storePaymentScreenshot(body, "paymentScreenshot", "booking");
     const created = await prisma.$transaction(async tx => {
       const booking = await tx.booking.create({
@@ -42,13 +43,13 @@ export async function POST(request: Request) {
           preferredTime: paymentValue(body, "preferredTime", 20),
           notes: paymentValue(body, "notes", 1000),
           status: "confirmed",
-          amount: pricing.finalPrice,
-          originalPrice: pricing.originalPrice,
-          platformFee: pricing.platformFee,
-          finalPrice: pricing.finalPrice,
-          coachPayout: coach ? pricing.coachPayout : pricing.originalPrice,
-          payoutAmount: coach ? pricing.coachPayout : pricing.originalPrice,
-          commissionAmount: pricing.platformFee,
+          amount: bookingAmount,
+          originalPrice: 0,
+          platformFee: bookingAmount,
+          finalPrice: bookingAmount,
+          coachPayout: 0,
+          payoutAmount: 0,
+          commissionAmount: bookingAmount,
           acceptedPolicies: true,
           paymentStatus: "paid",
           contactVisible: true,
@@ -64,19 +65,19 @@ export async function POST(request: Request) {
           purpose: "booking",
           targetType,
           targetId,
-          amount: pricing.finalPrice,
-          amountPaise: pricing.finalPrice * 100,
+          amount: bookingAmount,
+          amountPaise: bookingAmount * 100,
           currency: "INR",
-          originalPrice: pricing.originalPrice,
-          platformFee: pricing.platformFee,
-          coachPayout: coach ? pricing.coachPayout : pricing.originalPrice,
-          ...manualPaymentData(transactionId, pricing.finalPrice, screenshotPath || undefined)
+          originalPrice: 0,
+          platformFee: bookingAmount,
+          coachPayout: 0,
+          ...manualPaymentData(transactionId, bookingAmount, screenshotPath || undefined)
         }
       });
       await tx.notification.createMany({
         data: [
           { userId: provider.ownerId, bookingId: booking.id, type: "booking_confirmed", title: "New confirmed booking", message: `${booking.customerName} submitted a confirmed booking with manual UPI payment.` },
-          { userId: user.id, bookingId: booking.id, type: "payment_success", title: "Payment successful", message: `Your UPI payment of Rs. ${pricing.finalPrice} was recorded and your booking is confirmed. UPI ID: ${MANUAL_UPI_ID}.` }
+          { userId: user.id, bookingId: booking.id, type: "payment_success", title: "Payment successful", message: `Your UPI payment of Rs. ${bookingAmount} was recorded and your booking is confirmed. UPI ID: ${MANUAL_UPI_ID}.` }
         ]
       });
       return booking;

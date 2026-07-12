@@ -9,7 +9,7 @@ import { useSessionUser } from "@/lib/auth-client";
 import { getCoach, getDojo } from "@/lib/data";
 import { formatMoney } from "@/lib/format";
 import { readJsonResponse } from "@/lib/http";
-import { getCoachBaseFee, getPriceBreakdown } from "@/lib/pricing";
+import { BOOKING_FEE } from "@/lib/pricing";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
 export default function BookingPage() {
@@ -20,9 +20,7 @@ export default function BookingPage() {
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
-  const [coachFee, setCoachFee] = useState(0);
   const [providerReady, setProviderReady] = useState(false);
-  const breakdown = getPriceBreakdown(coachFee);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -35,7 +33,6 @@ export default function BookingPage() {
     }
     (coachId ? getCoach(id) : getDojo(id)).then((data) => {
       if (!data) throw new Error("Provider not found.");
-      setCoachFee(coachId ? getCoachBaseFee(data) : Number(data.originalPrice ?? data.price ?? 0));
       setProviderReady(true);
     }).catch(() => setMessage("This provider is not currently available for booking."));
   }, []);
@@ -114,10 +111,10 @@ export default function BookingPage() {
         />
         <div className="mt-4 rounded-xl border border-white/10 bg-ink p-4">
           <p className="text-sm font-semibold text-white">Payment summary</p>
-          <p className="mt-3 text-3xl font-semibold text-white">{formatMoney(breakdown.finalPrice)}</p>
-          <p className="mt-1 text-sm text-zinc-400">Total payable. Submit the UPI reference ID after payment.</p>
+          <p className="mt-3 text-3xl font-semibold text-white">{formatMoney(BOOKING_FEE)}</p>
+          <p className="mt-1 text-sm text-zinc-400">One-time booking charge. Submit the UPI reference ID after payment.</p>
         </div>
-        <ManualUpiPayment amountLabel={formatMoney(breakdown.finalPrice)} className="mt-4" />
+        <ManualUpiPayment amountLabel={formatMoney(BOOKING_FEE)} className="mt-4" />
         <div className="mt-4 grid gap-3 text-sm text-zinc-300">
           <PolicyCheck
             checked={acceptedTerms}

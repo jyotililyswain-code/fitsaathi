@@ -19,7 +19,7 @@ export default function DojosPage() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
       <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-royal/[0.08] p-6 sm:p-8">
-        <p className="text-sm font-medium text-acid">Explore dojos</p>
+        <p className="text-sm font-medium text-acid">Explore dojos and gyms</p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
           Martial arts and fitness academies
         </h1>
@@ -39,7 +39,7 @@ export default function DojosPage() {
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search dojos, city or category"
+          placeholder="Search gyms, dojos, city or category"
           className="field"
         />
         <CategorySelect
@@ -73,8 +73,8 @@ export default function DojosPage() {
         ) : dojos.data.length ? (
           <>
             <p className="mb-4 text-sm text-zinc-400">
-              Showing {dojos.data.length} dojo
-              {dojos.data.length === 1 ? "" : "s"}
+              Showing {dojos.data.length} gym or dojo
+              {dojos.data.length === 1 ? "" : " listings"}
             </p>
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {dojos.data.map((dojo) => (
@@ -86,7 +86,7 @@ export default function DojosPage() {
           <EmptyState
             title={
               search || category
-                ? "No matching dojo found"
+                ? "No matching gym or dojo found"
                 : "No active dojos or gyms yet"
             }
             body={

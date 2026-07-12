@@ -22,8 +22,14 @@ export type DojoSearchFilters = { search?: string; category?: string; city?: str
 
 export function publicDojoWhere(filters: DojoSearchFilters = {}): Prisma.DojoWhereInput {
   const search = filters.search?.trim();
+  const normalizedSearch = search?.toLowerCase();
   const category = filters.category?.trim();
   const city = filters.city?.trim();
+  const establishmentMatches: Prisma.DojoWhereInput[] = [];
+  if (normalizedSearch && /\b(gym|gyms)\b/.test(normalizedSearch)) establishmentMatches.push({ establishmentType: "GYM" });
+  if (normalizedSearch?.includes("fitness studio")) establishmentMatches.push({ establishmentType: "FITNESS_STUDIO" });
+  if (normalizedSearch?.includes("yoga studio")) establishmentMatches.push({ establishmentType: "YOGA_STUDIO" });
+  if (normalizedSearch && /\b(dojo|dojos)\b/.test(normalizedSearch)) establishmentMatches.push({ establishmentType: "DOJO" });
   return {
     status: "active",
     approved: true,
@@ -34,7 +40,9 @@ export function publicDojoWhere(filters: DojoSearchFilters = {}): Prisma.DojoWhe
       { description: { contains: search, mode: "insensitive" } },
       { category: { contains: search, mode: "insensitive" } },
       { city: { contains: search, mode: "insensitive" } },
-      { address: { contains: search, mode: "insensitive" } }
+      { address: { contains: search, mode: "insensitive" } },
+      { customEstablishmentType: { contains: search, mode: "insensitive" } },
+      ...establishmentMatches
     ] } : {})
   };
 }

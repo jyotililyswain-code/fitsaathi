@@ -13,6 +13,12 @@ test("public dojo queries require active and approved status fields", () => {
   assert.deepEqual(activation, { status: "active", approved: true, approvedAt: new Date("2026-07-12T12:00:00.000Z"), verified: false });
 });
 
+test("gym searches include records registered with the gym establishment type", () => {
+  const where = publicDojoWhere({ search: "gym" });
+  assert.ok(Array.isArray(where.OR));
+  assert.ok(where.OR.some(condition => "establishmentType" in condition && condition.establishmentType === "GYM"));
+});
+
 test("only the owner or an authorized admin can manage a dojo", () => {
   assert.equal(canManageDojo({ id: "owner", role: "dojo" }, "owner"), true);
   assert.equal(canManageDojo({ id: "other", role: "customer" }, "owner"), false);
