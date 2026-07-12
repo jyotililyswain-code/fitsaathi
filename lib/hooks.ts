@@ -19,9 +19,9 @@ const zeroStats: PlatformStats = { coaches: 0, dojos: 0, sellers: 0, bookings: 0
 export function usePlatformStats() { return useAsync<PlatformStats>(getPlatformStats, zeroStats); }
 export function useCoaches(featured = false) { return useAsync<Coach[]>(featured ? getFeaturedCoaches : getCoaches, [], featured); }
 export function useCoach(id: string) { return useAsync<Coach | null>(() => getCoach(id), null, id); }
-export function useDojos(featured = false, filters: { search?: string; category?: string; city?: string } = {}) {
-  const dependency = `${featured}:${filters.search || ""}:${filters.category || ""}:${filters.city || ""}`;
-  return useAsync<Dojo[]>(featured ? getFeaturedDojos : () => getDojos(filters), [], dependency);
+export function useDojos(featured = false, filters: { search?: string; category?: string; city?: string } = {}, enabled = true) {
+  const dependency = `${enabled}:${featured}:${filters.search || ""}:${filters.category || ""}:${filters.city || ""}`;
+  return useAsync<Dojo[]>(enabled ? (featured ? getFeaturedDojos : () => getDojos(filters)) : async () => [], [], dependency);
 }
 export function useDojo(id: string) { return useAsync<Dojo | null>(() => getDojo(id), null, id); }
 export function useMyDojoStatus(ownerId: string | null) { return useAsync(ownerId ? getMyDojoStatus : async () => null, null, ownerId); }

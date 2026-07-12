@@ -3,7 +3,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { coachBookingServiceJsonLd, generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Find Fitness Coaches Near You - FitSaathi",
+  title: "Find Fitness Coaches and Dojos Near You - FitSaathi",
   description:
     "Search and book home fitness coaches, personal trainers, yoga trainers, martial arts teachers, and sports coaches near you with FitSaathi.",
   path: "/find-coach",
@@ -26,7 +26,7 @@ export default function FindCoachPage() {
           ...coachBookingServiceJsonLd,
         }}
       />
-      <CoachesPage />
+      <CoachesPage includeDojos />
     </>
   );
 }

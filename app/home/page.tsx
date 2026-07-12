@@ -31,6 +31,7 @@ import { readJsonResponseBody } from "@/lib/http";
 import { API_URL } from "@/lib/local-api";
 import { socialApi, socialAsset } from "@/lib/social";
 import { useCoaches, useDojos, usePlatformStats } from "@/lib/hooks";
+import { generalSearchTargetFor } from "@/lib/search-routing";
 
 const generalSearches = [
   "Coaches",
@@ -729,27 +730,6 @@ export default function HomePage() {
       </section>
     </main>
   );
-}
-
-function generalSearchTargetFor(rawQuery: string) {
-  const query = rawQuery.trim();
-  const normalized = query.toLowerCase();
-  const encoded = encodeURIComponent(query);
-  if (/(coach|trainer|training)/.test(normalized))
-    return `/find-coach?search=${encoded}`;
-  if (/(dojo|academy|martial|karate class|mma class)/.test(normalized))
-    return `/dojos?search=${encoded}`;
-  if (
-    /(seller|shop|store|product|equipment|protein|supplement|cart)/.test(
-      normalized,
-    )
-  )
-    return `/shop?search=${encoded}`;
-  if (/(booking|book|class|classes|yoga|running|boxing|dance)/.test(normalized))
-    return `/find-coach?search=${encoded}`;
-  if (/(chat|message|invite)/.test(normalized)) return "/chat";
-  if (/(dashboard|account)/.test(normalized)) return "/dashboard";
-  return `/find-coach?search=${encoded}`;
 }
 
 function ProviderSection({

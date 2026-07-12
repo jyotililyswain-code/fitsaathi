@@ -10,12 +10,12 @@ import {
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { CoachCard } from "@/components/Card";
+import { CoachCard, DojoCard } from "@/components/Card";
 import { CategorySelect } from "@/components/CategorySelect";
 import { EmptyState } from "@/components/EmptyState";
-import { useCoaches } from "@/lib/hooks";
+import { useCoaches, useDojos } from "@/lib/hooks";
 
-export default function CoachesPage() {
+export default function CoachesPage({ includeDojos = false }: { includeDojos?: boolean }) {
   const params = useSearchParams();
   const initialCategory = params?.get("category") || "";
   const initialSearch = params?.get("search") || params?.get("q") || "";
@@ -26,6 +26,7 @@ export default function CoachesPage() {
   const [category, setCategory] = useState(initialCategory);
   const [search, setSearch] = useState(initialSearch);
   const [city, setCity] = useState("");
+  const dojos = useDojos(false, { search, category, city }, includeDojos);
 
   const visibleCoaches = useMemo(
     () =>
@@ -44,6 +45,10 @@ export default function CoachesPage() {
       }),
     [category, city, coaches.data, search],
   );
+  const loading = coaches.loading || (includeDojos && dojos.loading);
+  const error = coaches.error || (includeDojos ? dojos.error : null);
+  const resultCount = visibleCoaches.length + (includeDojos ? dojos.data.length : 0);
+  const hasFilters = Boolean(search || category || city);
 
   function resetFilters() {
     setCategory("");
@@ -56,13 +61,12 @@ export default function CoachesPage() {
       <section className="overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-acid/[0.06] p-6 sm:p-8">
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
           <div>
-            <p className="text-sm font-medium text-acid">Explore coaches</p>
+            <p className="text-sm font-medium text-acid">{includeDojos ? "Explore coaches and dojos" : "Explore coaches"}</p>
             <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-              Find your next fitness coach
+              {includeDojos ? "Find your next coach, dojo, or gym" : "Find your next fitness coach"}
             </h1>
             <p className="mt-4 max-w-2xl leading-7 text-zinc-300">
-              Browse registered trainers by specialty and city. Verification
-              status and activity metrics come directly from PostgreSQL records.
+              {includeDojos ? "Search approved dojos and registered trainers by specialty and city." : "Browse registered trainers by specialty and city."} Verification status and activity metrics come directly from PostgreSQL records.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -81,6 +85,7 @@ export default function CoachesPage() {
             >
               <UserPlus className="h-4 w-4" /> Register as a coach
             </Link>
+            {includeDojos ? <Link href="/register-dojo" className="inline-flex items-center gap-2 rounded-full border border-acid/40 px-5 py-2.5 text-sm font-semibold text-acid transition hover:bg-acid hover:text-ink">Register Dojo / Gym</Link> : null}
           </div>
         </div>
       </section>
@@ -123,52 +128,49 @@ export default function CoachesPage() {
       ) : null}
 
       <section className="mt-8" aria-live="polite">
-        {coaches.loading ? (
+        {loading ? (
           <CoachGridSkeleton />
-        ) : coaches.error ? (
+        ) : error ? (
           <div className="rounded-2xl border border-red-400/20 bg-red-400/[0.06] p-6 text-center">
             <AlertCircle className="mx-auto h-8 w-8 text-red-300" />
             <h2 className="mt-3 text-lg font-semibold text-white">
-              Coaches could not be loaded
+              {includeDojos ? "Providers could not be loaded" : "Coaches could not be loaded"}
             </h2>
-            <p className="mt-2 text-sm text-zinc-400">{coaches.error}</p>
+            <p className="mt-2 text-sm text-zinc-400">{error}</p>
             <button
               type="button"
-              onClick={coaches.reload}
+              onClick={() => { coaches.reload(); if (includeDojos) dojos.reload(); }}
               className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-semibold text-ink"
             >
               Try again
             </button>
           </div>
-        ) : visibleCoaches.length ? (
+        ) : resultCount ? (
           <>
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="text-sm text-zinc-400">
                 Showing{" "}
-                <strong className="text-white">{visibleCoaches.length}</strong>{" "}
-                coach{visibleCoaches.length === 1 ? "" : "es"}
+                <strong className="text-white">{resultCount}</strong>{" "}
+                result{resultCount === 1 ? "" : "s"}
               </p>
             </div>
-            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {visibleCoaches.map((coach) => (
-                <CoachCard key={coach.id} coach={coach} />
-              ))}
-            </div>
+            {visibleCoaches.length ? <div><h2 className="mb-4 text-xl font-semibold text-white">Coaches</h2><div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{visibleCoaches.map((coach) => <CoachCard key={coach.id} coach={coach} />)}</div></div> : null}
+            {includeDojos && dojos.data.length ? <div className={visibleCoaches.length ? "mt-9" : ""}><h2 className="mb-4 text-xl font-semibold text-white">Approved dojos and gyms</h2><div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">{dojos.data.map((dojo) => <DojoCard key={dojo.id} dojo={dojo} />)}</div></div> : null}
           </>
         ) : (
           <EmptyState
             title={
-              coaches.data.length
-                ? "No coaches match these filters"
-                : "No coaches registered yet"
+              hasFilters
+                ? includeDojos ? "No coaches or dojos match these filters" : "No coaches match these filters"
+                : includeDojos ? "No coaches or approved dojos yet" : "No coaches registered yet"
             }
             body={
-              coaches.data.length
+              hasFilters
                 ? "Try clearing a filter or searching another specialty or city."
-                : "Be the first coach to submit a profile. New registrations appear here immediately with a pending-verification badge."
+                : includeDojos ? "Dojo registrations appear here after administrator approval." : "Be the first coach to submit a profile."
             }
             action={
-              coaches.data.length ? (
+              hasFilters ? (
                 <button
                   type="button"
                   onClick={resetFilters}
