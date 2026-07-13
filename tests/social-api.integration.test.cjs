@@ -54,10 +54,9 @@ async function register(label, stamp, extra = {}) {
   return { email, id: result.user.id, token: result.accessToken };
 }
 
-test("FitSaathi Life social APIs use PostgreSQL for profiles, invites, chat, wallet, safety, notifications, and admin queues", async () => {
+test("FitSaathi Life social APIs provide free verified profiles, invites, chat, safety, notifications, and admin queues", async () => {
   const stamp = Date.now();
   const userIds = [];
-  let inviteId = "";
   let conversationId = "";
   try {
     const alice = await register("alice", stamp);
@@ -82,10 +81,7 @@ test("FitSaathi Life social APIs use PostgreSQL for profiles, invites, chat, wal
         governmentIdBackEncrypted: `private/${userId}-government-back.enc`,
         ageProofEncrypted: `private/${userId}-age.enc`,
         selfieEncrypted: `private/${userId}-selfie.enc`,
-        status: "approved",
-        paymentStatus: "paid",
-        paidAt: new Date(),
-        expiresAt: new Date(Date.now() + 365 * 86400_000)
+        status: "approved"
       }))
     });
 
@@ -103,10 +99,8 @@ test("FitSaathi Life social APIs use PostgreSQL for profiles, invites, chat, wal
     assert.equal(profile.verified, true);
 
     const invite = await api("/social/invites", json("POST", { recipientId: bob.id, message: "Train Karate together?" }, alice.token), [201]);
-    inviteId = invite.id;
     assert.ok((await api("/social/notifications", auth(bob.token))).some((item) => item.type === "invite_received"));
     await api(`/social/invites/${invite.id}`, json("PATCH", { status: "accepted" }, bob.token));
-    await prisma.connectionInvite.update({ where: { id: invite.id }, data: { acceptedAt: new Date(Date.now() - 3 * 86400_000) } });
     const conversations = await api("/social/conversations", auth(alice.token));
     const conversation = conversations.find((item) => item.partner.id === bob.id);
     assert.ok(conversation, "Accepted invite should create an active conversation");
@@ -117,31 +111,21 @@ test("FitSaathi Life social APIs use PostgreSQL for profiles, invites, chat, wal
     assert.ok(bobMessages.messages.some((item) => item.id === message.id));
     await api(`/social/messages/${message.id}`, { method: "DELETE", headers: { authorization: `Bearer ${alice.token}` } }, [204]);
 
-    await prisma.wallet.update({ where: { userId: alice.id }, data: { balancePaise: 20000 } });
-    await prisma.wallet.update({ where: { userId: bob.id }, data: { balancePaise: 20000 } });
-    const wallet = await api("/social/wallet", auth(alice.token));
-    assert.equal(wallet.wallet.balancePaise, 19500, "Daily accepted-connection fee should deduct ₹5 after both wallets are active");
-    assert.ok((await prisma.dailyConnectionCharge.count({ where: { connectionId: invite.id } })) >= 1);
+    assert.equal(await prisma.wallet.count({ where: { userId: { in: [alice.id, bob.id] } } }), 0, "Free chat must not create wallets");
+    assert.equal(await prisma.dailyConnectionCharge.count({ where: { connectionId: invite.id } }), 0, "Free chat must not create daily charges");
 
     await api("/social/reports", json("POST", { targetId: conversation.id, type: "chat", reason: "Automated moderation report for API test." }, alice.token), [201]);
     await api("/social/emergency", json("POST", { message: "Automated emergency request for API test." }, alice.token), [201]);
-    await prisma.premiumSubscription.create({ data: { userId: alice.id, plan: "monthly", startsAt: new Date(), endsAt: new Date(Date.now() + 30 * 86400_000), amountPaise: 19900 } });
 
     assert.ok((await api("/social/admin/overview", auth(admin.token))).users >= 3);
     assert.ok(Array.isArray(await api("/social/admin/verifications", auth(admin.token))));
     assert.ok(Array.isArray(await api("/social/admin/reports", auth(admin.token))));
-    assert.ok(Array.isArray(await api("/social/admin/wallets", auth(admin.token))));
     assert.ok(Array.isArray(await api("/social/admin/conversations", auth(admin.token))));
-    assert.ok(Array.isArray(await api("/social/admin/premium", auth(admin.token))));
     assert.equal((await api("/social/admin/analytics", auth(admin.token))).windowDays, 30);
   } finally {
     await prisma.report.deleteMany({ where: { OR: [{ reporterId: { in: userIds } }, { targetId: conversationId || "__missing__" }] } });
     await prisma.moderationCase.deleteMany({ where: { OR: [{ subjectId: { in: userIds } }, { targetId: conversationId || "__missing__" }] } });
     await prisma.emergencyRequest.deleteMany({ where: { userId: { in: userIds } } });
-    await prisma.premiumSubscription.deleteMany({ where: { userId: { in: userIds } } });
-    await prisma.dailyConnectionCharge.deleteMany({ where: { connectionId: inviteId || "__missing__" } });
-    await prisma.walletTransaction.deleteMany({ where: { userId: { in: userIds } } });
-    await prisma.wallet.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.socialMessage.deleteMany({ where: { senderId: { in: userIds } } });
     await prisma.typingIndicator.deleteMany({ where: { userId: { in: userIds } } });
     await prisma.conversation.deleteMany({ where: { OR: [{ userOneId: { in: userIds } }, { userTwoId: { in: userIds } }] } });

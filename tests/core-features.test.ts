@@ -20,11 +20,11 @@ test("attendance QR rejects scans outside the class window", () => {
   assert.equal(verifyAttendanceToken(token, "attendance-test-secret", now).ok, false);
 });
 
-test("pricing calculates rupees, paise, and stored customer totals", () => {
-  assert.deepEqual(getPriceBreakdown(1_000), { originalPrice: 1_000, platformFee: 700, totalPrice: 1_700, finalPrice: 1_700, coachPayout: 1_100 });
-  assert.equal(toPaise(1_700), 170_000);
-  assert.equal(getCoachCustomerPrice({ customerPrice: 2_400, baseFee: 1_000 }), 2_400);
-  assert.equal(getCoachCustomerPrice({ baseFee: 1_000 }), 1_700);
+test("service pricing stays free even when legacy prices are supplied", () => {
+  assert.deepEqual(getPriceBreakdown(1_000), { originalPrice: 0, platformFee: 0, totalPrice: 0, finalPrice: 0, coachPayout: 0 });
+  assert.equal(toPaise(0), 0);
+  assert.equal(getCoachCustomerPrice({ customerPrice: 2_400, baseFee: 1_000 }), 0);
+  assert.equal(getCoachCustomerPrice({ baseFee: 1_000 }), 0);
 });
 
 test("Indian phone normalization and validation are consistent", () => {

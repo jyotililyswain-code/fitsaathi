@@ -12,7 +12,6 @@ import { accessToken, allowRoles, authenticate, hashToken, refreshToken, type Au
 import { config } from "./config";
 import { prisma } from "./db";
 import { validateInterestList } from "./interests";
-import { paymentsRouter, walletRouter } from "./payments";
 import { databaseRateLimit } from "./rate-limit";
 import { socialRouter } from "./social";
 import { createSupabaseAuthUser, rememberSupabaseAuthLogin, sendSupabasePasswordReset } from "./supabase-auth";
@@ -23,9 +22,6 @@ const app = express();
 const admins = ["admin", "super_admin", "moderator", "support_admin"];
 const asyncRoute = (handler: (request: any, response: any) => Promise<unknown>) => (request: any, response: any, next: any) => Promise.resolve(handler(request, response)).catch(next);
 const pricing = (value: unknown) => { const sellerPrice = Math.max(0, Math.round(Number(value) || 0)); return { sellerPrice, customerPrice: sellerPrice + 100, sellerPayout: sellerPrice + 50, platformFee: 50 }; };
-const manualUpiId = "7065223868-2@ibl";
-const manualPaymentStatus = "paid";
-const dojoRegistrationFee = 700;
 const establishmentTypes = ["DOJO", "GYM", "FITNESS_STUDIO", "YOGA_STUDIO", "MARTIAL_ARTS_ACADEMY", "OTHER"] as const;
 const publicUser = { id: true, name: true, email: true, phone: true, role: true, accountStatus: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
 const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, ...coach }: any) => coach;
@@ -67,7 +63,6 @@ app.post("/api/auth/register", asyncRoute(async (request, response) => {
   const user = await prisma.$transaction(async tx => {
     const created = await tx.user.create({ data: { ...(supabaseAuthUserId ? { id: supabaseAuthUserId } : {}), ...details, passwordHash, acceptedPolicies: input.acceptedPolicies === true, acceptedAt: input.acceptedPolicies ? new Date() : undefined, onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: publicUser });
     if (interestList.interests.length) await tx.userInterest.createMany({ data: interestList.interests.map(interest => ({ userId: created.id, interest })) });
-    await tx.wallet.create({ data: { userId: created.id } });
     return created;
   });
   response.status(201).json(await issueSession(user, response));
@@ -131,7 +126,7 @@ app.get("/api/coaches/:id", asyncRoute(async (request, response) => {
 app.post("/api/coaches", authenticate, upload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
   const files = request.files as Record<string, Express.Multer.File[]>;
   const incomingFiles = Object.values(files || {}).flat();
-  const parsed = z.object({ name: z.string().min(2), phoneNumber: z.string().min(10), category: z.string().min(2), customCategory: z.string().optional(), city: z.string().min(2), price: z.coerce.number().positive(), availableTimings: z.string().min(2), bio: z.string().max(2000).optional() }).safeParse(request.body);
+  const parsed = z.object({ name: z.string().min(2), phoneNumber: z.string().min(10), category: z.string().min(2), customCategory: z.string().optional(), city: z.string().min(2), availableTimings: z.string().min(2), bio: z.string().max(2000).optional() }).safeParse(request.body);
   if (!parsed.success) {
     discardIncomingUploads(incomingFiles);
     return response.status(400).json({ error: "Please correct the coach registration fields.", issues: parsed.error.issues });
@@ -152,9 +147,8 @@ app.post("/api/coaches", authenticate, upload.fields([{ name: "photo", maxCount:
   const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
   const days = Array.isArray(request.body.availableDays) ? request.body.availableDays.map(String) : request.body.availableDays ? [String(request.body.availableDays)] : [];
   const timings = input.availableTimings.split(",").map(value => value.trim()).filter(Boolean);
-  const baseFee = Math.round(input.price); const platformFee = 700;
   const result = await prisma.$transaction(async tx => {
-    const coach = await tx.coach.create({ data: { ownerId: request.user!.id, name: input.name, phoneNumber: input.phoneNumber, category, city: input.city, bio: input.bio, baseFee, platformFee, customerPrice: baseFee + platformFee, coachPayout: baseFee + 100, availableDays: days, availableTimings: timings, photoPath: photo[0]?.path } });
+    const coach = await tx.coach.create({ data: { ownerId: request.user!.id, name: input.name, phoneNumber: input.phoneNumber, category, city: input.city, bio: input.bio, baseFee: 0, platformFee: 0, customerPrice: 0, coachPayout: 0, availableDays: days, availableTimings: timings, photoPath: photo[0]?.path } });
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: coach.id, profileType: "coach", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: certificate[0]?.path } });
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "coach", phone: input.phoneNumber } });
     return { coach, user };
@@ -165,9 +159,8 @@ app.put("/api/coaches/:id", authenticate, asyncRoute(async (request: AuthRequest
   const coach = await prisma.coach.findUnique({ where: { id: String(request.params.id) } });
   if (!coach) return response.status(404).json({ error: "Coach not found." });
   if (coach.ownerId !== request.user!.id && !admins.includes(request.user!.role)) return response.status(403).json({ error: "Not your coach profile." });
-  const input = z.object({ name: z.string().min(2).optional(), category: z.string().min(2).optional(), city: z.string().optional(), bio: z.string().optional(), baseFee: z.coerce.number().positive().optional(), availableDays: z.array(z.string()).optional(), availableTimings: z.array(z.string()).optional() }).parse(request.body);
-  const baseFee = input.baseFee == null ? undefined : Math.round(input.baseFee);
-  response.json(await prisma.coach.update({ where: { id: coach.id }, data: { ...input, ...(baseFee == null ? {} : { baseFee, customerPrice: baseFee + coach.platformFee, coachPayout: baseFee + 100 }), verified: admins.includes(request.user!.role) ? coach.verified : false, status: admins.includes(request.user!.role) ? coach.status : "pending" } }));
+  const input = z.object({ name: z.string().min(2).optional(), category: z.string().min(2).optional(), city: z.string().optional(), bio: z.string().optional(), availableDays: z.array(z.string()).optional(), availableTimings: z.array(z.string()).optional() }).parse(request.body);
+  response.json(await prisma.coach.update({ where: { id: coach.id }, data: { ...input, baseFee: 0, platformFee: 0, customerPrice: 0, coachPayout: 0, verified: admins.includes(request.user!.role) ? coach.verified : false, status: admins.includes(request.user!.role) ? coach.status : "pending" } }));
 }));
 app.delete("/api/coaches/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const coach = await prisma.coach.findUnique({ where: { id: String(request.params.id) } });
@@ -214,7 +207,7 @@ app.get("/api/dojos/:id/verification-document", authenticate, asyncRoute(async (
   response.set({ "Content-Type": document.contentType, "Content-Length": String(document.size), "Cache-Control": "private, no-store", "Content-Disposition": "inline" });
   document.stream.pipe(response);
 }));
-app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }, { name: "paymentScreenshot", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
+app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
   const files = request.files as Record<string, Express.Multer.File[]>;
   const incomingFiles = Object.values(files || {}).flat();
   const parsed = z.object({
@@ -230,14 +223,9 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
     city: z.string().trim().min(2).max(80),
     state: z.string().trim().min(2).max(80),
     pincode: z.string().regex(/^\d{6}$/),
-    price: z.coerce.number().min(0),
     experience: z.string().trim().min(2).max(100),
     gstNumber: z.string().trim().max(30).optional(),
-    accountHolder: config.enableBankDetails ? z.string().min(2) : z.string().optional(),
-    accountNumber: config.enableBankDetails ? z.string().min(4).max(34) : z.string().optional(),
-    ifsc: config.enableBankDetails ? z.string().min(4).max(20) : z.string().optional(),
-    description: z.string().max(2000).optional(),
-    transactionId: config.enableDojoGymRegistrationPayment ? z.string().trim().min(6).max(80) : z.string().optional()
+    description: z.string().max(2000).optional()
   }).refine(input => input.establishmentType !== "OTHER" || Boolean(input.customEstablishmentType?.trim()), { path: ["customEstablishmentType"], message: "Enter the establishment type." }).safeParse(request.body);
   if (!parsed.success) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Please correct the dojo or gym registration fields.", issues: parsed.error.issues }); }
   const input = parsed.data;
@@ -246,14 +234,8 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
   if (!files?.photo?.[0]?.size) return response.status(400).json({ error: "Select a non-empty business photo." });
   if (!files?.certificate?.[0]?.size) return response.status(400).json({ error: "Select a non-empty registration certificate or ownership proof." });
   if (config.enableAadhaarVerification && !files?.aadharFront?.length) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Aadhaar front image is required." }); }
-  if (config.enableDojoGymRegistrationPayment && !files?.paymentScreenshot?.[0]?.size) return response.status(400).json({ error: "Upload the payment screenshot so the registration payment can be verified." });
-  if (config.enableDojoGymRegistrationPayment && input.transactionId) {
-    const usedPayment = await prisma.payment.findUnique({ where: { transactionId: input.transactionId }, select: { id: true } });
-    if (usedPayment) return response.status(409).json({ error: "This UPI transaction ID has already been used." });
-  }
   const dojoFiles = await uploadDojoRegistrationFiles(files.photo[0], files.certificate[0]);
   const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
-  const price = Math.round(input.price);
   let result;
   const auxiliaryBlobPaths: string[] = [];
   try {
@@ -261,14 +243,9 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
     auxiliaryBlobPaths.push(...aadhaarFront.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
     const aadhaarBack = config.enableAadhaarVerification ? await optimizeUploads(files.aadharBack || [], "aadhaar") : [];
     auxiliaryBlobPaths.push(...aadhaarBack.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
-    const paymentScreenshot = config.enableDojoGymRegistrationPayment ? await optimizeUploads(files.paymentScreenshot || [], "payments") : [];
-    auxiliaryBlobPaths.push(...paymentScreenshot.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
     result = await prisma.$transaction(async tx => {
-    const dojo = await tx.dojo.create({ data: { id: dojoFiles.registrationId, ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, accountHolder: input.accountHolder, accountNumberLast4: input.accountNumber ? input.accountNumber.slice(-4) : undefined, ifsc: input.ifsc ? input.ifsc.toUpperCase() : undefined, description: input.description, originalPrice: price, finalPrice: price, imagePath: dojoFiles.businessPhotoPathname, ...automaticDojoActivation(), registrationPaymentStatus: config.enableDojoGymRegistrationPayment ? manualPaymentStatus : "not_required" } });
+    const dojo = await tx.dojo.create({ data: { id: dojoFiles.registrationId, ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, description: input.description, originalPrice: 0, finalPrice: 0, imagePath: dojoFiles.businessPhotoPathname, ...automaticDojoActivation(), registrationPaymentStatus: "not_required" } });
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: dojoFiles.verificationDocumentPathname } });
-    if (config.enableDojoGymRegistrationPayment) {
-      await tx.payment.create({ data: { userId: request.user!.id, purpose: "dojo_registration", targetType: "dojo", targetId: dojo.id, amount: dojoRegistrationFee, amountPaise: dojoRegistrationFee * 100, amountPaid: dojoRegistrationFee, currency: "INR", provider: "UPI_MANUAL", originalPrice: dojoRegistrationFee, platformFee: 0, status: manualPaymentStatus, paymentMethod: "upi_manual", upiId: manualUpiId, transactionId: input.transactionId, paymentStatus: manualPaymentStatus, paymentScreenshotPath: paymentScreenshot[0]?.path, paidAt: new Date() } });
-    }
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
     return { dojo, user };
   }); } catch (error) { removeUploads(auxiliaryBlobPaths); await removeBlobUploads(dojoFiles.created); throw error; }
@@ -279,8 +256,8 @@ app.put("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthRequest, 
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) } });
   if (!dojo) return response.status(404).json({ error: "Dojo not found." });
   if (!canManageDojo(request.user!, dojo.ownerId)) return response.status(403).json({ error: "Not your dojo profile." });
-  const input = z.object({ name: z.string().min(2).optional(), category: z.string().optional(), city: z.string().optional(), description: z.string().optional(), originalPrice: z.coerce.number().min(0).optional() }).parse(request.body);
-  response.json(await prisma.dojo.update({ where: { id: dojo.id }, data: { ...input, ...(input.originalPrice == null ? {} : { finalPrice: Math.round(input.originalPrice) }) } }));
+  const input = z.object({ name: z.string().min(2).optional(), category: z.string().optional(), city: z.string().optional(), description: z.string().optional() }).parse(request.body);
+  response.json(await prisma.dojo.update({ where: { id: dojo.id }, data: { ...input, originalPrice: 0, finalPrice: 0 } }));
 }));
 app.delete("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) } });
@@ -381,10 +358,9 @@ app.patch("/api/bookings/:id/status", authenticate, asyncRoute(async (request: A
   const booking = await prisma.booking.findUnique({ where: { id: String(request.params.id) }, include: { customer: true, providerOwner: true } });
   if (!booking) return response.status(404).json({ error: "Booking not found." });
   if (booking.providerOwnerId !== request.user!.id && !admins.includes(request.user!.role)) return response.status(403).json({ error: "You cannot manage this booking." });
-  if (status === "accepted" && booking.paymentStatus !== "paid") return response.status(409).json({ error: "Only paid bookings can be accepted." });
   const visible = ["accepted", "completed"].includes(status);
   const updated = await prisma.$transaction(async tx => {
-    const item = await tx.booking.update({ where: { id: booking.id }, data: { status, contactVisible: visible, customerPhone: visible ? booking.customer.phone : null, providerPhone: visible ? booking.providerOwner.phone : null, payoutStatus: status === "accepted" ? "pending" : ["rejected", "cancelled"].includes(status) ? "held" : booking.payoutStatus } });
+    const item = await tx.booking.update({ where: { id: booking.id }, data: { status, contactVisible: visible, customerPhone: visible ? booking.customerPhone || booking.customer.phone : null, providerPhone: visible ? booking.providerPhone || booking.providerOwner.phone : null, payoutStatus: "not_due" } });
     if (["accepted", "rejected"].includes(status)) await tx.notification.create({ data: { userId: booking.userId, bookingId: booking.id, type: `booking_${status}`, title: `Booking ${status}`, message: status === "accepted" ? "Your provider accepted the booking." : "Your provider rejected the booking." } });
     return item;
   });
@@ -394,10 +370,10 @@ app.patch("/api/bookings/:id/status", authenticate, asyncRoute(async (request: A
 app.get("/api/dashboard/summary", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const provider = ["coach", "dojo"].includes(request.user!.role);
   const bookingWhere = provider ? { providerOwnerId: request.user!.id } : { userId: request.user!.id };
-  const [bookings, wishlist, payments, reviews, attendance, notifications, customers] = await Promise.all([
-    prisma.booking.count({ where: bookingWhere }), prisma.wishlist.count({ where: { userId: request.user!.id } }), prisma.payment.count({ where: provider ? { booking: { providerOwnerId: request.user!.id } } : { userId: request.user!.id } }), prisma.providerReview.count({ where: provider ? { OR: [{ coach: { ownerId: request.user!.id } }, { dojo: { ownerId: request.user!.id } }] } : { userId: request.user!.id } }), prisma.attendance.count({ where: provider ? { scannedById: request.user!.id } : { customerId: request.user!.id } }), prisma.notification.count({ where: { userId: request.user!.id } }), provider ? prisma.booking.groupBy({ by: ["userId"], where: bookingWhere }).then(rows => rows.length) : Promise.resolve(0)
+  const [bookings, wishlist, reviews, attendance, notifications, customers] = await Promise.all([
+    prisma.booking.count({ where: bookingWhere }), prisma.wishlist.count({ where: { userId: request.user!.id } }), prisma.providerReview.count({ where: provider ? { OR: [{ coach: { ownerId: request.user!.id } }, { dojo: { ownerId: request.user!.id } }] } : { userId: request.user!.id } }), prisma.attendance.count({ where: provider ? { scannedById: request.user!.id } : { customerId: request.user!.id } }), prisma.notification.count({ where: { userId: request.user!.id } }), provider ? prisma.booking.groupBy({ by: ["userId"], where: bookingWhere }).then(rows => rows.length) : Promise.resolve(0)
   ]);
-  response.json({ bookings, students: customers, memberships: bookings, favorites: wishlist, payments, reviews, attendance, notifications });
+  response.json({ bookings, students: customers, memberships: bookings, favorites: wishlist, reviews, attendance, notifications });
 }));
 
 app.get("/api/reviews", authenticate, asyncRoute(async (request: AuthRequest, response) => {
@@ -432,7 +408,7 @@ app.get("/api/admin/snapshot", authenticate, allowRoles(...admins), asyncRoute(a
     prisma.product.findMany({ include: { images: true, seller: { include: { owner: { select: publicUser } } } }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.order.findMany({ include: { items: true, user: { select: publicUser } }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.report.findMany({ orderBy: { createdAt: "desc" }, take: 300 }),
-    prisma.payment.findMany({ include: { user: { select: publicUser }, order: { include: { items: true } }, booking: true, seller: true }, orderBy: { createdAt: "desc" }, take: 300 }),
+    prisma.payment.findMany({ where: { purpose: "marketplace_order" }, include: { user: { select: publicUser }, order: { include: { items: true } }, seller: true }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.adminLog.findMany({ include: { actor: { select: publicUser } }, orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.notification.findMany({ orderBy: { createdAt: "desc" }, take: 300 }),
     prisma.platformSettings.findUnique({ where: { id: "global" } }),
@@ -488,8 +464,6 @@ app.get("/api/admin/analytics", authenticate, allowRoles(...admins), asyncRoute(
 
 app.use("/api/social", socialRouter);
 app.use("/api/matches", matchesRouter);
-app.use("/api/payments", paymentsRouter);
-app.use("/api/wallet", walletRouter);
 
 app.use((_request, response) => response.status(404).json({ error: "API route not found." }));
 app.use((error: any, _request: express.Request, response: express.Response, _next: express.NextFunction) => {

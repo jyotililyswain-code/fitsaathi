@@ -18,8 +18,8 @@ const customerItems = [
   "Smart attendance scanner",
   "Progress and rewards system",
   "Demo shows and events",
-  "Dojo refund policy for first package only",
-  "No refund for home/private coaching classes",
+  "Free booking with no hidden platform charges",
+  "Free member, coach and dojo registration",
 ];
 
 const coachItems = [

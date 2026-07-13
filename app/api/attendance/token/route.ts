@@ -12,7 +12,6 @@ export async function POST(request: Request) {
     const booking = await prisma.booking.findFirst({ where: { id: bookingId, userId: user.id } });
     if (!booking) return NextResponse.json({ error: "Active booking not found." }, { status: 404 });
     if (booking.status !== "accepted") return NextResponse.json({ error: "The booking must be accepted before attendance can be marked." }, { status: 409 });
-    if (booking.paymentStatus !== "paid") return NextResponse.json({ error: "The booking payment is not complete." }, { status: 409 });
     const providerProfileId = booking.coachId || booking.dojoId;
     if (!providerProfileId) return NextResponse.json({ error: "Booking provider is missing." }, { status: 409 });
 

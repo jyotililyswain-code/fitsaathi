@@ -30,8 +30,6 @@ export default function robots(): MetadataRoute.Robots {
         "/login",
         "/signup",
         "/forgot-password",
-        "/payment-success",
-        "/payment-failure",
       ],
     },
     sitemap: absoluteUrl("/sitemap.xml"),

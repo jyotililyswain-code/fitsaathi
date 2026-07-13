@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- profile images are served by the local API */
-import { BadgeCheck, CheckCircle2, Circle, Edit3, ShieldCheck, WalletCards } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Circle, Edit3, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -61,7 +61,7 @@ export default function ProfilePage() {
                   {[
                     ["photo", "Photo"],
                     ["bio", "Bio"],
-                    ["verification", "Verification + payment"],
+                    ["verification", "Identity verification"],
                     ["interests", "Interests"],
                     ["location", "Location"],
                     ["fitnessGoals", "Fitness goals"]
@@ -74,14 +74,12 @@ export default function ProfilePage() {
               </div>
 
               <aside className="rounded-3xl border border-white/10 bg-white/[.04] p-6">
-                <div className="flex items-center gap-3"><WalletCards className="text-acid" /><h2 className="text-xl font-black text-white">Verification membership</h2></div>
-                <p className="mt-4 text-sm leading-6 text-zinc-400">The public badge requires admin approval and an active yearly verification payment.</p>
+                <div className="flex items-center gap-3"><ShieldCheck className="text-acid" /><h2 className="text-xl font-black text-white">Identity verification</h2></div>
+                <p className="mt-4 text-sm leading-6 text-zinc-400">Verification is free. Admin approval unlocks discovery and invitations, with no charges or hidden fees.</p>
                 <div className="mt-4 rounded-2xl border border-white/10 p-4 text-sm text-zinc-300">
-                  <p>Admin status <span className="float-right capitalize text-acid">{profile.verificationStatus?.replace("_", " ") || "not submitted"}</span></p>
-                  <p className="mt-2">Payment <span className="float-right capitalize text-acid">{profile.verificationPaymentStatus || "unpaid"}</span></p>
-                  <p className="mt-2">Expires <span className="float-right text-zinc-400">{profile.verificationExpiresAt ? new Date(profile.verificationExpiresAt).toLocaleDateString() : "Not paid"}</span></p>
+                  <p>Admin status <span className="float-right capitalize text-acid">{profile.verificationStatus?.replace(/_/g, " ") || "not submitted"}</span></p>
                 </div>
-                <Link href="/wallet" className="mt-5 inline-flex w-full justify-center rounded-xl border border-acid/30 px-5 py-3 text-sm font-bold text-acid">Manage payment</Link>
+                <Link href={profile.verified ? "/life" : "/verification"} className="mt-5 inline-flex w-full justify-center rounded-xl border border-acid/30 px-5 py-3 text-sm font-bold text-acid">{profile.verified ? "Explore verified members" : "Submit verification"}</Link>
               </aside>
             </section>
           </>

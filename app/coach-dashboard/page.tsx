@@ -1,12 +1,11 @@
 "use client";
 
-import { Bell, CalendarDays, CheckCircle2, Clock, IndianRupee, Star, Users, Wallet } from "lucide-react";
+import { Bell, CalendarDays, CheckCircle2, Clock, Star, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
 import { useSessionUser } from "@/lib/auth-client";
-import { formatMoney } from "@/lib/format";
 import { readJsonResponse } from "@/lib/http";
 import { useCollectionCount, useProviderBookings, useReviews } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
@@ -19,8 +18,8 @@ export default function CoachDashboardPage() {
   const attendance = useCollectionCount("attendance");
   const notifications = useCollectionCount("notifications");
   const [message, setMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<"pending" | "accepted" | "rejected" | "completed">("pending");
-  const earnings = bookings.data.filter((booking) => ["accepted", "completed"].includes(booking.status || "")).reduce((sum, booking) => sum + (booking.coachPayout || booking.payoutAmount || booking.originalPrice || 0), 0);
+  const [activeTab, setActiveTab] = useState<"pending" | "confirmed" | "accepted" | "rejected" | "completed">("confirmed");
+  const acceptedBookings = bookings.data.filter((booking) => ["accepted", "completed"].includes(booking.status || "")).length;
   const visibleBookings = bookings.data.filter((booking) => (booking.status || "pending") === activeTab);
 
   async function setBookingStatus(id: string, status: "accepted" | "rejected") {
@@ -38,15 +37,15 @@ export default function CoachDashboardPage() {
     <AuthGuard role="coach">
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <h1 className="text-4xl font-bold text-white">Coach dashboard</h1>
-      <p className="mt-3 text-zinc-400">Earnings, requests, attendance, schedule, students, and reviews stay at zero until real records exist.</p>
+      <p className="mt-3 text-zinc-400">Registration and all FitSaathi bookings are free, with no platform deductions or hidden charges.</p>
       <div className="mt-8 grid gap-4 md:grid-cols-4">
-        <Tile icon={<IndianRupee />} label="Earnings" value={formatMoney(earnings)} />
+        <Tile icon={<CheckCircle2 />} label="Accepted bookings" value={String(acceptedBookings)} />
         <Tile icon={<CalendarDays />} label="Booking requests" value={String(bookings.data.length)} />
         <Tile icon={<Users />} label="Students" value={String(students.data)} />
         <Tile icon={<Star />} label="Reviews" value={String(reviews.data.length)} />
       </div>
       <div className="mt-4 grid gap-4 md:grid-cols-4">
-        <Tile icon={<Wallet />} label="Monthly payouts" value={formatMoney(earnings)} />
+        <Tile icon={<CalendarDays />} label="Free platform bookings" value={String(bookings.data.length)} />
         <Tile icon={<CheckCircle2 />} label="Attendance scans" value={String(attendance.data)} />
         <Tile icon={<Clock />} label="Available days" value="Set on profile" />
         <Tile icon={<Bell />} label="Notifications" value={String(notifications.data)} />
@@ -55,7 +54,7 @@ export default function CoachDashboardPage() {
         <Panel title="Booking requests">
           {message ? <p className="mb-3 rounded-xl border border-acid/30 bg-acid/10 p-3 text-sm text-acid">{message}</p> : null}
           <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-            {(["pending", "accepted", "rejected", "completed"] as const).map((tab) => (
+            {(["pending", "confirmed", "accepted", "rejected", "completed"] as const).map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold capitalize ${activeTab === tab ? "bg-acid text-ink" : "border border-white/10 text-zinc-300"}`}>
                 {tab} ({bookings.data.filter((booking) => (booking.status || "pending") === tab).length})
               </button>
@@ -89,7 +88,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected") => void }) {
   const accepted = booking.status === "accepted" || booking.status === "completed";
-  const pending = !booking.status || booking.status === "pending" || booking.status === "requested";
+  const pending = booking.status === "confirmed";
   return (
     <article className="rounded-2xl border border-white/10 bg-ink/40 p-4">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">

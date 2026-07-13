@@ -3,8 +3,6 @@ import Image from "next/image";
 import { CheckCircle2, Clock3, MapPin, Star, UserRound } from "lucide-react";
 import { AttendancePill } from "@/components/AttendancePill";
 import { BadgePill } from "@/components/BadgePill";
-import { formatMoney } from "@/lib/format";
-import { getCoachCustomerPrice } from "@/lib/pricing";
 import type { Coach, Dojo } from "@/lib/types";
 
 export function CoachCard({ coach }: { coach: Coach }) {
@@ -64,7 +62,7 @@ export function CoachCard({ coach }: { coach: Coach }) {
             <Star className="h-4 w-4 text-legendary" />
             {coach.rating ?? "No rating"}
           </span>
-          <span>{formatMoney(getCoachCustomerPrice(coach))}</span>
+          <span className="font-semibold text-acid">Free booking</span>
         </div>
       </div>
     </Link>
@@ -95,7 +93,7 @@ export function DojoCard({ dojo }: { dojo: Dojo }) {
           <Star className="h-4 w-4 text-legendary" />
           {dojo.rating ?? "No rating"}
         </span>
-        <span>{formatMoney(dojo.price)}</span>
+        <span className="font-semibold text-acid">Free booking</span>
       </div>
       </div>
     </Link>

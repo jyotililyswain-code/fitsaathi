@@ -41,8 +41,6 @@ export function middleware(request: NextRequest) {
     "/login",
     "/signup",
     "/forgot-password",
-    "/payment-success",
-    "/payment-failure",
   ];
   if (
     privatePrefixes.some(

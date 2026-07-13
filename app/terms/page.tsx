@@ -5,7 +5,7 @@ import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
   title: "Terms and Conditions - FitSaathi",
   description:
-    "Read FitSaathi Terms and Conditions for coach booking, dojo registration, seller registration, payments, refunds, and platform rules.",
+    "Read FitSaathi Terms and Conditions for free coach and dojo booking, free provider registration and identity verification, transparent shop purchases, and platform rules.",
   path: "/terms",
 });
 

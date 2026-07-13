@@ -92,7 +92,7 @@ export default function DojosPage() {
             body={
               search || category
                 ? "Try another name, city, sport, or category."
-                : "Valid registrations appear here immediately after secure upload and payment checks complete."
+                : "Valid free registrations appear here immediately after secure document upload."
             }
             action={
               <Link

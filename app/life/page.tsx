@@ -50,7 +50,7 @@ export default function LifePage() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-[.22em] text-acid">FitSaathi Life</p>
             <h1 className="mt-2 text-4xl font-black text-white sm:text-6xl">Find your people.</h1>
-            <p className="mt-3 text-zinc-400">Search verified paid members by fitness interest. Phone numbers stay private until an invite is accepted.</p>
+            <p className="mt-3 text-zinc-400">Search verified members by fitness interest for free. Phone numbers stay private until an invite is accepted.</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/[.04] px-5 py-3 text-sm text-zinc-300">
             Suggested age <strong className="text-white">{range.min}–{range.max}</strong>
@@ -83,13 +83,12 @@ export default function LifePage() {
           </div>
           <details className="mt-4">
             <summary className="flex cursor-pointer items-center gap-2 text-sm text-zinc-400"><SlidersHorizontal className="h-4 w-4" />Advanced filters</summary>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <input name="ageMin" type="number" min="18" max="100" defaultValue={searchParams?.get("ageMin") || ""} placeholder="Min age" className="field" />
               <input name="ageMax" type="number" min="18" max="100" defaultValue={searchParams?.get("ageMax") || ""} placeholder="Max age" className="field" />
               <input name="distance" type="number" min="1" max="1000" defaultValue={searchParams?.get("distance") || ""} placeholder="Distance km" className="field" />
-              <div className="rounded-xl border border-acid/20 bg-acid/5 px-4 py-3 text-sm text-acid">Verified + paid only</div>
+              <div className="rounded-xl border border-acid/20 bg-acid/5 px-4 py-3 text-sm text-acid">Verified members · free access</div>
               <label className="flex items-center gap-2 rounded-xl border border-white/10 px-4 text-sm text-zinc-300"><input name="online" value="true" defaultChecked={searchParams?.get("online") === "true"} type="checkbox" />Online now</label>
-              <label className="flex items-center gap-2 rounded-xl border border-white/10 px-4 text-sm text-zinc-300"><input name="premium" value="true" defaultChecked={searchParams?.get("premium") === "true"} type="checkbox" />Premium perks</label>
             </div>
           </details>
         </form>

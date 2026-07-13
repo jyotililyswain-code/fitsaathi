@@ -22,7 +22,7 @@ export default function VerificationPage() {
     setMessage("");
     try {
       await socialApi("/verification", { method: "POST", body: form });
-      router.push("/wallet?verification=1");
+      router.replace("/complete-profile");
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Verification submission failed.");
@@ -35,7 +35,7 @@ export default function VerificationPage() {
     <AuthGuard>
       <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
         <div className="mb-8 grid gap-2 sm:grid-cols-4">
-          {["Account", "Interests", "Verification", "Payment"].map((step, index) => (
+          {["Account", "Interests", "Verification", "Complete"].map((step, index) => (
             <div key={step} className={`rounded-2xl border px-4 py-3 text-sm ${index === 2 ? "border-acid bg-acid/10 text-acid" : "border-white/10 text-zinc-400"}`}>
               <span className="mr-2 font-black">{index + 1}</span>{step}
             </div>
@@ -56,7 +56,7 @@ export default function VerificationPage() {
               </p>
             </div>
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/[.04] p-5 text-sm leading-6 text-zinc-400">
-              After upload, pay the yearly verification fee of Rs. 300. Approval is still manual, and automated checks only flag blurry, duplicate or suspicious submissions for review.
+              Identity verification is completely free, with no charges or hidden fees. Approval is manual, and automated checks only flag blurry, duplicate or suspicious submissions for review.
             </div>
           </section>
 

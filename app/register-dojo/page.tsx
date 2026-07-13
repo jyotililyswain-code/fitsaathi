@@ -4,15 +4,11 @@ import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CategorySelect } from "@/components/CategorySelect";
-import { ManualUpiPayment } from "@/components/ManualUpiPayment";
 import { useSessionUser } from "@/lib/auth-client";
 import { API_URL, localApi, notifyAuthChanged } from "@/lib/local-api";
-import { DOJO_REGISTRATION_FEE } from "@/lib/pricing";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
-const ENABLE_PAYMENT = process.env.NEXT_PUBLIC_ENABLE_DOJO_GYM_REGISTRATION_PAYMENT === "true";
 const ENABLE_AADHAAR = process.env.NEXT_PUBLIC_ENABLE_AADHAAR_VERIFICATION === "true";
-const ENABLE_BANK_DETAILS = process.env.NEXT_PUBLIC_ENABLE_BANK_DETAILS === "true";
 
 type ProviderSubmissionStage = "refreshing_session" | "saving_profile" | "uploading_aadhar" | "uploading_aadhaar" | "uploading_attachments" | "saving_verification";
 const stageLabels: Record<ProviderSubmissionStage, string> = {
@@ -91,7 +87,7 @@ export default function RegisterDojoPage() {
       <section className="mx-auto max-w-3xl text-center">
         <p className="text-sm text-acid">Dojo / Gym registration</p>
         <h1 className="mt-2 text-4xl font-bold text-white">Register Your Dojo or Gym</h1>
-        <p className="mt-4 leading-7 text-zinc-400">Valid registrations go live immediately. The verified badge, rating, student count, inquiries, and revenue update separately from real platform activity.</p>
+        <p className="mt-4 leading-7 text-zinc-400">Registration is completely free. There is no payment step, registration fee, platform charge, or hidden charge. Valid registrations go live immediately while document verification remains under review.</p>
       </section>
       <form onSubmit={submit} className="mx-auto w-full max-w-3xl rounded-2xl border border-acid/25 bg-white/[0.05] p-5 sm:p-6">
         <label className="block text-sm font-medium text-zinc-300">
@@ -112,27 +108,14 @@ export default function RegisterDojoPage() {
           <input name="state" required placeholder="State" className="field" />
           <input name="pincode" required pattern="[0-9]{6}" placeholder="Pincode" className="field" />
         </div>
-        <input name="price" type="number" min="0" placeholder="Package price in INR" className="field mt-3" />
         <input name="experience" required placeholder="Experience, e.g. 8 years" className="field mt-3" />
         <input name="gstNumber" placeholder="GST number (optional)" className="field mt-3" />
-        {ENABLE_BANK_DETAILS ? (
-          <div className="mt-3 grid gap-3 sm:grid-cols-3">
-            <input name="accountHolder" required placeholder="Account holder" className="field" />
-            <input name="accountNumber" required placeholder="Account number" className="field" />
-            <input name="ifsc" required placeholder="IFSC" className="field" />
-          </div>
-        ) : null}
         <textarea name="description" rows={5} placeholder="Business description" className="field mt-3" />
-        {ENABLE_PAYMENT ? (
-          <>
-            <div className="mt-4 rounded-xl border border-acid/30 bg-acid/10 p-4">
-              <p className="text-sm font-semibold text-white">One-time registration payment</p>
-              <p className="mt-1 text-2xl font-semibold text-white">Rs. {DOJO_REGISTRATION_FEE}</p>
-              <p className="mt-1 text-sm text-zinc-300">Required before submission. Enter the UPI transaction ID after payment.</p>
-            </div>
-            <ManualUpiPayment amountLabel={`Rs. ${DOJO_REGISTRATION_FEE}`} className="mt-4" screenshotRequired />
-          </>
-        ) : null}
+        <div className="mt-4 rounded-xl border border-acid/30 bg-acid/10 p-4">
+          <p className="text-sm font-semibold text-white">Registration total</p>
+          <p className="mt-1 text-2xl font-bold text-acid">Free</p>
+          <p className="mt-1 text-sm text-zinc-300">₹0 today and no hidden platform charges later.</p>
+        </div>
         <FileField name="photo" label="Business photo" accept="image/png,image/jpeg,image/webp" required />
         <FileField name="certificate" label="Registration certificate or ownership proof" accept="image/png,image/jpeg,image/webp,application/pdf" required />
         {ENABLE_AADHAAR ? (

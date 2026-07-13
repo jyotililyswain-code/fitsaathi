@@ -3,9 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { CalendarPlus, ReceiptText } from "lucide-react";
+import { CalendarPlus, CircleCheck } from "lucide-react";
 import { EmptyState } from "@/components/EmptyState";
-import { formatMoney } from "@/lib/format";
 import { useDojo } from "@/lib/hooks";
 
 export default function DojoProfilePage() {
@@ -24,7 +23,7 @@ export default function DojoProfilePage() {
         <h1 className="mt-3 text-4xl font-bold text-white">{data?.name || "Loading dojo profile"}</h1>
         <p className="mt-2 text-zinc-400">{data?.category || "Category not set"} {data?.city ? `in ${data.city}` : ""}</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <Info label="Package price" value={formatMoney(data?.price)} />
+          <Info label="FitSaathi booking charge" value="Free — no hidden fees" />
           <Info label="Rating" value={data?.rating ? String(data.rating) : "No reviews yet"} />
           <Info label="City" value={data?.city || "Not set"} />
         </div>
@@ -34,9 +33,9 @@ export default function DojoProfilePage() {
             <CalendarPlus className="h-4 w-4" />
             Book trial
           </Link>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm text-zinc-300">
-            <ReceiptText className="h-4 w-4" />
-            First package partial refund eligible
+          <div className="inline-flex items-center gap-2 rounded-full border border-acid/30 px-5 py-3 text-sm text-acid">
+            <CircleCheck className="h-4 w-4" />
+            ₹0 platform charge
           </div>
         </div>
       </div>

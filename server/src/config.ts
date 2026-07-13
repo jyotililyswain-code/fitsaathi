@@ -21,8 +21,6 @@ export const config = {
   refreshSecret: required("JWT_REFRESH_SECRET"),
   uploadRoot: path.resolve(process.env.UPLOAD_PATH || (vercelRuntime ? path.join(os.tmpdir(), "fitsaathi-uploads") : path.join(process.cwd(), "server", "uploads"))),
   privateRoot: path.resolve(process.env.PRIVATE_UPLOAD_PATH || (vercelRuntime ? path.join(os.tmpdir(), "fitsaathi-private") : path.join(process.cwd(), "server", "private"))),
-  enableDojoGymRegistrationPayment: enabled("ENABLE_DOJO_GYM_REGISTRATION_PAYMENT"),
   enableAadhaarVerification: enabled("ENABLE_AADHAAR_VERIFICATION"),
-  enableBankDetails: enabled("ENABLE_BANK_DETAILS"),
   vercelRuntime
 };

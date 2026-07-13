@@ -17,19 +17,14 @@ type Conversation = {
 
 export default function ChatPage() {
   const [items, setItems] = useState<Conversation[]>([]);
-  const [walletWarning, setWalletWarning] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
     try {
       setError("");
-      const [conversations, wallet] = await Promise.all([
-        socialApi<Conversation[]>("/conversations"),
-        socialApi<{ wallet: { balancePaise: number }; dailyConnectionFeePaise: number }>("/wallet")
-      ]);
+      const conversations = await socialApi<Conversation[]>("/conversations");
       setItems(conversations);
-      setWalletWarning(wallet.wallet.balancePaise < wallet.dailyConnectionFeePaise ? "Wallet balance is low. Recharge to keep paid chats active after the first two free days." : "");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Could not load conversations.");
     } finally {
@@ -59,7 +54,6 @@ export default function ChatPage() {
         </p>
 
         {error ? <p className="mt-6 rounded-2xl border border-red-400/20 bg-red-950/20 p-4 text-red-300">{error}</p> : null}
-        {walletWarning ? <Link href="/wallet" className="mt-6 block rounded-2xl border border-amber-400/20 bg-amber-950/20 p-4 text-amber-100">{walletWarning}</Link> : null}
         <div className="mt-8 grid gap-4">
           {loading ? (
             [1, 2, 3].map((item) => <div key={item} className="h-24 animate-pulse rounded-2xl bg-white/[.04]" />)

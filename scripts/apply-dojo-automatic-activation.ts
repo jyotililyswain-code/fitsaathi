@@ -10,7 +10,7 @@ async function main() {
     UPDATE public.dojos AS dojo
     SET status='active', approved=TRUE, "approvedAt"=COALESCE(dojo."approvedAt", CURRENT_TIMESTAMP), verified=FALSE
     WHERE dojo.status='pending' AND dojo.approved=FALSE
-      AND dojo."registrationPaymentStatus" IN ('paid', 'not_required')
+      AND dojo."registrationPaymentStatus" = 'not_required'
       AND NULLIF(BTRIM(dojo.name), '') IS NOT NULL
       AND NULLIF(BTRIM(dojo.category), '') IS NOT NULL
       AND NULLIF(BTRIM(dojo."phoneNumber"), '') IS NOT NULL

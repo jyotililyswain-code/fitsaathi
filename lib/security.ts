@@ -21,3 +21,17 @@ export function sanitizeText(value: unknown, maxLength = 120) {
 export function getClientIp(request: Request) {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
 }
+
+export function assertSameOrigin(request: Request) {
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite === "cross-site") throw new RequestSecurityError("Cross-site request blocked.");
+  const origin = request.headers.get("origin");
+  if (!origin) return;
+  const requestOrigin = new URL(request.url).origin;
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+  const forwardedOrigin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : null;
+  if (origin !== requestOrigin && origin !== forwardedOrigin) throw new RequestSecurityError("Request origin is not allowed.");
+}
+
+export class RequestSecurityError extends Error {}

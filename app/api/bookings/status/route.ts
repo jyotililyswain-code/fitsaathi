@@ -14,10 +14,9 @@ export async function POST(request: Request) {
     const booking = await prisma.booking.findUnique({ where: { id: bookingId }, include: { customer: true, providerOwner: true } });
     if (!booking) return NextResponse.json({ error: "Booking not found." }, { status: 404 });
     if (booking.providerOwnerId !== user.id && !isAdminRole(user.role)) return NextResponse.json({ error: "You cannot manage this booking." }, { status: 403 });
-    if (status === "accepted" && booking.paymentStatus !== "paid") return NextResponse.json({ error: "Only paid bookings can be accepted." }, { status: 409 });
     const visible = ["accepted", "completed"].includes(status);
     const updated = await prisma.$transaction(async tx => {
-      const item = await tx.booking.update({ where: { id: booking.id }, data: { status, contactVisible: visible, customerPhone: visible ? booking.customer.phone : null, providerPhone: visible ? booking.providerOwner.phone : null, payoutStatus: status === "accepted" ? "pending" : ["rejected", "cancelled"].includes(status) ? "held" : booking.payoutStatus } });
+      const item = await tx.booking.update({ where: { id: booking.id }, data: { status, contactVisible: visible, customerPhone: visible ? booking.customerPhone || booking.customer.phone : null, providerPhone: visible ? booking.providerPhone || booking.providerOwner.phone : null, payoutStatus: "not_due" } });
       if (["accepted", "rejected"].includes(status)) await tx.notification.create({ data: { userId: booking.userId, bookingId: booking.id, type: `booking_${status}`, title: `Booking ${status}`, message: status === "accepted" ? "Your provider accepted the booking." : "Your provider rejected the booking." } });
       return item;
     });

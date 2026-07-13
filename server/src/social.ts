@@ -5,7 +5,7 @@ import { prisma } from "./db";
 import { cleanInterest, validateInterestList } from "./interests";
 import { inspectPhoto, moderateText, saferUsername } from "./moderation";
 import { readEncryptedFile, removePrivateFiles, storeEncryptedFile } from "./private-storage";
-import { discardIncomingUploads, optimizeUploads, removeUploads, socialUpload } from "./uploads";
+import { discardIncomingUploads, optimizeUploads, socialUpload } from "./uploads";
 
 export const socialRouter = Router();
 const admins = ["admin", "super_admin", "moderator", "support_admin"];
@@ -18,7 +18,7 @@ const publicInclude = {
   interests: { orderBy: { interest: "asc" as const } },
   achievements: { orderBy: { createdAt: "desc" as const }, take: 20 },
   socialLinks: true,
-  socialVerification: { select: { status: true, paymentStatus: true, expiresAt: true } },
+  socialVerification: { select: { status: true } },
   socialReviewsReceived: { include: { author: { select: { id: true, name: true } } }, orderBy: { createdAt: "desc" as const }, take: 20 }
 };
 
@@ -96,8 +96,9 @@ socialRouter.post("/verification", socialUpload.fields([{ name: "aadhaarFront", 
 }));
 
 socialRouter.get("/discover", asyncRoute(async (request: AuthRequest, response) => {
-  const query = z.object({ interest: z.string().trim().max(50).optional(), gender: z.enum(["male", "female", "other"]).optional(), ageMin: z.coerce.number().int().min(18).max(100).optional(), ageMax: z.coerce.number().int().min(18).max(100).optional(), distance: z.coerce.number().min(1).max(1000).optional(), city: z.string().trim().max(80).optional(), verified: z.enum(["true", "false"]).optional(), online: z.enum(["true", "false"]).optional(), premium: z.enum(["true", "false"]).optional(), sort: z.enum(["nearest", "active", "newest"]).default("active"), limit: z.coerce.number().int().min(1).max(100).default(30) }).parse(request.query);
-  const viewer = await prisma.user.findUniqueOrThrow({ where: { id: request.user!.id }, include: { interests: true } });
+  const query = z.object({ interest: z.string().trim().max(50).optional(), gender: z.enum(["male", "female", "other"]).optional(), ageMin: z.coerce.number().int().min(18).max(100).optional(), ageMax: z.coerce.number().int().min(18).max(100).optional(), distance: z.coerce.number().min(1).max(1000).optional(), city: z.string().trim().max(80).optional(), online: z.enum(["true", "false"]).optional(), sort: z.enum(["nearest", "active", "newest"]).default("active"), limit: z.coerce.number().int().min(1).max(100).default(30) }).parse(request.query);
+  const viewer = await prisma.user.findUniqueOrThrow({ where: { id: request.user!.id }, include: { interests: true, socialVerification: { select: { status: true } } } });
+  if (!hasApprovedVerification(viewer)) return response.status(403).json({ error: "Admin approval is required before discovery unlocks." });
   const viewerAge = ageFromDate(viewer.birthDate);
   const ageMin = query.ageMin ?? (viewerAge ? Math.max(18, viewerAge - 2) : 18);
   const ageMax = query.ageMax ?? (viewerAge ? viewerAge + 2 : 100);
@@ -111,7 +112,7 @@ socialRouter.get("/discover", asyncRoute(async (request: AuthRequest, response) 
     ? [{ interests: { some: { interest: { equals: requestedInterest, mode: "insensitive" as const } } } }]
     : viewerInterests.map(interest => ({ interests: { some: { interest: { equals: interest, mode: "insensitive" as const } } } }));
   const candidates = await prisma.user.findMany({
-    where: { id: { not: viewer.id }, accountStatus: "active", birthDate: { gte: dateForAge(ageMax + 1), lte: dateForAge(ageMin) }, verificationPaymentStatus: "paid", verificationPaidUntil: { gt: now }, ...(defaultGender ? { gender: defaultGender } : {}), ...(query.city ? { city: { equals: query.city, mode: "insensitive" } } : {}), ...(interestClauses.length === 1 ? interestClauses[0] : interestClauses.length ? { OR: interestClauses } : {}), socialVerification: { status: "approved" }, ...(query.online === "true" ? { isOnline: true, lastSeenAt: { gte: new Date(now.getTime() - 5 * 60_000) } } : {}), ...(query.premium === "true" ? { premiumUntil: { gt: now } } : {}), blocksReceived: { none: { blockerId: viewer.id } }, blocksMade: { none: { blockedId: viewer.id } } },
+    where: { id: { not: viewer.id }, accountStatus: "active", birthDate: { gte: dateForAge(ageMax + 1), lte: dateForAge(ageMin) }, ...(defaultGender ? { gender: defaultGender } : {}), ...(query.city ? { city: { equals: query.city, mode: "insensitive" } } : {}), ...(interestClauses.length === 1 ? interestClauses[0] : interestClauses.length ? { OR: interestClauses } : {}), socialVerification: { status: "approved" }, ...(query.online === "true" ? { isOnline: true, lastSeenAt: { gte: new Date(now.getTime() - 5 * 60_000) } } : {}), blocksReceived: { none: { blockerId: viewer.id } }, blocksMade: { none: { blockedId: viewer.id } } },
     include: publicInclude, orderBy: query.sort === "newest" ? { createdAt: "desc" } : { lastSeenAt: "desc" }, take: 100
   });
   const distanceLimit = query.distance || 1000;
@@ -149,9 +150,7 @@ socialRouter.post("/invites", asyncRoute(async (request: AuthRequest, response) 
     prisma.user.findUniqueOrThrow({ where: { id: request.user!.id }, include: { socialVerification: true } }),
     prisma.user.findUnique({ where: { id: input.recipientId }, include: { socialVerification: true } })
   ]);
-  if (!recipient || !hasActiveVerification(sender) || !hasActiveVerification(recipient)) return response.status(403).json({ error: "Both members need an approved and paid yearly verification before invites unlock." });
-  const premium = Boolean(sender.premiumUntil && sender.premiumUntil > new Date());
-  if (!premium) { const sentToday = await prisma.connectionInvite.count({ where: { senderId: sender.id, createdAt: { gte: startOfToday() } } }); if (sentToday >= 5) return response.status(403).json({ error: "Free accounts can send five invites per day. Upgrade to Premium for unlimited invites." }); }
+  if (!recipient || !hasApprovedVerification(sender) || !hasApprovedVerification(recipient)) return response.status(403).json({ error: "Both members need approved identity verification before invites unlock." });
   const reverse = await prisma.connectionInvite.findFirst({ where: { senderId: input.recipientId, recipientId: sender.id } });
   if (reverse) return response.status(409).json({ error: `This connection already exists with status ${reverse.status}.`, inviteId: reverse.id });
   const invite = await prisma.connectionInvite.upsert({ where: { senderId_recipientId: { senderId: sender.id, recipientId: input.recipientId } }, update: { status: "pending", message: input.message }, create: { senderId: sender.id, ...input } });
@@ -169,8 +168,6 @@ socialRouter.patch("/invites/:id", asyncRoute(async (request: AuthRequest, respo
     const item = await tx.connectionInvite.update({ where: { id }, data: { status, acceptedAt: status === "accepted" ? new Date() : invite.acceptedAt } });
     if (status === "accepted") {
       await tx.conversation.upsert({ where: { connectionId: id }, update: { active: true }, create: { connectionId: id, userOneId: invite.senderId, userTwoId: invite.recipientId } });
-      await tx.wallet.upsert({ where: { userId: invite.senderId }, update: {}, create: { userId: invite.senderId } });
-      await tx.wallet.upsert({ where: { userId: invite.recipientId }, update: {}, create: { userId: invite.recipientId } });
       await tx.notification.create({ data: { userId: invite.senderId, type: "invite_accepted", title: "Invite accepted", message: "Your fitness connection invite was accepted. Chat is now unlocked." } });
     }
     if (["blocked", "disconnected"].includes(status)) await tx.conversation.updateMany({ where: { connectionId: id }, data: { active: false } });
@@ -181,7 +178,6 @@ socialRouter.patch("/invites/:id", asyncRoute(async (request: AuthRequest, respo
 }));
 
 socialRouter.get("/conversations", asyncRoute(async (request: AuthRequest, response) => {
-  await settleDailyCharges(request.user!.id);
   const conversations = await prisma.conversation.findMany({ where: { active: true, OR: [{ userOneId: request.user!.id }, { userTwoId: request.user!.id }] }, include: { userOne: { include: { profilePhotos: { orderBy: { sortOrder: "asc" }, take: 1 }, socialVerification: { select: { status: true } } } }, userTwo: { include: { profilePhotos: { orderBy: { sortOrder: "asc" }, take: 1 }, socialVerification: { select: { status: true } } } }, messages: { where: { deletedAt: null }, orderBy: { createdAt: "desc" }, take: 1 } }, orderBy: { lastActivityAt: "desc" } });
   response.json(conversations.map(item => ({ id: item.id, connectionId: item.connectionId, partner: publicProfile(item.userOneId === request.user!.id ? item.userTwo : item.userOne), lastMessage: item.messages[0] || null, lastActivityAt: item.lastActivityAt })));
 }));
@@ -230,33 +226,8 @@ socialRouter.get("/messages/:id/media", asyncRoute(async (request: AuthRequest, 
   response.type(message.mediaMime || "application/octet-stream").send(await readEncryptedFile(message.mediaPath));
 }));
 
-socialRouter.get("/wallet", asyncRoute(async (request: AuthRequest, response) => {
-  await settleDailyCharges(request.user!.id);
-  const wallet = await prisma.wallet.upsert({ where: { userId: request.user!.id }, update: {}, create: { userId: request.user!.id } });
-  const transactions = await prisma.walletTransaction.findMany({ where: { userId: request.user!.id }, orderBy: { createdAt: "desc" }, take: 100 });
-  const verification = await prisma.socialVerification.findUnique({ where: { userId: request.user!.id }, select: { status: true, paymentStatus: true, expiresAt: true } });
-  response.json({ wallet, transactions, verification, verificationFeePaise: 30000, minimumRechargePaise: 10000, dailyConnectionFeePaise: 500 });
-}));
-
-socialRouter.post("/wallet/recharge", asyncRoute(async (request: AuthRequest, response) => {
-  void request;
-  response.status(410).json({ error: "Use the PhonePe / UPI payment form on the wallet page." });
-}));
-
-socialRouter.post("/verification/payment", asyncRoute(async (request: AuthRequest, response) => {
-  void request;
-  response.status(410).json({ error: "Direct verification activation is disabled. Admin verification of the manual UPI payment is required." });
-}));
-
-socialRouter.post("/premium", asyncRoute(async (request: AuthRequest, response) => {
-  void request;
-  response.status(410).json({ error: "Direct Premium activation is disabled. Admin verification of the manual UPI payment is required." });
-}));
-
 socialRouter.get("/profile-views", asyncRoute(async (request: AuthRequest, response) => {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: request.user!.id } });
-  if (!user.premiumUntil || user.premiumUntil <= new Date()) return response.status(403).json({ error: "Who viewed your profile is a Premium feature." });
-  response.json(await prisma.profileView.findMany({ where: { viewedId: user.id }, include: { viewer: { include: { profilePhotos: { orderBy: { sortOrder: "asc" }, take: 1 }, socialVerification: { select: { status: true } } } } }, orderBy: { createdAt: "desc" }, take: 100 }));
+  response.json(await prisma.profileView.findMany({ where: { viewedId: request.user!.id }, include: { viewer: { include: { profilePhotos: { orderBy: { sortOrder: "asc" }, take: 1 }, socialVerification: { select: { status: true } } } } }, orderBy: { createdAt: "desc" }, take: 100 }));
 }));
 
 socialRouter.post("/block", asyncRoute(async (request: AuthRequest, response) => {
@@ -295,8 +266,8 @@ socialRouter.patch("/notifications/:id", asyncRoute(async (request: AuthRequest,
 }));
 
 socialRouter.get("/admin/overview", allowRoles(...admins), asyncRoute(async (_request, response) => {
-  const [users, pendingVerification, wallets, reports, conversations, premium, moderation, emergency] = await Promise.all([prisma.user.count(), prisma.socialVerification.count({ where: { status: { in: ["pending", "needs_review"] } } }), prisma.wallet.aggregate({ _count: true, _sum: { balancePaise: true } }), prisma.report.count({ where: { status: "open" } }), prisma.conversation.count({ where: { active: true } }), prisma.premiumSubscription.count({ where: { active: true, endsAt: { gt: new Date() } } }), prisma.moderationCase.count({ where: { status: "flagged" } }), prisma.emergencyRequest.count({ where: { status: "open" } })]);
-  response.json({ users, pendingVerification, wallets, reports, conversations, premium, moderation, emergency });
+  const [users, pendingVerification, reports, conversations, moderation, emergency] = await Promise.all([prisma.user.count(), prisma.socialVerification.count({ where: { status: { in: ["pending", "needs_review"] } } }), prisma.report.count({ where: { status: "open" } }), prisma.conversation.count({ where: { active: true } }), prisma.moderationCase.count({ where: { status: "flagged" } }), prisma.emergencyRequest.count({ where: { status: "open" } })]);
+  response.json({ users, pendingVerification, reports, conversations, moderation, emergency });
 }));
 
 socialRouter.get("/admin/reports", allowRoles(...admins), asyncRoute(async (_request, response) => {
@@ -308,10 +279,6 @@ socialRouter.patch("/admin/reports/:id", allowRoles(...admins), asyncRoute(async
   response.json(await prisma.report.update({ where: { id: String(request.params.id) }, data: { status: input.status, resolvedById: ["resolved", "dismissed"].includes(input.status) ? request.user!.id : undefined } }));
 }));
 
-socialRouter.get("/admin/wallets", allowRoles(...admins), asyncRoute(async (_request, response) => {
-  response.json(await prisma.wallet.findMany({ include: { user: { select: { id: true, name: true, email: true } } }, orderBy: { updatedAt: "desc" }, take: 200 }));
-}));
-
 socialRouter.get("/admin/conversations", allowRoles(...admins), asyncRoute(async (_request, response) => {
   response.json(await prisma.conversation.findMany({
     include: { userOne: { select: { id: true, name: true, email: true } }, userTwo: { select: { id: true, name: true, email: true } }, connection: true, _count: { select: { messages: true } } },
@@ -320,23 +287,17 @@ socialRouter.get("/admin/conversations", allowRoles(...admins), asyncRoute(async
   }));
 }));
 
-socialRouter.get("/admin/premium", allowRoles(...admins), asyncRoute(async (_request, response) => {
-  response.json(await prisma.premiumSubscription.findMany({ include: { user: { select: { id: true, name: true, email: true, premiumUntil: true } } }, orderBy: { createdAt: "desc" }, take: 200 }));
-}));
-
 socialRouter.get("/admin/analytics", allowRoles(...admins), asyncRoute(async (_request, response) => {
   const since = new Date(Date.now() - 30 * 86400_000);
-  const [newUsers, invites, acceptedInvites, messages, walletVolume, premiumRevenue, profileViews, reports] = await Promise.all([
+  const [newUsers, invites, acceptedInvites, messages, profileViews, reports] = await Promise.all([
     prisma.user.count({ where: { createdAt: { gte: since } } }),
     prisma.connectionInvite.count({ where: { createdAt: { gte: since } } }),
     prisma.connectionInvite.count({ where: { acceptedAt: { gte: since } } }),
     prisma.socialMessage.count({ where: { createdAt: { gte: since }, deletedAt: null } }),
-    prisma.walletTransaction.aggregate({ where: { createdAt: { gte: since }, amountPaise: { gt: 0 } }, _sum: { amountPaise: true } }),
-    prisma.premiumSubscription.aggregate({ where: { createdAt: { gte: since } }, _sum: { amountPaise: true } }),
     prisma.profileView.count({ where: { createdAt: { gte: since } } }),
     prisma.report.count({ where: { createdAt: { gte: since } } })
   ]);
-  response.json({ windowDays: 30, newUsers, invites, acceptedInvites, messages, walletVolumePaise: walletVolume._sum.amountPaise || 0, premiumRevenuePaise: premiumRevenue._sum.amountPaise || 0, profileViews, reports });
+  response.json({ windowDays: 30, newUsers, invites, acceptedInvites, messages, profileViews, reports });
 }));
 
 socialRouter.get("/admin/verifications", allowRoles(...admins), asyncRoute(async (_request, response) => response.json(await prisma.socialVerification.findMany({ include: { user: { select: { id: true, name: true, email: true, birthDate: true, city: true, profilePhotos: true } } }, orderBy: [{ status: "asc" }, { createdAt: "asc" }], take: 200 }))));
@@ -374,36 +335,16 @@ async function isBlocked(first: string, second: string) {
   return Boolean(await prisma.userBlock.findFirst({ where: { OR: [{ blockerId: first, blockedId: second }, { blockerId: second, blockedId: first }] } }));
 }
 
-export async function settleDailyCharges(userId: string) {
-  const today = startOfToday();
-  const activeSince = new Date(Date.now() - 7 * 86400_000);
-  const chargeableSince = new Date(Date.now() - 2 * 86400_000);
-  const connections = await prisma.connectionInvite.findMany({ where: { status: "accepted", acceptedAt: { lte: chargeableSince }, OR: [{ senderId: userId }, { recipientId: userId }], conversation: { active: true, lastActivityAt: { gte: activeSince } }, dailyCharges: { none: { chargeDate: today } } }, include: { conversation: true }, take: 50 });
-  for (const connection of connections) {
-    try {
-      await prisma.$transaction(async tx => {
-        const [one, two] = await Promise.all([tx.wallet.findUnique({ where: { userId: connection.senderId } }), tx.wallet.findUnique({ where: { userId: connection.recipientId } })]);
-        if (!one?.active || !two?.active || one.balancePaise < 500 || two.balancePaise < 500) return;
-        const oneWallet = await tx.wallet.update({ where: { userId: connection.senderId }, data: { balancePaise: { decrement: 500 } } });
-        const twoWallet = await tx.wallet.update({ where: { userId: connection.recipientId }, data: { balancePaise: { decrement: 500 } } });
-        const oneTx = await tx.walletTransaction.create({ data: { userId: connection.senderId, type: "chat_fee", purpose: "CHAT_CHARGE", amountPaise: -500, balanceAfterPaise: oneWallet.balancePaise, reference: `connection:${connection.id}:${today.toISOString()}:${connection.senderId}`, description: "Daily chat access fee" } });
-        const twoTx = await tx.walletTransaction.create({ data: { userId: connection.recipientId, type: "chat_fee", purpose: "CHAT_CHARGE", amountPaise: -500, balanceAfterPaise: twoWallet.balancePaise, reference: `connection:${connection.id}:${today.toISOString()}:${connection.recipientId}`, description: "Daily chat access fee" } });
-        await tx.dailyConnectionCharge.create({ data: { connectionId: connection.id, chargeDate: today, userOneTxId: oneTx.id, userTwoTxId: twoTx.id } });
-      });
-    } catch (error: any) { if (error?.code !== "P2002") throw error; }
-  }
-}
-
 function publicProfile(user: any) {
   const age = ageFromDate(user.birthDate);
-  return { id: user.id, name: user.name, age, gender: user.gender, city: user.city, state: user.state, country: user.country, heightCm: user.heightCm, weightKg: user.weightKg, fitnessGoal: user.fitnessGoal, relationshipPreference: user.relationshipPreference, profileBio: user.profileBio, fitnessLevel: user.fitnessLevel, photos: (user.profilePhotos || []).map((photo: any) => photo.path), interests: (user.interests || []).map((item: any) => item.interest), achievements: user.achievements || [], socialLinks: user.socialLinks || [], verified: hasActiveVerification(user), verificationStatus: user.socialVerification?.status || "not_submitted", verificationPaymentStatus: effectivePaymentStatus(user), verificationExpiresAt: user.verificationPaidUntil || user.socialVerification?.expiresAt || null, online: Boolean(user.isOnline && user.lastSeenAt && new Date(user.lastSeenAt) > new Date(Date.now() - 5 * 60_000)), premium: Boolean(user.premiumUntil && new Date(user.premiumUntil) > new Date()), reviews: user.socialReviewsReceived || [], createdAt: user.createdAt };
+  return { id: user.id, name: user.name, age, gender: user.gender, city: user.city, state: user.state, country: user.country, heightCm: user.heightCm, weightKg: user.weightKg, fitnessGoal: user.fitnessGoal, relationshipPreference: user.relationshipPreference, profileBio: user.profileBio, fitnessLevel: user.fitnessLevel, photos: (user.profilePhotos || []).map((photo: any) => photo.path), interests: (user.interests || []).map((item: any) => item.interest), achievements: user.achievements || [], socialLinks: user.socialLinks || [], verified: hasApprovedVerification(user), verificationStatus: user.socialVerification?.status || "not_submitted", online: Boolean(user.isOnline && user.lastSeenAt && new Date(user.lastSeenAt) > new Date(Date.now() - 5 * 60_000)), reviews: user.socialReviewsReceived || [], createdAt: user.createdAt };
 }
 
 function profileCompletion(user: any) {
   const checks = [
     Boolean(user.profilePhotos?.length >= 4),
     Boolean(user.profileBio),
-    hasActiveVerification(user),
+    hasApprovedVerification(user),
     Boolean(user.interests?.length),
     Boolean(user.city && user.state),
     Boolean(user.fitnessGoal),
@@ -423,15 +364,8 @@ function profileCompletion(user: any) {
   };
 }
 
-function hasActiveVerification(user: any) {
-  return Boolean(user.socialVerification?.status === "approved" && effectivePaymentStatus(user) === "paid");
-}
-
-function effectivePaymentStatus(user: any) {
-  const status = user.verificationPaymentStatus || user.socialVerification?.paymentStatus || "unpaid";
-  const expiresAt = user.verificationPaidUntil || user.socialVerification?.expiresAt;
-  if (status === "paid" && expiresAt && new Date(expiresAt) <= new Date()) return "expired";
-  return status;
+function hasApprovedVerification(user: any) {
+  return user.socialVerification?.status === "approved";
 }
 
 function oppositeGender(value?: string | null) {
@@ -442,6 +376,5 @@ function oppositeGender(value?: string | null) {
 
 function ageFromDate(value?: Date | string | null) { if (!value) return null; const birth = new Date(value); const now = new Date(); let age = now.getFullYear() - birth.getFullYear(); if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age -= 1; return age; }
 function dateForAge(age: number) { const date = new Date(); date.setFullYear(date.getFullYear() - age); return date; }
-function startOfToday() { const now = new Date(); return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())); }
 function distanceKm(aLat?: number | null, aLng?: number | null, bLat?: number | null, bLng?: number | null) { if (aLat == null || aLng == null || bLat == null || bLng == null) return null; const rad = (value: number) => value * Math.PI / 180; const dLat = rad(bLat - aLat), dLng = rad(bLng - aLng); const value = Math.sin(dLat / 2) ** 2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2; return Math.round(6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)) * 10) / 10; }
 function compatibility(viewer: any, candidate: any) { const first = new Set((viewer.interests || []).map((item: any) => item.interest.toLowerCase())); const second = new Set((candidate.interests || []).map((item: any) => item.interest.toLowerCase())); const common = [...first].filter(value => second.has(value)).length; const union = new Set([...first, ...second]).size || 1; const interestScore = common / union * 70; const goalScore = viewer.fitnessGoal && candidate.fitnessGoal && viewer.fitnessGoal.toLowerCase() === candidate.fitnessGoal.toLowerCase() ? 20 : 0; const ageDifference = Math.abs((ageFromDate(viewer.birthDate) || 0) - (ageFromDate(candidate.birthDate) || 0)); return Math.max(0, Math.min(100, Math.round(interestScore + goalScore + Math.max(0, 10 - ageDifference * 2)))); }

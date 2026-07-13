@@ -25,17 +25,12 @@ function registrationBody() {
     city: "Delhi",
     state: "Delhi",
     pincode: "110001",
-    price: "1200",
     experience: "5 years",
     description: "Temporary automated test registration"
   };
   for (const [key, value] of Object.entries(fields)) body.set(key, value);
   body.set("photo", new File([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], "business.png", { type: "image/png" }));
   body.set("certificate", new File([Buffer.from("%PDF-1.4\n% temporary ownership proof\n%%EOF")], "ownership.pdf", { type: "application/pdf" }));
-  if (process.env.ENABLE_DOJO_GYM_REGISTRATION_PAYMENT === "true") {
-    body.set("transactionId", `E2E-${suffix}`);
-    body.set("paymentScreenshot", new File([Buffer.from([0x89, 0x50, 0x4e, 0x47])], "payment.png", { type: "image/png" }));
-  }
   return body;
 }
 
@@ -67,6 +62,9 @@ async function main() {
   assert.equal(stored.approved, true);
   assert.equal(stored.status, "active");
   assert.equal(stored.verified, false);
+  assert.equal(stored.registrationPaymentStatus, "not_required");
+  assert.equal(stored.originalPrice, 0);
+  assert.equal(await prisma.payment.count({ where: { purpose: "dojo_registration", targetId: dojoId } }), 0);
   assert.ok(stored.approvedAt);
   assert.ok(verification.certificatePath);
 

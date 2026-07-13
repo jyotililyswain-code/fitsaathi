@@ -8,7 +8,7 @@ const asset = (value?: string | null) => value ? value.startsWith("http") || val
 
 export async function getCollectionCount(name: string) {
   const summary = await localApi<Record<string, number>>("/dashboard/summary");
-  const aliases: Record<string, string> = { favorites: "favorites", payments: "payments", reviews: "reviews", attendance: "attendance", notifications: "notifications", students: "students", memberships: "memberships" };
+  const aliases: Record<string, string> = { favorites: "favorites", reviews: "reviews", attendance: "attendance", notifications: "notifications", students: "students", memberships: "memberships" };
   return summary[aliases[name] || name] || 0;
 }
 

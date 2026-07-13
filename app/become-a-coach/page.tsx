@@ -6,7 +6,6 @@ import { useState } from "react";
 import { CategorySelect } from "@/components/CategorySelect";
 import { useSessionUser } from "@/lib/auth-client";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
-import { getPriceBreakdown } from "@/lib/pricing";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
 type ProviderSubmissionStage = "refreshing_session" | "saving_profile" | "uploading_aadhar" | "uploading_aadhaar" | "uploading_attachments" | "saving_verification";
@@ -25,8 +24,6 @@ export default function BecomeCoachPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<ProviderSubmissionStage | null>(null);
-  const [baseFee, setBaseFee] = useState(0);
-  const pricing = getPriceBreakdown(baseFee);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -67,19 +64,16 @@ export default function BecomeCoachPage() {
       <section>
         <p className="text-sm text-acid">Become a coach</p>
         <h1 className="mt-2 text-4xl font-bold text-white">Register with real profile details</h1>
-        <p className="mt-4 leading-7 text-zinc-400">Badge, attendance, rating, and earnings are not invented. They start empty or zero and change only when real activity is recorded.</p>
+        <p className="mt-4 leading-7 text-zinc-400">Coach registration and customer bookings are completely free. FitSaathi adds no registration fee, booking fee, platform charge, or hidden charge.</p>
       </section>
       <form onSubmit={submit} className="rounded-2xl border border-white/10 bg-white/[0.05] p-6">
         <input name="name" required placeholder="Coach name" className="field" />
         <input name="phoneNumber" type="tel" required pattern="[6-9][0-9]{9}" placeholder="Phone number" className="field mt-3" />
         <CategorySelect className="mt-3" />
         <input name="city" required placeholder="City" className="field mt-3" />
-        <input name="price" type="number" min="1" required value={baseFee || ""} onChange={(event) => setBaseFee(Number(event.target.value || 0))} placeholder="Your service fee in INR" className="field mt-3" />
-        {baseFee > 0 ? (
-          <div className="mt-3 rounded-xl border border-acid/30 bg-acid/10 p-4 text-sm leading-6 text-zinc-200">
-            You entered <strong className="text-white">₹{pricing.originalPrice}</strong>. Customers will see <strong className="text-white">₹{pricing.finalPrice}</strong>. You will receive <strong className="text-acid">₹{pricing.coachPayout}</strong> per successful booking.
-          </div>
-        ) : null}
+        <div className="mt-3 rounded-xl border border-acid/30 bg-acid/10 p-4 text-sm leading-6 text-zinc-200">
+          <strong className="text-acid">Free registration.</strong> Your profile and bookings have a ₹0 FitSaathi charge with no hidden fees.
+        </div>
         <fieldset className="mt-3 rounded-xl border border-white/10 bg-ink p-4">
           <legend className="px-1 text-sm font-medium text-white">Available teaching days</legend>
           <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-zinc-300 sm:grid-cols-4">

@@ -52,7 +52,7 @@ export type Dojo = {
   phoneNumber?: string;
   isPhoneVerified?: boolean;
   approvalStatus?: "pending" | "approved" | "active" | "inactive" | "rejected" | "suspended";
-  registrationPaymentStatus?: "pending" | "paid" | "rejected" | "failed";
+  registrationPaymentStatus?: "not_required";
 };
 
 export type Booking = {
@@ -68,7 +68,7 @@ export type Booking = {
   platformFee?: number;
   totalPrice?: number;
   finalPrice?: number;
-  paymentStatus?: "pending" | "paid" | "rejected" | "failed" | "refunded";
+  paymentStatus?: "not_required" | "pending" | "paid" | "rejected" | "failed" | "refunded";
   payoutStatus?: "not_due" | "pending" | "processed" | "held";
   payoutAmount?: number;
   payoutMonth?: string;
@@ -102,7 +102,7 @@ export type Payment = {
   userId?: string;
   bookingId?: string;
   orderId?: string;
-  purpose?: "booking" | "dojo_registration" | "marketplace_order" | "WALLET_RECHARGE" | "YEARLY_VERIFICATION" | "premium";
+  purpose?: "marketplace_order";
   paymentMethod?: "upi_manual";
   upiId?: string;
   transactionId?: string;

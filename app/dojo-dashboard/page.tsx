@@ -1,12 +1,11 @@
 "use client";
 
-import { BarChart3, CalendarDays, Clock, IndianRupee, Users, WalletCards } from "lucide-react";
+import { BarChart3, CalendarDays, CheckCircle2, Clock, Users, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
 import { useSessionUser } from "@/lib/auth-client";
-import { formatMoney } from "@/lib/format";
 import { readJsonResponse } from "@/lib/http";
 import { useCollectionCount, useMyDojoStatus, useProviderBookings } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
@@ -18,7 +17,6 @@ export default function DojoDashboardPage() {
   const customers = useCollectionCount("students");
   const memberships = useCollectionCount("memberships");
   const [message, setMessage] = useState("");
-  const earnings = bookings.data.reduce((sum, booking) => sum + (booking.originalPrice || booking.amount || 0), 0);
 
   async function setBookingStatus(id: string, status: "accepted" | "rejected") {
     if (!user) return setMessage("Please sign in again.");
@@ -36,14 +34,14 @@ export default function DojoDashboardPage() {
     <AuthGuard role="dojo">
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-white">Dojo dashboard</h1>
-        <p className="mt-3 text-zinc-400">Manage academy profile, classes, timings, bookings, customers, earnings, analytics, and memberships.</p>
+        <p className="mt-3 text-zinc-400">Manage your academy, classes, timings, and free FitSaathi bookings. Registration and bookings have no platform or hidden charges.</p>
         {registration.data?.status === "active" && !registration.data.verified ? <div className="mt-5 rounded-2xl border border-acid/30 bg-acid/10 p-4 text-sm text-emerald-100"><strong className="block text-white">Your dojo is live</strong>Your profile appears in public search. The verified badge remains under document review.</div> : null}
         {registration.data?.status === "inactive" || registration.data?.status === "suspended" ? <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100"><strong className="block text-white">Dojo listing is not public</strong>Contact support if you need help restoring this registration.</div> : null}
         {registration.data?.status === "rejected" ? <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100"><strong className="block text-white">Registration needs attention</strong>Your dojo is not publicly listed. Contact support for review details.</div> : null}
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <Tile icon={<CalendarDays />} label="Bookings" value={String(bookings.data.length)} />
           <Tile icon={<Users />} label="Customers" value={String(customers.data)} />
-          <Tile icon={<IndianRupee />} label="Earnings" value={formatMoney(earnings)} />
+          <Tile icon={<CheckCircle2 />} label="Free bookings" value={String(bookings.data.length)} />
           <Tile icon={<WalletCards />} label="Memberships" value={String(memberships.data)} />
         </div>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
@@ -56,14 +54,14 @@ export default function DojoDashboardPage() {
                 ))}
               </div>
             ) : (
-              <EmptyState title="0 dojo bookings" body="Paid dojo booking requests appear here." />
+              <EmptyState title="0 dojo bookings" body="New free booking requests will appear here." />
             )}
           </Panel>
           <Panel title="Classes"><EmptyState title="No classes added" body="Add classes and batch capacity from your profile management flow." /></Panel>
         </div>
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <Panel title="Timings"><EmptyState title="No timings added" body="Morning, evening, and weekend timings appear here after setup." /></Panel>
-          <Panel title="Analytics"><div className="flex items-center gap-3 text-zinc-400"><BarChart3 className="text-acid" /> Revenue and attendance charts populate from real activity.</div></Panel>
+          <Panel title="Analytics"><div className="flex items-center gap-3 text-zinc-400"><BarChart3 className="text-acid" /> Booking and attendance charts populate from real activity.</div></Panel>
         </div>
       </main>
     </AuthGuard>
@@ -72,7 +70,7 @@ export default function DojoDashboardPage() {
 
 function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected") => void }) {
   const confirmed = booking.status === "accepted" || booking.status === "completed";
-  const pending = !booking.status || booking.status === "pending" || booking.status === "requested";
+  const pending = booking.status === "confirmed";
   return (
     <article className="rounded-2xl border border-white/10 bg-ink/40 p-4">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">

@@ -1,6 +1,6 @@
 # FitSaathi
 
-FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, manual UPI payments, and Vercel Blob. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
+FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, and Vercel Blob. Account and provider registration, identity verification, and coach or dojo booking are free, with no platform or hidden charges. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
 
 ## Run locally
 
@@ -60,9 +60,11 @@ npm run build
 
 The integration suites cover every Prisma model plus authentication, provider registration and approval, bookings, attendance, marketplace CRUD, cart, orders, seller/admin dashboards, uploads, and role enforcement.
 
-## Payments
+## Free services and marketplace purchases
 
-Payments use manual PhonePe / UPI transfer to `7065223868-2@ibl`. Every payment screen displays the supplied scanner QR, UPI ID, amount, transaction ID field, and optional screenshot upload. A valid submission is stored as `paid` and its booking, order, registration, wallet recharge, verification, or premium plan is activated immediately. Legacy checkout credentials and webhooks are not required.
+FitSaathi does not charge for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. These flows do not require a wallet recharge, UPI transfer, transaction ID, payment screenshot, platform fee, or hidden charge.
+
+Marketplace product purchases remain separate. Before a shop order is placed, the customer must see the product total, delivery total, and any other mandatory order amount. Shop order payment, receipt, and refund records must never be used to gate or activate the free registration, verification, or booking flows.
 
 ## Supabase database
 

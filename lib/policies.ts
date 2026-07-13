@@ -14,14 +14,14 @@ export type Policy = {
   sections: PolicySection[];
 };
 
-export const POLICY_VERSION = "2026-06-29";
+export const POLICY_VERSION = "2026-07-12";
 
 export const policies: Policy[] = [
   {
     slug: "terms",
     title: "Terms & Conditions",
-    summary: "The core rules for using FitSaathi as a customer, coach, dojo owner, or visitor.",
-    lastUpdated: "June 29, 2026",
+    summary: "The core rules for using FitSaathi, including free registrations, identity verification, and coach or dojo bookings.",
+    lastUpdated: "July 12, 2026",
     sections: [
       {
         id: "platform-overview",
@@ -41,17 +41,17 @@ export const policies: Policy[] = [
       {
         id: "booking-rules",
         title: "Booking Rules",
-        body: ["Bookings, package terms, cancellations, replacement requests, attendance records, and payment obligations must follow the policies published by FitSaathi and the rules shown at checkout. Customers see the final payable price; FitSaathi may retain an internal platform commission from that amount."]
+        body: ["Creating and confirming a coach or dojo booking request on FitSaathi is free. FitSaathi does not add a booking fee, platform commission, checkout charge, or hidden charge to these bookings. Scheduling, cancellations, replacements, and attendance records must still follow the applicable platform rules."]
       },
       {
-        id: "platform-payments",
-        title: "Platform Payments",
-        body: ["All booking and registration payments must be handled through FitSaathi payment flows. Coaches, customers, and dojos must not bypass platform payment, verification, refund, or payout systems."]
+        id: "free-platform-services",
+        title: "Free Platform Services",
+        body: ["Account registration, coach registration, dojo or gym registration, seller registration, identity verification, and coach or dojo booking are free. These services do not require a payment, wallet recharge, transaction reference, or payment screenshot. Marketplace product purchases are separate, and their product and delivery total must be shown before an order is placed."]
       },
       {
         id: "prohibited-activities",
         title: "Prohibited Activities",
-        body: ["Harassment, fraud, unsafe training, spam, abusive messages, payment manipulation, fake complaints, fake reviews, and attempts to bypass FitSaathi payments are not allowed."]
+        body: ["Harassment, fraud, unsafe training, spam, abusive messages, marketplace order manipulation, fake complaints, fake reviews, and attempts to misuse FitSaathi systems are not allowed."]
       },
       {
         id: "account-suspension",
@@ -72,7 +72,7 @@ export const policies: Policy[] = [
       {
         id: "dispute-handling",
         title: "Dispute Handling",
-        body: ["Users should report disputes through official support channels. FitSaathi may review attendance logs, payment status, package rules, messages, and provider records before taking action."]
+        body: ["Users should report disputes through official support channels. FitSaathi may review attendance logs, booking details, marketplace order records, messages, and provider records before taking action."]
       },
       {
         id: "modification-rights",
@@ -85,12 +85,12 @@ export const policies: Policy[] = [
     slug: "privacy",
     title: "Privacy Policy",
     summary: "How FitSaathi collects, uses, protects, and processes personal data.",
-    lastUpdated: "June 29, 2026",
+    lastUpdated: "July 12, 2026",
     sections: [
       {
         id: "data-collection",
         title: "Data Collection",
-        body: ["FitSaathi collects information needed to create accounts, operate bookings, process payments, improve safety, prevent abuse, and provide customer support."]
+        body: ["FitSaathi collects information needed to create accounts, review identities, operate bookings, process marketplace orders, improve safety, prevent abuse, and provide customer support."]
       },
       {
         id: "account-information",
@@ -98,9 +98,9 @@ export const policies: Policy[] = [
         body: ["Account data may include name, email, phone number, location, role, fitness interest, coach or dojo details, attendance history, badge status, and support records."]
       },
       {
-        id: "payment-information",
-        title: "Payment Information",
-        body: ["Payments are currently submitted through manual UPI. FitSaathi does not ask users to share UPI PINs, card passwords, or other sensitive payment credentials with coaches or support staff. Transaction references, verification status, refund status, internal commission, and payout tracking may be stored for accounting, safety, and dispute handling."]
+        id: "marketplace-purchase-information",
+        title: "Marketplace Purchase Information",
+        body: ["FitSaathi does not collect payment details or payment evidence for account or provider registration, identity verification, or coach and dojo booking because those services are free. For shop purchases, FitSaathi may store the clearly shown product total, delivery total, order status, receipt details, and any refund status needed to fulfil the order and handle disputes."]
       },
       {
         id: "contact-visibility",
@@ -120,57 +120,57 @@ export const policies: Policy[] = [
       {
         id: "third-party-services",
         title: "Third-Party Services",
-        body: ["FitSaathi uses PostgreSQL for application and account data and configured storage services for uploaded files. Manual UPI payments are reviewed by authorized administrators before activation."]
+        body: ["FitSaathi uses PostgreSQL for application and account data and configured storage services for uploaded files. Account registration, provider registration, identity verification, and coach or dojo booking are never activated or delayed based on payment."]
       },
       {
         id: "user-rights",
         title: "User Rights",
-        body: ["Users may request correction, export, or deletion of eligible personal data by contacting support. Some records may be retained where needed for legal, payment, safety, or dispute reasons."]
+        body: ["Users may request correction, export, or deletion of eligible personal data by contacting support. Some records may be retained where needed for legal, marketplace order, safety, or dispute reasons."]
       },
       {
         id: "deletion-requests",
         title: "Data Deletion Requests",
-        body: ["Deletion requests are reviewed to confirm identity and determine whether any booking, payment, or safety records must be retained for a lawful period."]
+        body: ["Deletion requests are reviewed to confirm identity and determine whether any booking, marketplace order, or safety records must be retained for a lawful period."]
       }
     ]
   },
   {
     slug: "refunds",
     title: "Refund Policy",
-    summary: "FitSaathi refund eligibility for home classes, dojo packages, traditional arts, and payment disputes.",
-    lastUpdated: "June 29, 2026",
+    summary: "Free FitSaathi services need no refund; this policy covers marketplace product purchase refunds and disputes.",
+    lastUpdated: "July 12, 2026",
     sections: [
       {
-        id: "home-classes",
-        title: "Home Classes",
-        body: ["Home class purchases are not refundable. A one-time trainer replacement may be available if requested within the first week and approved after review."],
-        variant: "danger"
+        id: "free-platform-services",
+        title: "Free Platform Services",
+        body: ["FitSaathi does not collect payment for account or provider registration, identity verification, or coach and dojo booking. There is no platform fee to refund and no non-refundable charge for these services."],
+        variant: "success"
       },
       {
-        id: "dojo-training",
-        title: "Dojo & Training Classes",
-        body: ["Dojo and training class packages may qualify for a partial refund only for the first package or first month. Platform service fees are retained, and eligibility depends on the package rules shown at purchase."],
+        id: "marketplace-products",
+        title: "Marketplace Product Purchases",
+        body: ["Refund or return eligibility for a shop product depends on the seller's clearly disclosed return policy, the product condition, and applicable consumer law. The product and delivery total is shown before the order is placed."],
         variant: "warning"
       },
       {
-        id: "traditional-arts",
-        title: "Traditional Arts",
-        body: ["Traditional arts programs may have a special refund period because evaluation, uniform, initiation, or batch rules can differ by discipline and provider."]
+        id: "delivery-charges",
+        title: "Delivery Charges",
+        body: ["Any delivery charge is included in the total shown before a shop order is placed. Whether a delivery charge can be refunded depends on fulfilment status, the disclosed return terms, and applicable law; it is never hidden as a registration, verification, or booking fee."]
       },
       {
         id: "request-process",
         title: "Refund Request Process",
-        body: ["Refund requests must be submitted through official support with booking ID, payment proof, reason, and any relevant communication. FitSaathi may ask for more details before deciding."]
+        body: ["Marketplace refund requests must be submitted through official support with the order ID, reason, and any relevant product photos or seller communication. FitSaathi may ask for more details before deciding."]
       },
       {
         id: "review-timeline",
         title: "Review Timeline",
-        body: ["Eligible refund requests are reviewed within a reasonable support timeline. Approved refunds follow payment processor timelines and may vary by bank, card, UPI, or wallet provider."]
+        body: ["Eligible marketplace refund requests are reviewed within a reasonable support timeline. After approval, completion time may depend on the original shop payment method and the customer's bank or payment provider."]
       },
       {
         id: "abuse-prevention",
         title: "Abuse Prevention",
-        body: ["Repeated refund abuse, false claims, fake complaints, chargeback misuse, or attempts to receive services without payment may lead to account restrictions."]
+        body: ["Repeated marketplace refund abuse, false product claims, fake complaints, chargeback misuse, or attempts to keep products without valid payment may lead to account restrictions."]
       }
     ]
   },
@@ -178,7 +178,7 @@ export const policies: Policy[] = [
     slug: "coach-conduct",
     title: "Coach Conduct Policy",
     summary: "Professional behavior, attendance, verification, and safety standards for FitSaathi coaches.",
-    lastUpdated: "June 29, 2026",
+    lastUpdated: "July 12, 2026",
     sections: [
       {
         id: "professionalism",
@@ -214,9 +214,9 @@ export const policies: Policy[] = [
         body: ["Customers must communicate respectfully with coaches, dojo staff, support, and other users. Harassment, threats, or abusive behavior are not allowed."]
       },
       {
-        id: "payment-honesty",
-        title: "Payment Honesty",
-        body: ["Customers must not bypass FitSaathi payments, submit false payment claims, misuse chargebacks, or pressure coaches into off-platform arrangements."]
+        id: "marketplace-purchase-honesty",
+        title: "Marketplace Purchase Honesty",
+        body: ["Registration, identity verification, and coach or dojo booking are free, so customers should never be asked for payment to unlock them. For shop purchases, customers must provide truthful order information and must not submit false payment or refund claims or misuse chargebacks."]
       },
       {
         id: "complaints",
@@ -260,34 +260,39 @@ export const policies: Policy[] = [
   },
   {
     slug: "payments",
-    title: "Payment Policy",
-    summary: "Payment processing, subscriptions, invoices, failed payments, refunds, and disputes.",
-    lastUpdated: "June 29, 2026",
+    title: "Free Services & Marketplace Purchase Policy",
+    summary: "No-charge registration, verification, and booking rules, plus transparent totals for marketplace product purchases.",
+    lastUpdated: "July 12, 2026",
     sections: [
       {
-        id: "manual-upi",
-        title: "Manual UPI Payments",
-        body: ["FitSaathi currently accepts manual UPI payments to the UPI ID shown on the payment screen. Users must enter the matching transaction/reference ID. A booking, order, registration, wallet recharge, verification fee, or membership is activated only after administrator verification."]
+        id: "free-services",
+        title: "Registration, Verification & Booking Are Free",
+        body: ["FitSaathi charges nothing for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. No payment, paid membership, wallet recharge, transaction ID, or payment screenshot is required for these services."]
       },
       {
-        id: "subscriptions",
-        title: "Subscriptions & Recurring Billing",
-        body: ["If a package supports recurring billing, renewal amount, cycle, and cancellation rules will be shown before payment. Users are responsible for reviewing the terms before confirming."]
+        id: "no-hidden-charges",
+        title: "No Platform or Hidden Charges",
+        body: ["FitSaathi does not add a platform fee, booking fee, registration fee, verification fee, commission, or hidden charge to its free service flows. A user must not be sent to checkout or asked for payment evidence to complete them."]
       },
       {
-        id: "invoices",
-        title: "Invoices",
-        body: ["Receipts or invoices may be generated based on payment processor data and FitSaathi records. Users should contact support if details need correction."]
+        id: "marketplace-product-totals",
+        title: "Marketplace Product Totals",
+        body: ["Shop product purchases are separate from FitSaathi's free services. Before an order is placed, the customer must see the product total, delivery total, and any other mandatory order amount. A shop charge must never be presented as a registration, verification, or booking fee."]
       },
       {
-        id: "failed-payments",
-        title: "Failed Payment Handling",
-        body: ["Failed or pending payments may delay booking confirmation. A booking is not guaranteed until FitSaathi records the payment as successful."]
+        id: "marketplace-receipts",
+        title: "Marketplace Receipts",
+        body: ["Receipts or invoices for marketplace product orders may be generated from the clearly shown order total and FitSaathi records. Customers should contact support if shop order details need correction."]
       },
       {
-        id: "refunds-disputes",
-        title: "Refunds & Payment Disputes",
-        body: ["Refund timelines depend on approval and the user's bank or UPI provider. Disputes are reviewed against the submitted transaction reference, booking, package, order, and attendance records."]
+        id: "marketplace-payment-problems",
+        title: "Marketplace Payment Problems",
+        body: ["A failed or pending shop payment may delay only the related product order. It must not block account or provider registration, identity verification, or coach and dojo booking."]
+      },
+      {
+        id: "marketplace-refunds-disputes",
+        title: "Marketplace Refunds & Disputes",
+        body: ["Marketplace product disputes are reviewed against the order total, delivery status, product condition, seller return terms, and applicable law. They do not affect the free status of registration, verification, or coach and dojo booking."]
       }
     ]
   },
@@ -377,13 +382,13 @@ export const policies: Policy[] = [
       {
         id: "elite",
         title: "Elite Coach",
-        body: ["An Elite Coach badge uses a purple status signal and may require 2+ years of strong activity, consistent reliability, strong customer outcomes, and premium visibility eligibility. Eligible coaches may receive a yearly Rs. 10,000 wellness or diet support reward."],
+        body: ["An Elite Coach badge uses a purple status signal and may require 2+ years of strong activity, consistent reliability, and strong customer outcomes. Eligible coaches may receive a yearly Rs. 10,000 wellness or diet support reward."],
         variant: "royal"
       },
       {
         id: "legendary",
         title: "Legendary Coach",
-        body: ["Legendary Coach is a rare crown status with premium recommendation priority. Eligible coaches may receive a yearly Rs. 17,000 wellness or diet support reward."],
+        body: ["Legendary Coach is a rare crown status based on exceptional verified activity and reliability. Eligible coaches may receive a yearly Rs. 17,000 wellness or diet support reward."],
         variant: "legendary"
       },
       {

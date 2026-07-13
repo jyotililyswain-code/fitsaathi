@@ -1,7 +1,7 @@
-export const DEFAULT_PLATFORM_FEE = 700;
-export const BOOKING_FEE = 50;
-export const DOJO_REGISTRATION_FEE = 700;
-export const COACH_INCENTIVE_BONUS = 100;
+export const DEFAULT_PLATFORM_FEE = 0;
+export const BOOKING_FEE = 0;
+export const DOJO_REGISTRATION_FEE = 0;
+export const COACH_INCENTIVE_BONUS = 0;
 
 export type PriceBreakdown = {
   originalPrice: number;
@@ -12,28 +12,25 @@ export type PriceBreakdown = {
 };
 
 export function getPriceBreakdown(originalPrice: number, platformFee = DEFAULT_PLATFORM_FEE): PriceBreakdown {
-  const safeOriginalPrice = clampMoney(originalPrice);
-  const safePlatformFee = clampMoney(platformFee);
-
-  const total = safeOriginalPrice + safePlatformFee;
+  void originalPrice;
+  void platformFee;
   return {
-    originalPrice: safeOriginalPrice,
-    platformFee: safePlatformFee,
-    totalPrice: total,
-    finalPrice: total,
-    coachPayout: safeOriginalPrice + COACH_INCENTIVE_BONUS
+    originalPrice: 0,
+    platformFee: 0,
+    totalPrice: 0,
+    finalPrice: 0,
+    coachPayout: 0
   };
 }
 
 export function getCoachCustomerPrice(coach: { customer_price?: number; customerPrice?: number; finalPrice?: number; totalPrice?: number; base_fee?: number; baseFee?: number; originalPrice?: number; price?: number } | null | undefined) {
-  if (!coach) return 0;
-  const storedFinal = Number(coach.customer_price ?? coach.customerPrice ?? coach.finalPrice ?? coach.totalPrice);
-  if (Number.isFinite(storedFinal) && storedFinal > 0) return clampMoney(storedFinal);
-  return getPriceBreakdown(Number(coach.base_fee ?? coach.baseFee ?? coach.originalPrice ?? coach.price ?? 0)).finalPrice;
+  void coach;
+  return 0;
 }
 
 export function getCoachBaseFee(coach: { base_fee?: number; baseFee?: number; originalPrice?: number; price?: number } | null | undefined) {
-  return clampMoney(Number(coach?.base_fee ?? coach?.baseFee ?? coach?.originalPrice ?? coach?.price ?? 0));
+  void coach;
+  return 0;
 }
 
 export function toPaise(amountInRupees: number) {

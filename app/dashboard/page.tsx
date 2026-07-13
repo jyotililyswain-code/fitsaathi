@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Calendar, Heart, IndianRupee, MapPin, MessageCircle, QrCode, Star, Store } from "lucide-react";
+import { Bell, Calendar, CheckCircle2, Heart, MapPin, MessageCircle, QrCode, Star, Store } from "lucide-react";
 import type { ReactNode } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
@@ -13,7 +13,6 @@ export default function CustomerDashboardPage() {
   const { user } = useSessionUser();
   const bookings = useUserBookings(user?.id ?? null);
   const favorites = useCollectionCount("favorites");
-  const payments = useCollectionCount("payments");
   const reviews = useCollectionCount("reviews");
   const attendance = useCollectionCount("attendance");
   const notifications = useCollectionCount("notifications");
@@ -22,11 +21,11 @@ export default function CustomerDashboardPage() {
     <AuthGuard>
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-white">Customer dashboard</h1>
-        <p className="mt-3 text-zinc-400">Bookings, subscriptions, favorites, chats, payments, and reviews render from real records.</p>
+        <p className="mt-3 text-zinc-400">Bookings and registration are free with no platform or hidden charges.</p>
         <div className="mt-8 grid gap-4 md:grid-cols-4">
           <Tile icon={<Calendar />} label="My bookings" value={bookings.data.length} />
           <Tile icon={<Heart />} label="Saved favorites" value={favorites.data} />
-          <Tile icon={<IndianRupee />} label="Payment history" value={payments.data} />
+          <Tile icon={<CheckCircle2 />} label="Free bookings" value={bookings.data.length} />
           <Tile icon={<Star />} label="Reviews written" value={reviews.data} />
         </div>
         <div className="mt-8 grid gap-4 lg:grid-cols-4">
@@ -53,8 +52,9 @@ export default function CustomerDashboardPage() {
                       <p className="font-semibold text-white">{booking.classType || "Class booking"}</p>
                       <p className="mt-1 text-sm text-zinc-400">{booking.preferredDate || "Date pending"} {booking.preferredTime || ""}</p>
                       <p className="mt-1 text-sm text-zinc-400">
-                        Owner contact: {booking.paymentStatus === "paid" ? booking.providerPhone || "Owner number pending" : "Visible after payment"}
+                        Owner contact: {["accepted", "completed"].includes(booking.status || "") ? booking.providerPhone || "Owner number pending" : "Visible after the provider accepts"}
                       </p>
+                      <p className="mt-1 text-xs font-semibold text-acid">Free booking · ₹0 FitSaathi charge</p>
                     </div>
                     <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.status || "pending"}</span>
                   </div>

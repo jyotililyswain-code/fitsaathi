@@ -42,7 +42,7 @@ export default function CheckoutPage() {
       });
       const created = await readJsonResponse<{ orderId: string }>(createResponse, "Could not create order.");
       await cart.clear();
-      router.push(`/payment-success?orderId=${encodeURIComponent(created.orderId)}`);
+      router.push(`/orders?placed=${encodeURIComponent(created.orderId)}`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Checkout failed.");
     } finally {

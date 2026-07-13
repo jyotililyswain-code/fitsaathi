@@ -6,7 +6,7 @@ import { generateSeoMetadata } from "@/lib/seo";
 const faqs = [
   [
     "What is FitSaathi?",
-    "FitSaathi is a fitness marketplace where users can find coaches, dojos, trainers, fitness services, and products.",
+    "FitSaathi is a fitness marketplace where users can find coaches, dojos, trainers, fitness services, and products. Account and provider registration, identity verification, and coach or dojo booking are free.",
   ],
   [
     "How can I find a fitness coach near me?",
@@ -14,19 +14,19 @@ const faqs = [
   ],
   [
     "Can I book a personal trainer at home?",
-    "Yes. Choose an available coach, open their profile, and use the booking option to request home fitness training.",
+    "Yes. Choose an available coach, open their profile, and use the booking option to request home fitness training. FitSaathi does not charge a booking or platform fee.",
   ],
   [
     "Can martial arts coaches register?",
-    "Yes. Karate, boxing, MMA, self-defense, and other martial arts instructors can submit a coach profile for verification.",
+    "Yes. Karate, boxing, MMA, self-defense, and other martial arts instructors can submit a coach profile for verification at no charge.",
   ],
   [
     "Can dojos and academies register?",
-    "Yes. Dojos, yoga centers, and fitness academies can register, provide their details, and connect with students after approval.",
+    "Yes. Dojos, yoga centers, and fitness academies can register, provide their details, and connect with students after approval. Registration and identity verification are free.",
   ],
   [
     "Can sellers sell fitness products?",
-    "Yes. Fitness sellers can register and submit sports equipment, training essentials, and other fitness products for approval.",
+    "Yes. Fitness sellers can register for free and submit sports equipment, training essentials, and other fitness products for approval.",
   ],
   [
     "How can I contact customer care?",
@@ -38,26 +38,26 @@ const faqs = [
   ],
   [
     "How does coach booking work?",
-    "Find a coach, review the public profile and availability, open the booking form, and submit the required booking and payment details.",
+    "Find a coach, review the public profile and availability, open the booking form, and submit the booking details. Creating and confirming a coach or dojo booking through FitSaathi is free, with no platform or hidden charges.",
   ],
   [
     "How can I report a problem?",
-    "Use Report a Problem in the footer or dashboard to contact support about booking, registration, payment, coach, dojo, or account issues.",
+    "Use Report a Problem in the footer or dashboard to contact support about a booking, registration, coach, dojo, account, or marketplace order issue.",
   ],
   [
-    "How do payments work?",
-    "Pay with PhonePe or another UPI app and enter the transaction reference. The payment status and booking confirmation are then recorded by FitSaathi.",
+    "Are registration, verification, and booking really free?",
+    "Yes. FitSaathi charges nothing for account registration, coach or dojo registration, identity verification, or coach and dojo booking. There are no platform fees or hidden charges for these services. Shop purchases are separate, and the product and delivery total is shown before an order is placed.",
   ],
   [
     "How is private verification information handled?",
-    "Identity documents and private verification details are used for review and are not displayed in public coach or dojo SEO content.",
+    "Identity documents and private verification details are used for review and are not displayed in public coach or dojo SEO content. Identity verification is free and does not require payment evidence.",
   ],
 ] as const;
 
 export const metadata = generateSeoMetadata({
   title: "FitSaathi FAQ - Fitness Coach, Dojo & Booking Questions",
   description:
-    "Read common questions about FitSaathi coach booking, dojo registration, seller registration, payments, support, and safety.",
+    "Read common questions about free FitSaathi coach booking, provider registration, identity verification, transparent shop totals, support, and safety.",
   path: "/faq",
   keywords: [
     "FitSaathi FAQ",
@@ -91,7 +91,7 @@ export default function FAQPage() {
         </h1>
         <p className="mt-4 text-lg leading-8 text-zinc-300">
           Clear answers about finding coaches, booking training, registrations,
-          payments, support, and safety.
+          free platform services, shop totals, support, and safety.
         </p>
       </div>
 
@@ -113,8 +113,8 @@ export default function FAQPage() {
       <section className="mt-10 rounded-2xl border border-acid/20 bg-acid/[0.08] p-6">
         <h2 className="text-xl font-semibold text-white">Still need help?</h2>
         <p className="mt-2 text-zinc-300">
-          Contact FitSaathi support for booking, safety, registration, payment,
-          or account questions.
+          Contact FitSaathi support for booking, safety, registration,
+          marketplace order, or account questions.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link

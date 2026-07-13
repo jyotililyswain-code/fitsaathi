@@ -31,12 +31,13 @@ async function register(stamp, label) {
 function providerForm(kind) {
   const form = new FormData();
   const fields = kind === "coach"
-    ? { name: "Flow Coach", phoneNumber: "9876543210", category: "Strength", city: "Delhi", price: "800", availableDays: "Monday", availableTimings: "6:00 AM, 7:00 PM", bio: "Automated provider flow test." }
-    : { name: "Flow Dojo", ownerName: "Flow Owner", phoneNumber: "9876543211", category: "Karate", city: "Delhi", price: "1800", description: "Automated dojo flow test." };
+    ? { name: "Flow Coach", phoneNumber: "9876543210", category: "Strength", city: "Delhi", availableDays: "Monday", availableTimings: "6:00 AM, 7:00 PM", bio: "Automated provider flow test." }
+    : { establishmentType: "DOJO", name: "Flow Dojo", ownerName: "Flow Owner", phoneNumber: "9876543211", category: "Karate", city: "Delhi", description: "Automated dojo flow test." };
   for (const [key, value] of Object.entries(fields)) form.append(key, value);
   const image = fs.readFileSync(path.join(process.cwd(), "public", "scroll-art", "dumbbell.jpg"));
   form.append("photo", new Blob([image], { type: "image/jpeg" }), "photo.jpg");
   form.append("aadharFront", new Blob([image], { type: "image/jpeg" }), "aadhaar.jpg");
+  if (kind === "dojo") form.append("certificate", new Blob([image], { type: "image/jpeg" }), "certificate.jpg");
   return form;
 }
 
@@ -48,7 +49,7 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
   const stamp = Date.now();
   const userIds = [];
   const uploaded = [];
-  let coachId, dojoId, bookingId, paymentId, dojoPaymentId;
+  let coachId, dojoId, bookingId;
   try {
     const coachAccount = await register(stamp, "coach"); userIds.push(coachAccount.id);
     const coachResult = await request(apiUrl, "/coaches", { method: "POST", headers: { authorization: `Bearer ${coachAccount.session.accessToken}` }, body: providerForm("coach") }, [201]);
@@ -62,14 +63,11 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     assert.equal((await request(apiUrl, `/coaches/${coachId}`, json("PUT", { bio: "Updated PostgreSQL coach bio." }, coachToken))).bio, "Updated PostgreSQL coach bio.");
 
     const dojoAccount = await register(stamp, "dojo"); userIds.push(dojoAccount.id);
-    const dojoTransactionId = `UPI-DOJO-${stamp}`;
     const dojoForm = providerForm("dojo");
-    dojoForm.append("email", dojoAccount.email); dojoForm.append("address", "12 Flow Street"); dojoForm.append("state", "Delhi"); dojoForm.append("pincode", "110001"); dojoForm.append("experience", "8 years"); dojoForm.append("accountHolder", "Flow Owner"); dojoForm.append("accountNumber", "123456789012"); dojoForm.append("ifsc", "TEST0001234"); dojoForm.append("transactionId", dojoTransactionId);
+    dojoForm.append("email", dojoAccount.email); dojoForm.append("address", "12 Flow Street"); dojoForm.append("state", "Delhi"); dojoForm.append("pincode", "110001"); dojoForm.append("experience", "8 years");
     const dojoResult = await request(apiUrl, "/dojos", { method: "POST", headers: { authorization: `Bearer ${dojoAccount.session.accessToken}` }, body: dojoForm }, [201]);
     dojoId = dojoResult.profile.id;
-    const dojoPayment = await prisma.payment.findUniqueOrThrow({ where: { transactionId: dojoTransactionId } });
-    dojoPaymentId = dojoPayment.id;
-    assert.equal(dojoPayment.paymentStatus, "paid");
+    assert.equal(await prisma.payment.count({ where: { purpose: "dojo_registration", targetId: dojoId } }), 0);
     const dojoToken = dojoResult.session.accessToken;
     const publicDojo = await request(apiUrl, `/dojos/${dojoId}`);
     assert.equal(publicDojo.id, dojoId);
@@ -80,29 +78,28 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     const admin = await register(stamp, "admin"); userIds.push(admin.id);
     await prisma.user.update({ where: { id: admin.id }, data: { role: "admin" } });
     const adminSession = await request(apiUrl, "/auth/login", json("POST", { email: admin.email, password: "AuditPass123!" }));
-    assert.equal((await prisma.dojo.findUniqueOrThrow({ where: { id: dojoId } })).registrationPaymentStatus, "paid");
+    assert.equal((await prisma.dojo.findUniqueOrThrow({ where: { id: dojoId } })).registrationPaymentStatus, "not_required");
     assert.equal((await request(apiUrl, `/admin/providers/coach/${coachId}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).verified, true);
     assert.equal((await request(apiUrl, `/admin/providers/dojo/${dojoId}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).approved, true);
 
     const customer = await register(stamp, "customer"); userIds.push(customer.id);
-    const bookingTransactionId = `UPI-BOOKING-${stamp}`;
     const now = new Date();
     const preferredDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     const preferredTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const booking = await request(nextUrl, "/api/bookings/create", json("POST", { targetType: "coach", targetId: coachId, transactionId: bookingTransactionId, customerName: "Flow Customer", city: "Delhi", classType: "Strength", packageType: "Trial", preferredDate, preferredTime, acceptedTerms: true, acceptedPrivacy: true }, customer.session.accessToken), [201]);
+    const booking = await request(nextUrl, "/api/bookings/create", json("POST", { targetType: "coach", targetId: coachId, name: "Flow Customer", phone: "9876543212", city: "Delhi", classType: "home", packageType: "trial", preferredDate, preferredTime, acceptedTerms: true, acceptedPrivacy: true }, customer.session.accessToken), [201]);
     bookingId = booking.bookingId;
-    const payment = await prisma.payment.findUniqueOrThrow({ where: { transactionId: bookingTransactionId } });
-    paymentId = payment.id;
-    assert.equal(payment.paymentStatus, "paid");
+    assert.equal(await prisma.payment.count({ where: { bookingId } }), 0);
     const confirmedBooking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
-    assert.equal(confirmedBooking.paymentStatus, "paid");
+    assert.equal(confirmedBooking.paymentStatus, "not_required");
+    assert.equal(confirmedBooking.amount, 0);
+    assert.equal(confirmedBooking.platformFee, 0);
     assert.equal(confirmedBooking.status, "confirmed");
     assert.ok((await request(apiUrl, "/bookings", { headers: { authorization: `Bearer ${customer.session.accessToken}` } })).some(item => item.id === bookingId));
     assert.equal((await request(apiUrl, `/bookings/${bookingId}/status`, json("PATCH", { status: "accepted" }, coachToken))).status, "accepted");
     const qr = await request(nextUrl, "/api/attendance/token", json("POST", { bookingId }, customer.session.accessToken));
-    const scan = await request(nextUrl, "/api/attendance/scan", json("POST", { token: qr.token, location: "Flow studio" }, coachToken));
+    const scan = await request(nextUrl, "/api/attendance/scan", json("POST", { bookingId, code: qr.code }, coachToken));
     assert.equal(scan.bookingId, bookingId);
-    await request(nextUrl, "/api/attendance/scan", json("POST", { token: qr.token }, coachToken), [409]);
+    await request(nextUrl, "/api/attendance/scan", json("POST", { bookingId, code: qr.code }, coachToken), [409]);
     assert.ok((await request(apiUrl, "/dashboard/summary", { headers: { authorization: `Bearer ${customer.session.accessToken}` } })).attendance >= 1);
     assert.equal((await request(apiUrl, `/bookings/${bookingId}/status`, json("PATCH", { status: "completed" }, coachToken))).status, "completed");
 
@@ -110,15 +107,12 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     for (const item of verificationFiles) uploaded.push(item.aadhaarFrontPath, item.aadhaarBackPath, item.certificatePath);
     uploaded.push((await prisma.coach.findUnique({ where: { id: coachId } })).photoPath, (await prisma.dojo.findUnique({ where: { id: dojoId } })).imagePath);
 
-    await prisma.payment.update({ where: { id: paymentId }, data: { bookingId: null } });
     await prisma.booking.delete({ where: { id: bookingId } }); bookingId = null;
     await request(apiUrl, `/coaches/${coachId}`, { method: "DELETE", headers: { authorization: `Bearer ${coachToken}` } }, [204]); coachId = null;
     await request(apiUrl, `/dojos/${dojoId}`, { method: "DELETE", headers: { authorization: `Bearer ${dojoToken}` } }, [204]); dojoId = null;
     for (const filePath of uploaded.filter(Boolean)) assert.equal(fs.existsSync(storedFile(filePath)), false, `${filePath} should be removed with its provider`);
   } finally {
-    if (paymentId) await prisma.payment.deleteMany({ where: { id: paymentId } });
-    if (dojoPaymentId) await prisma.payment.deleteMany({ where: { id: dojoPaymentId } });
-    if (bookingId) { await prisma.payment.updateMany({ where: { bookingId }, data: { bookingId: null } }); await prisma.booking.deleteMany({ where: { id: bookingId } }); }
+    if (bookingId) await prisma.booking.deleteMany({ where: { id: bookingId } });
     await prisma.adminLog.deleteMany({ where: { actorId: { in: userIds } } });
     await prisma.providerVerification.deleteMany({ where: { ownerId: { in: userIds } } });
     if (coachId) await prisma.coach.deleteMany({ where: { id: coachId } });
