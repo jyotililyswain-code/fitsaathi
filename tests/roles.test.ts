@@ -8,6 +8,19 @@ test("specialized userRole overrides a stale customer role", () => {
 });
 
 test("dashboard paths match provider roles", () => {
-  assert.equal(dashboardPathForRole("coach"), "/coach-dashboard");
-  assert.equal(dashboardPathForRole("seller"), "/seller-dashboard");
+  const paths = new Map([
+    ["customer", "/dashboard"],
+    ["coach", "/coach-dashboard"],
+    ["dojo", "/dojo-dashboard"],
+    ["seller", "/seller-dashboard"],
+    ["admin", "/super-admin-dashboard"],
+    ["super_admin", "/super-admin-dashboard"],
+    ["moderator", "/super-admin-dashboard"],
+    ["support_admin", "/super-admin-dashboard"],
+    ["unknown", "/dashboard"],
+  ]);
+
+  for (const [role, path] of paths) {
+    assert.equal(dashboardPathForRole(role), path, role);
+  }
 });

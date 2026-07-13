@@ -8,6 +8,7 @@ import { safeAuthRedirect } from "@/lib/auth-redirect";
 import { POLICY_VERSION, requiredAgreementPolicies } from "@/lib/policies";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { dashboardPathForRole } from "@/lib/roles";
+import { AuthModeTabs } from "@/components/AuthModeTabs";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -77,7 +78,8 @@ function AuthShell({
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-12">
       <form onSubmit={onSubmit} className="w-full rounded-2xl border border-white/10 bg-white/[0.05] p-6 backdrop-blur-xl">
-        <h1 className="text-3xl font-bold text-white">{title}</h1>
+        <AuthModeTabs current="login" />
+        <h1 className="mt-6 text-3xl font-bold text-white">{title}</h1>
         <input name="email" type="email" required placeholder="Email" className="focus-ring mt-6 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-white" />
         <div className="relative mt-3">
           <input name="password" type={showPassword ? "text" : "password"} minLength={8} maxLength={100} required autoComplete="current-password" placeholder="Password" className="focus-ring w-full rounded-xl border border-white/10 bg-ink px-4 py-3 pr-24 text-white" />

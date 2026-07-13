@@ -20,7 +20,7 @@ export function CustomerCareButton({ variant = "footer" }: CustomerCareButtonPro
   }
 
   const className = variant === "header"
-    ? "inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-acid/30 bg-acid/[0.06] px-2.5 text-acid transition hover:border-acid/60 hover:bg-acid/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid sm:px-3"
+    ? "inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-acid/30 bg-acid/[0.06] px-3 text-acid transition hover:border-acid/60 hover:bg-acid/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid sm:px-3"
     : variant === "menu"
       ? "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-acid/30 px-4 py-3 font-semibold text-acid transition hover:bg-acid/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
       : "inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid";

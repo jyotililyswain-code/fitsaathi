@@ -45,10 +45,12 @@ export function OwnerPopover() {
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-controls="owner-popover"
-        className="inline-flex items-center gap-1.5 rounded-full border border-acid/30 bg-acid/[0.08] px-3 py-2 text-xs font-semibold text-acid shadow-[0_0_20px_rgba(0,255,136,0.08)] transition duration-200 hover:border-acid/60 hover:bg-acid/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:px-4 sm:text-sm"
+        aria-label="Owner"
+        title="Owner"
+        className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-acid/30 bg-acid/[0.08] px-3 text-xs font-semibold text-acid shadow-[0_0_20px_rgba(0,255,136,0.08)] transition duration-200 hover:border-acid/60 hover:bg-acid/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:px-4 sm:text-sm"
       >
         <Crown className="h-3.5 w-3.5" aria-hidden="true" />
-        Owner
+        <span className="hidden min-[360px]:inline">Owner</span>
       </button>
 
       <div
