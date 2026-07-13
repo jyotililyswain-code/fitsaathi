@@ -64,7 +64,7 @@ app.post("/api/auth/register", asyncRoute(async (request, response) => {
     const created = await tx.user.create({ data: { ...(supabaseAuthUserId ? { id: supabaseAuthUserId } : {}), ...details, passwordHash, acceptedPolicies: input.acceptedPolicies === true, acceptedAt: input.acceptedPolicies ? new Date() : undefined, onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: publicUser });
     if (interestList.interests.length) await tx.userInterest.createMany({ data: interestList.interests.map(interest => ({ userId: created.id, interest })) });
     return created;
-  });
+  }, { timeout: 20_000 });
   response.status(201).json(await issueSession(user, response));
 }));
 app.post("/api/auth/login", asyncRoute(async (request, response) => {
@@ -152,7 +152,7 @@ app.post("/api/coaches", authenticate, upload.fields([{ name: "photo", maxCount:
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: coach.id, profileType: "coach", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: certificate[0]?.path } });
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "coach", phone: input.phoneNumber } });
     return { coach, user };
-  });
+  }, { timeout: 20_000 });
   response.status(201).json({ profile: result.coach, session: await issueSession(result.user, response) });
 }));
 app.put("/api/coaches/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
@@ -248,7 +248,7 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
     await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: dojoFiles.verificationDocumentPathname } });
     const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
     return { dojo, user };
-  }); } catch (error) { removeUploads(auxiliaryBlobPaths); await removeBlobUploads(dojoFiles.created); throw error; }
+  }, { timeout: 20_000 }); } catch (error) { removeUploads(auxiliaryBlobPaths); await removeBlobUploads(dojoFiles.created); throw error; }
   console.info("dojo.registration_created", { profileId: result.dojo.id, status: result.dojo.status, approved: result.dojo.approved, verified: result.dojo.verified, autoActivated: true, hasBusinessPhoto: true, hasVerificationDocument: true });
   response.status(201).json({ profile: result.dojo, session: await issueSession(result.user, response) });
 }));
@@ -321,7 +321,7 @@ app.get("/api/seller/me", authenticate, asyncRoute(async (request: AuthRequest, 
 app.post("/api/sellers", authenticate, upload.fields([{ name: "aadhaar", maxCount: 1 }, { name: "profile", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({ storeName: z.string().min(2), phone: z.string().min(8), address: z.string().min(8), bio: z.string().max(1000).optional(), gstNumber: z.string().optional(), website: z.string().optional(), socialLinks: z.string().optional() }).parse(request.body); const files = request.files as Record<string, Express.Multer.File[]>;
   const aadhaar = await optimizeUploads(files?.aadhaar || [], "aadhaar"); const profile = await optimizeUploads(files?.profile || [], "sellers");
-  const result = await prisma.$transaction(async tx => { const seller = await tx.seller.create({ data: { ownerId: request.user!.id, ...input, aadhaarPath: aadhaar[0]?.path, profilePath: profile[0]?.path } }); const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "seller", phone: input.phone } }); return { seller, user }; });
+  const result = await prisma.$transaction(async tx => { const seller = await tx.seller.create({ data: { ownerId: request.user!.id, ...input, aadhaarPath: aadhaar[0]?.path, profilePath: profile[0]?.path } }); const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "seller", phone: input.phone } }); return { seller, user }; }, { timeout: 20_000 });
   response.status(201).json({ ...result.seller, session: await issueSession(result.user, response) });
 }));
 app.patch("/api/sellers/:id/verify", authenticate, allowRoles("admin", "super_admin", "moderator"), asyncRoute(async (request: AuthRequest, response) => { const status = z.object({ status: z.enum(["pending", "verified", "trusted", "rejected", "suspended"]) }).parse(request.body).status; const seller = await prisma.seller.update({ where: { id: String(request.params.id) }, data: { status, verified: ["verified", "trusted"].includes(status), trusted: status === "trusted" } }); await prisma.adminLog.create({ data: { actorId: request.user!.id, action: "seller_status", targetId: seller.id, details: { status }, ip: request.ip } }); response.json(seller); }));

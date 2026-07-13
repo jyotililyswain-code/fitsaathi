@@ -55,7 +55,7 @@ socialRouter.patch("/me", requireAdultSocialAccess, asyncRoute(async (request: A
     if (interestList?.ok) { await tx.userInterest.deleteMany({ where: { userId: request.user!.id } }); if (interestList.interests.length) await tx.userInterest.createMany({ data: interestList.interests.map(interest => ({ userId: request.user!.id, interest })) }); }
     if (achievements) { await tx.userAchievement.deleteMany({ where: { userId: request.user!.id } }); if (achievements.length) await tx.userAchievement.createMany({ data: achievements.map(item => ({ userId: request.user!.id, ...item })) }); }
     if (socialLinks) { await tx.userSocialLink.deleteMany({ where: { userId: request.user!.id } }); if (socialLinks.length) await tx.userSocialLink.createMany({ data: socialLinks.map(item => ({ userId: request.user!.id, ...item })) }); }
-  });
+  }, { timeout: 20_000 });
   const updated = await prisma.user.findUniqueOrThrow({ where: { id: request.user!.id }, include: publicInclude });
   response.json({ ...publicProfile(updated), email: updated.email, phone: updated.phone, profileCompletion: profileCompletion(updated) });
 }));
@@ -97,7 +97,7 @@ socialRouter.post("/verification", socialUpload.fields([{ name: "aadhaarFront", 
     const verification = await tx.socialVerification.upsert({ where: { userId: request.user!.id }, update: { governmentIdEncrypted, governmentIdBackEncrypted, ageProofEncrypted, selfieEncrypted, introVideoEncrypted, status, riskScore, automatedNotes, rejectionReason: null, reviewedAt: null, reviewedById: null }, create: { userId: request.user!.id, governmentIdEncrypted, governmentIdBackEncrypted, ageProofEncrypted, selfieEncrypted, introVideoEncrypted, status, riskScore, automatedNotes } });
     if (riskScore > 0) await tx.moderationCase.create({ data: { subjectId: request.user!.id, targetType: "verification", targetId: verification.id, category: duplicateHashes.size ? "duplicate_photo" : "photo_quality", riskScore, evidence: { duplicateCount: duplicateHashes.size } } });
     return verification;
-  });
+  }, { timeout: 20_000 });
   removePrivateFiles(previous ? [previous.governmentIdEncrypted, previous.governmentIdBackEncrypted, previous.ageProofEncrypted, previous.selfieEncrypted, previous.introVideoEncrypted] : []);
   response.status(201).json({ id: result.id, status: result.status, riskScore: result.riskScore });
 }));
@@ -182,7 +182,7 @@ socialRouter.patch("/invites/:id", asyncRoute(async (request: AuthRequest, respo
     if (["blocked", "disconnected"].includes(status)) await tx.conversation.updateMany({ where: { connectionId: id }, data: { active: false } });
     if (status === "blocked") await tx.userBlock.upsert({ where: { blockerId_blockedId: { blockerId: request.user!.id, blockedId: invite.senderId } }, update: {}, create: { blockerId: request.user!.id, blockedId: invite.senderId, reason: "Blocked from invite response" } });
     return item;
-  });
+  }, { timeout: 20_000 });
   response.json(updated);
 }));
 
@@ -212,7 +212,7 @@ socialRouter.post("/conversations/:id/messages", socialUpload.single("media"), a
     const recipientId = conversation.userOneId === request.user!.id ? conversation.userTwoId : conversation.userOneId;
     await tx.notification.create({ data: { userId: recipientId, type: "message_received", title: "New message", message: input.type === "text" ? (input.content || "New message").slice(0, 120) : `New ${input.type} message` } });
     return created;
-  });
+  }, { timeout: 20_000 });
   response.status(201).json({ ...message, mediaUrl: mediaPath ? `/api/social/messages/${message.id}/media` : null, mediaPath: undefined });
 }));
 
@@ -242,7 +242,7 @@ socialRouter.get("/profile-views", asyncRoute(async (request: AuthRequest, respo
 socialRouter.post("/block", asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({ userId: z.string().uuid(), reason: z.string().trim().max(300).optional() }).parse(request.body);
   if (input.userId === request.user!.id) return response.status(400).json({ error: "You cannot block yourself." });
-  const block = await prisma.$transaction(async tx => { const item = await tx.userBlock.upsert({ where: { blockerId_blockedId: { blockerId: request.user!.id, blockedId: input.userId } }, update: { reason: input.reason }, create: { blockerId: request.user!.id, blockedId: input.userId, reason: input.reason } }); await tx.connectionInvite.updateMany({ where: { OR: [{ senderId: request.user!.id, recipientId: input.userId }, { senderId: input.userId, recipientId: request.user!.id }] }, data: { status: "blocked" } }); await tx.conversation.updateMany({ where: { OR: [{ userOneId: request.user!.id, userTwoId: input.userId }, { userOneId: input.userId, userTwoId: request.user!.id }] }, data: { active: false } }); return item; });
+  const block = await prisma.$transaction(async tx => { const item = await tx.userBlock.upsert({ where: { blockerId_blockedId: { blockerId: request.user!.id, blockedId: input.userId } }, update: { reason: input.reason }, create: { blockerId: request.user!.id, blockedId: input.userId, reason: input.reason } }); await tx.connectionInvite.updateMany({ where: { OR: [{ senderId: request.user!.id, recipientId: input.userId }, { senderId: input.userId, recipientId: request.user!.id }] }, data: { status: "blocked" } }); await tx.conversation.updateMany({ where: { OR: [{ userOneId: request.user!.id, userTwoId: input.userId }, { userOneId: input.userId, userTwoId: request.user!.id }] }, data: { active: false } }); return item; }, { timeout: 20_000 });
   response.status(201).json(block);
 }));
 
