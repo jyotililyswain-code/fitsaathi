@@ -3,6 +3,7 @@ import Script from "next/script";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
+import { AuthSessionProvider } from "@/lib/auth-client";
 import { JsonLd } from "@/components/JsonLd";
 import {
   generateSeoMetadata,
@@ -45,9 +46,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </Script>
           </>
         ) : null}
-        <Header />
-        {children}
-        <Footer />
+        <AuthSessionProvider>
+          <Header />
+          {children}
+          <Footer />
+        </AuthSessionProvider>
       </body>
     </html>
   );

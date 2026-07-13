@@ -38,17 +38,6 @@ export async function createSupabaseAuthUser(input: AuthUserInput) {
   return data.user?.id;
 }
 
-export async function rememberSupabaseAuthLogin(email: string, password: string) {
-  if (!isSupabaseConfigured) return;
-  const client = createSupabaseServerClient();
-  if (!client) return;
-
-  const { error } = await client.auth.signInWithPassword({ email, password });
-  if (error) {
-    console.warn("supabase_auth_login_skipped", error.message);
-  }
-}
-
 export async function sendSupabasePasswordReset(email: string) {
   if (!isSupabaseConfigured) return false;
   const client = createSupabaseServerClient();

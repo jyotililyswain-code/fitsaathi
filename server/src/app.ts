@@ -14,7 +14,7 @@ import { prisma } from "./db";
 import { validateInterestList } from "./interests";
 import { databaseRateLimit } from "./rate-limit";
 import { socialRouter } from "./social";
-import { createSupabaseAuthUser, rememberSupabaseAuthLogin, sendSupabasePasswordReset } from "./supabase-auth";
+import { createSupabaseAuthUser, sendSupabasePasswordReset } from "./supabase-auth";
 import { matchesRouter } from "./matches";
 import { discardIncomingUploads, dojoRegistrationUpload, optimizeUploads, readPrivateBlob, removeBlobUploads, removeUploads, upload, uploadDojoRegistrationFiles } from "./uploads";
 
@@ -29,6 +29,11 @@ const publicSellerRecord = ({ phone: _phone, aadhaarPath: _aadhaar, gstNumber: _
 const publicProductRecord = ({ sellerPrice: _sellerPrice, sellerPayout: _sellerPayout, platformFee: _platformFee, seller, ...product }: any) => ({ ...product, ...(seller ? { seller: publicSellerRecord(seller) } : {}) });
 
 const sessionCookie = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: "/" };
+
+function clearSessionCookies(response: express.Response) {
+  response.clearCookie("fitsaathi_access", sessionCookie);
+  response.clearCookie("fitsaathi_refresh", sessionCookie);
+}
 
 async function issueSession(record: { id: string; name: string; email: string; role: string }, response: express.Response) {
   const claims: SessionUser = { id: record.id, email: record.email, role: record.role };
@@ -70,21 +75,26 @@ app.post("/api/auth/register", asyncRoute(async (request, response) => {
 app.post("/api/auth/login", asyncRoute(async (request, response) => {
   const input = credentials.extend({ acceptedPolicies: z.boolean().optional(), acceptedPolicyVersion: z.string().max(40).optional() }).parse(request.body); const record = await prisma.user.findUnique({ where: { email: input.email } });
   if (!record || record.accountStatus !== "active" || !await bcrypt.compare(input.password, record.passwordHash)) return response.status(401).json({ error: "Invalid email or password.", code: "INVALID_CREDENTIALS" });
-  await rememberSupabaseAuthLogin(input.email, input.password);
   const current = input.acceptedPolicies ? await prisma.user.update({ where: { id: record.id }, data: { acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() } }) : record;
   response.json(await issueSession(current, response));
 }));
 app.post("/api/auth/refresh", asyncRoute(async (request, response) => {
   const token = String(request.body?.refreshToken || request.headers.cookie?.match(/(?:^|;\s*)fitsaathi_refresh=([^;]+)/)?.[1] || "");
-  if (token.length < 20) return response.status(401).json({ error: "Refresh session expired." });
+  if (token.length < 20) {
+    clearSessionCookies(response);
+    return response.status(401).json({ error: "Refresh session expired." });
+  }
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } });
-  if (!stored || stored.expiresAt < new Date() || stored.user.accountStatus !== "active") return response.status(401).json({ error: "Refresh session expired." });
+  if (!stored || stored.expiresAt < new Date() || stored.user.accountStatus !== "active") {
+    clearSessionCookies(response);
+    return response.status(401).json({ error: "Refresh session expired." });
+  }
   const user = { id: stored.user.id, email: stored.user.email, role: stored.user.role };
   const access = accessToken(user);
   response.cookie("fitsaathi_access", access, { ...sessionCookie, maxAge: 15 * 60_000 });
   response.json({ accessToken: access, user: { ...user, name: stored.user.name } });
 }));
-app.post("/api/auth/logout", asyncRoute(async (request, response) => { const token = String(request.body?.refreshToken || request.headers.cookie?.match(/(?:^|;\s*)fitsaathi_refresh=([^;]+)/)?.[1] || ""); if (token) await prisma.refreshToken.deleteMany({ where: { tokenHash: hashToken(token) } }); response.clearCookie("fitsaathi_access", sessionCookie); response.clearCookie("fitsaathi_refresh", sessionCookie); response.status(204).end(); }));
+app.post("/api/auth/logout", asyncRoute(async (request, response) => { const token = String(request.body?.refreshToken || request.headers.cookie?.match(/(?:^|;\s*)fitsaathi_refresh=([^;]+)/)?.[1] || ""); if (token) await prisma.refreshToken.deleteMany({ where: { tokenHash: hashToken(token) } }); clearSessionCookies(response); response.status(204).end(); }));
 app.get("/api/auth/me", authenticate, asyncRoute(async (request: AuthRequest, response) => response.json(await prisma.user.findUnique({ where: { id: request.user!.id }, select: publicUser }))));
 app.post("/api/auth/forgot-password", asyncRoute(async (request, response) => {
   const input = credentials.pick({ email: true }).parse(request.body);

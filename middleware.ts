@@ -2,7 +2,51 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+  const protectedPrefixes = [
+    "/admin",
+    "/owner",
+    "/super-admin-dashboard",
+    "/dashboard",
+    "/seller-dashboard",
+    "/coach-dashboard",
+    "/dojo-dashboard",
+    "/profile",
+    "/settings",
+    "/chat",
+    "/orders",
+    "/wallet",
+    "/checkout",
+    "/cart",
+    "/invites",
+    "/attendance",
+    "/verification",
+    "/complete-profile",
+    "/life",
+    "/booking",
+    "/become-a-coach",
+    "/register-dojo",
+    "/register-seller",
+    "/seller/register",
+  ];
+  const isProtectedPage = protectedPrefixes.some(
+    (prefix) =>
+      request.nextUrl.pathname === prefix ||
+      request.nextUrl.pathname.startsWith(`${prefix}/`),
+  );
+  const hasSessionCookie =
+    request.cookies.has("fitsaathi_access") ||
+    request.cookies.has("fitsaathi_refresh");
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+  loginUrl.searchParams.set(
+    "next",
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+  );
+  const response =
+    isProtectedPage && !hasSessionCookie
+      ? NextResponse.redirect(loginUrl)
+      : NextResponse.next();
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
+import { establishSupabaseSession } from "@/lib/auth-client";
 import { POLICY_VERSION, requiredAgreementPolicies } from "@/lib/policies";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { dashboardPathForRole } from "@/lib/roles";
@@ -20,11 +21,14 @@ export default function LoginPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email")).trim().toLowerCase();
+    const password = String(formData.get("password"));
     if (!accepted) return setMessage("Please agree to the current FitSaathi policies before signing in.");
     setLoading(true);
     setMessage("");
     try {
-      const result = await localApi<{ user: { role: string } }>("/auth/login", { method: "POST", body: JSON.stringify({ email: String(formData.get("email")).trim().toLowerCase(), password: String(formData.get("password")), acceptedPolicies: true, acceptedPolicyVersion: POLICY_VERSION }) });
+      const result = await localApi<{ user: { role: string } }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password, acceptedPolicies: true, acceptedPolicyVersion: POLICY_VERSION }) });
+      await establishSupabaseSession(email, password);
       notifyAuthChanged();
       const requestedPath = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("next") : null;
       router.replace(safeAuthRedirect(requestedPath, dashboardPathForRole(result.user.role)));

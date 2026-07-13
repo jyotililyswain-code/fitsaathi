@@ -47,16 +47,6 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => { setSearch(""); setFilter("all"); }, [section]);
   useEffect(() => {
-    let lastActivity = Date.now();
-    const active = () => { lastActivity = Date.now(); };
-    const events = ["pointerdown", "keydown", "touchstart"];
-    events.forEach((event) => window.addEventListener(event, active, { passive: true }));
-    const timer = window.setInterval(() => {
-      if (Date.now() - lastActivity > 30 * 60 * 1000) void logoutSession();
-    }, 60_000);
-    return () => { events.forEach((event) => window.removeEventListener(event, active)); window.clearInterval(timer); };
-  }, []);
-  useEffect(() => {
     if (!userId) return;
     setLoading(true);
     localApi<any>("/admin/snapshot").then(data => {

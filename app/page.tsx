@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { JsonLd } from "@/components/JsonLd";
+import { useSessionUser } from "@/lib/auth-client";
 import { usePlatformStats } from "@/lib/hooks";
+import { dashboardPathForRole } from "@/lib/roles";
 import { coachBookingServiceJsonLd } from "@/lib/seo";
 import { SOCIAL_INTERESTS } from "@/lib/social";
 
@@ -36,6 +38,7 @@ const features = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { user, checking } = useSessionUser();
   const stats = usePlatformStats();
   const [screen, setScreen] = useState(0);
   const [interests, setInterests] = useState<string[]>([]);
@@ -49,6 +52,18 @@ export default function OnboardingPage() {
     router.push(
       `/signup${interests.length ? `?interests=${encodeURIComponent(interests.join(","))}` : ""}`,
     );
+
+  useEffect(() => {
+    if (!checking && user) router.replace(dashboardPathForRole(user.role));
+  }, [checking, router, user]);
+
+  if (checking || user) {
+    return (
+      <main className="grid min-h-[calc(100vh-73px)] place-items-center bg-[#08090d] px-4 text-sm text-zinc-400">
+        {checking ? "Restoring your session..." : "Opening your account..."}
+      </main>
+    );
+  }
 
   return (
     <main className="relative min-h-[calc(100vh-73px)] overflow-hidden bg-[#08090d] px-4 py-8 sm:px-6">

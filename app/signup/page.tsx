@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { POLICY_VERSION } from "@/lib/policies";
+import { establishSupabaseSession } from "@/lib/auth-client";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { SOCIAL_INTERESTS } from "@/lib/social";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
@@ -51,6 +52,7 @@ export default function SignupPage() {
     const form = new FormData(event.currentTarget);
     const password = String(form.get("password"));
     const confirmation = String(form.get("passwordConfirmation"));
+    const email = String(form.get("email")).trim().toLowerCase();
     const phone = normalizePhone(String(form.get("phone")));
     const cleanInterests = uniqueInterests(interests.map(normalizeInterestValue).filter(Boolean));
 
@@ -68,7 +70,7 @@ export default function SignupPage() {
         method: "POST",
         body: JSON.stringify({
           name: String(form.get("name")).trim(),
-          email: String(form.get("email")).trim().toLowerCase(),
+          email,
           password,
           phone,
           gender: form.get("gender"),
@@ -87,6 +89,7 @@ export default function SignupPage() {
           acceptedPolicyVersion: POLICY_VERSION
         })
       });
+      await establishSupabaseSession(email, password);
       notifyAuthChanged();
       router.replace("/verification");
       router.refresh();

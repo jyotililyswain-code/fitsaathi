@@ -76,7 +76,9 @@ npm run db:migrate
 
 The Prisma migrations create the app schema, map physical table names to Supabase-friendly names, and install Row Level Security policies. In particular, direct Supabase clients can select only active public columns from `dojos`; verification-document records remain inaccessible to `anon` and `authenticated` roles.
 
-Supabase Auth is supported for new signups and password reset when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set. Existing custom JWT cookies remain in place so the current login UI and protected routes keep working.
+Supabase Auth is supported for new signups and password reset when `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set. The browser client uses Supabase's default persistent storage with automatic token refresh and URL-session detection. Use the same two environment values for the frontend and backend, and configure the deployed `NEXT_PUBLIC_SITE_URL` as an allowed Site URL/Redirect URL in Supabase Auth.
+
+Application sessions are also protected by HttpOnly cookies: a short-lived access cookie and a 30-day persistent refresh cookie. On startup the app restores the Supabase browser session when configured, checks `/auth/me`, and automatically uses `/auth/refresh` before deciding that a user is signed out. Cookies and Supabase storage are cleared only by manual logout or when the provider/session is invalid.
 
 ## Storage and production
 
