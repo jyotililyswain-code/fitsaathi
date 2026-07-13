@@ -23,7 +23,7 @@ const json = (method, body, token) => ({ method, headers: { "content-type": "app
 
 async function register(stamp, label) {
   const email = `flow-${label}-${stamp}@example.test`;
-  const created = await request(apiUrl, "/auth/register", json("POST", { name: `Flow ${label}`, email, password: "AuditPass123!", phone: `90000000${label.length}0` }), [201]);
+  const created = await request(apiUrl, "/auth/register", json("POST", { name: `Flow ${label}`, email, password: "AuditPass123!", phone: `90000000${label.length}0`, birthDate: "2012-01-01" }), [201]);
   const session = await request(apiUrl, "/auth/login", json("POST", { email, password: "AuditPass123!" }));
   return { email, id: created.user.id, session };
 }

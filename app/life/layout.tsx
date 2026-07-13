@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AdultSocialGuard } from "@/components/AdultSocialGuard";
 import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
   title: "Private Fitness Community - FitSaathi",
@@ -6,5 +7,5 @@ export const metadata = generateSeoMetadata({
   noIndex: true,
 });
 export default function Layout({ children }: { children: ReactNode }) {
-  return children;
+  return <AdultSocialGuard>{children}</AdultSocialGuard>;
 }

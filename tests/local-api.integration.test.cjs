@@ -62,7 +62,7 @@ test("local Express API authentication, uploads, marketplace CRUD, orders, and a
     const health = await api("/health");
     assert.equal(health.database, "connected");
 
-    const sellerAccount = await register("seller");
+    const sellerAccount = await register("seller", { birthDate: "2012-01-01" });
     const duplicate = await api("/auth/register", json("POST", { name: "Duplicate", email: sellerAccount.email.toUpperCase(), password: "AuditPass123!" }), [409]);
     assert.deepEqual({ code: duplicate.code, field: duplicate.field }, { code: "DUPLICATE_EMAIL", field: "email" });
     assert.match(duplicate.error, /email address already exists/i);
@@ -82,7 +82,7 @@ test("local Express API authentication, uploads, marketplace CRUD, orders, and a
     uploadedPaths.push(seller.aadhaarPath, seller.profilePath);
     sellerSession = await login(sellerAccount.email);
 
-    const adminAccount = await register("admin");
+    const adminAccount = await register("admin", { birthDate: "2012-01-01" });
     await prisma.user.update({ where: { id: adminAccount.user.id }, data: { role: "admin" } });
     const adminSession = await login(adminAccount.email);
     assert.equal((await api(`/sellers/${seller.id}/verify`, json("PATCH", { status: "trusted" }, adminSession.accessToken))).trusted, true);
@@ -109,7 +109,7 @@ test("local Express API authentication, uploads, marketplace CRUD, orders, and a
     assert.equal((await api(`/admin/products/${product.id}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).status, "approved");
     assert.ok((await api("/products?search=Audit%20Dumbbell&limit=5")).items.some((item) => item.id === product.id));
 
-    const buyerAccount = await register("buyer");
+    const buyerAccount = await register("buyer", { birthDate: "2012-01-01" });
     const buyerSession = await login(buyerAccount.email);
     await api("/admin/analytics", { headers: { authorization: `Bearer ${buyerSession.accessToken}` } }, [403]);
     await api("/cart", json("POST", { productId: product.id, quantity: 1 }, buyerSession.accessToken), [201]);

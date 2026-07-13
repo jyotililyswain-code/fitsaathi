@@ -58,7 +58,6 @@ export default function SignupPage() {
     if (!isStrongPassword(password)) return setMessage("Use 8+ characters with uppercase, lowercase, number and symbol.");
     if (password !== confirmation) return setMessage("Passwords do not match.");
     if (!isValidIndianPhone(phone)) return setMessage("Enter a valid 10 digit Indian mobile number.");
-    if (age == null || age < 18) return setMessage("FitSaathi social profiles are available to adults aged 18 and above.");
     if (!cleanInterests.length) return setMessage("Choose at least one fitness interest.");
     if (cleanInterests.some((item) => item.length > maxInterestLength || !isInterestSafe(item))) return setMessage("Please remove invalid custom interests before continuing.");
 
@@ -83,8 +82,6 @@ export default function SignupPage() {
           relationshipPreference: form.get("relationshipPreference") || undefined,
           profileBio: form.get("profileBio"),
           fitnessLevel: form.get("fitnessLevel"),
-          preferredAgeMin: Number(form.get("preferredAgeMin")),
-          preferredAgeMax: Number(form.get("preferredAgeMax")),
           interests: cleanInterests,
           acceptedPolicies: true,
           acceptedPolicyVersion: POLICY_VERSION
@@ -156,8 +153,6 @@ export default function SignupPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field name="fitnessGoal" placeholder="Fitness goal" />
             <Field name="relationshipPreference" required={false} placeholder="Relationship preference (optional)" />
-            <Field name="preferredAgeMin" type="number" min="18" max="100" defaultValue={age ? Math.max(18, age - 2) : 18} placeholder="Preferred minimum age" />
-            <Field name="preferredAgeMax" type="number" min="18" max="100" defaultValue={age ? age + 2 : 30} placeholder="Preferred maximum age" />
             <textarea name="profileBio" required minLength={20} maxLength={1200} rows={4} placeholder="Profile bio - your training style, experience and what you are looking for" className="field sm:col-span-2" />
           </div>
         </Section>

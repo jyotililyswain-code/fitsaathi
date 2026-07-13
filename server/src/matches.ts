@@ -2,12 +2,15 @@ import { Router } from "express";
 import { z } from "zod";
 import { authenticate, type AuthRequest } from "./auth";
 import { prisma } from "./db";
+import { ageFromBirthDate } from "../../lib/age-eligibility";
+import { requireAdultSocialAccess } from "./social-access";
 
 export const matchesRouter = Router();
 
 const asyncRoute = (handler: (request: any, response: any) => Promise<unknown>) => (request: any, response: any, next: any) => Promise.resolve(handler(request, response)).catch(next);
 
 matchesRouter.use(authenticate);
+matchesRouter.use(requireAdultSocialAccess);
 
 matchesRouter.get("/interests", asyncRoute(async (request: AuthRequest, response) => {
   const interest = z.string().trim().min(2).max(50).parse(request.query.interest);
@@ -20,7 +23,7 @@ matchesRouter.get("/interests", asyncRoute(async (request: AuthRequest, response
     }
   });
 
-  const currentAge = ageFromDate(currentUser.birthDate);
+  const currentAge = ageFromBirthDate(currentUser.birthDate);
   if (!isProfileCompleteForMatching(currentUser) || currentAge == null) {
     return response.status(409).json({
       error: "Complete your profile verification before using Interest Match Search.",
@@ -53,9 +56,9 @@ matchesRouter.get("/interests", asyncRoute(async (request: AuthRequest, response
     take: 100
   });
 
-  const minAge = currentAge - 2;
+  const minAge = Math.max(18, currentAge - 2);
   const items = candidates
-    .map((user) => ({ user, age: ageFromDate(user.birthDate) }))
+    .map((user) => ({ user, age: ageFromBirthDate(user.birthDate) }))
     .filter(({ user, age }) => age != null && age >= minAge && age <= currentAge && isProfileCompleteForMatching(user))
     .slice(0, 30)
     .map(({ user, age }) => ({
@@ -82,13 +85,4 @@ function isProfileCompleteForMatching(user: any) {
     user.socialVerification?.status === "approved" &&
     user.profilePhotos?.length >= 4
   );
-}
-
-function ageFromDate(value?: Date | string | null) {
-  if (!value) return null;
-  const birth = new Date(value);
-  const now = new Date();
-  let age = now.getFullYear() - birth.getFullYear();
-  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age -= 1;
-  return age;
 }

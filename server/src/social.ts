@@ -6,12 +6,19 @@ import { cleanInterest, validateInterestList } from "./interests";
 import { inspectPhoto, moderateText, saferUsername } from "./moderation";
 import { readEncryptedFile, removePrivateFiles, storeEncryptedFile } from "./private-storage";
 import { discardIncomingUploads, optimizeUploads, socialUpload } from "./uploads";
+import { ageFromBirthDate, isMatchMakingEligible } from "../../lib/age-eligibility";
+import { requireAdultSocialAccess } from "./social-access";
 
 export const socialRouter = Router();
 const admins = ["admin", "super_admin", "moderator", "support_admin"];
 const asyncRoute = (handler: (request: any, response: any) => Promise<unknown>) => (request: any, response: any, next: any) => Promise.resolve(handler(request, response)).catch(next);
 
 socialRouter.use(authenticate);
+
+socialRouter.get("/eligibility", asyncRoute(async (request: AuthRequest, response) => {
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: request.user!.id }, select: { birthDate: true } });
+  response.set("Cache-Control", "no-store").json({ eligible: isMatchMakingEligible(user.birthDate), age: ageFromBirthDate(user.birthDate), minimumAge: 18 });
+}));
 
 const publicInclude = {
   profilePhotos: { where: { moderationStatus: { not: "blocked" as const } }, orderBy: { sortOrder: "asc" as const } },
@@ -27,7 +34,7 @@ socialRouter.get("/me", asyncRoute(async (request: AuthRequest, response) => {
   response.set("Cache-Control", "no-store").json({ ...publicProfile(user), email: user.email, phone: user.phone, birthDate: user.birthDate, profileCompletion: profileCompletion(user) });
 }));
 
-socialRouter.patch("/me", asyncRoute(async (request: AuthRequest, response) => {
+socialRouter.patch("/me", requireAdultSocialAccess, asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({
     name: z.string().trim().min(2).max(80).optional(), gender: z.enum(["male", "female", "other"]).optional(), birthDate: z.coerce.date().optional(),
     city: z.string().trim().min(2).max(80).optional(), state: z.string().trim().min(2).max(80).optional(), country: z.string().trim().min(2).max(80).optional(),
@@ -95,6 +102,8 @@ socialRouter.post("/verification", socialUpload.fields([{ name: "aadhaarFront", 
   response.status(201).json({ id: result.id, status: result.status, riskScore: result.riskScore });
 }));
 
+socialRouter.use(requireAdultSocialAccess);
+
 socialRouter.get("/discover", asyncRoute(async (request: AuthRequest, response) => {
   const query = z.object({ interest: z.string().trim().max(50).optional(), gender: z.enum(["male", "female", "other"]).optional(), ageMin: z.coerce.number().int().min(18).max(100).optional(), ageMax: z.coerce.number().int().min(18).max(100).optional(), distance: z.coerce.number().min(1).max(1000).optional(), city: z.string().trim().max(80).optional(), online: z.enum(["true", "false"]).optional(), sort: z.enum(["nearest", "active", "newest"]).default("active"), limit: z.coerce.number().int().min(1).max(100).default(30) }).parse(request.query);
   const viewer = await prisma.user.findUniqueOrThrow({ where: { id: request.user!.id }, include: { interests: true, socialVerification: { select: { status: true } } } });
@@ -126,7 +135,7 @@ socialRouter.get("/profiles/:id", asyncRoute(async (request: AuthRequest, respon
   const id = z.string().uuid().parse(request.params.id);
   if (await isBlocked(request.user!.id, id)) return response.status(404).json({ error: "Profile not found." });
   const profile = await prisma.user.findFirst({ where: { id, accountStatus: "active" }, include: publicInclude });
-  if (!profile) return response.status(404).json({ error: "Profile not found." });
+  if (!profile || !isMatchMakingEligible(profile.birthDate)) return response.status(404).json({ error: "Profile not found." });
   if (id !== request.user!.id) await prisma.profileView.create({ data: { viewerId: request.user!.id, viewedId: id } });
   response.json(publicProfile(profile));
 }));
@@ -150,7 +159,7 @@ socialRouter.post("/invites", asyncRoute(async (request: AuthRequest, response) 
     prisma.user.findUniqueOrThrow({ where: { id: request.user!.id }, include: { socialVerification: true } }),
     prisma.user.findUnique({ where: { id: input.recipientId }, include: { socialVerification: true } })
   ]);
-  if (!recipient || !hasApprovedVerification(sender) || !hasApprovedVerification(recipient)) return response.status(403).json({ error: "Both members need approved identity verification before invites unlock." });
+  if (!recipient || !isMatchMakingEligible(recipient.birthDate) || !hasApprovedVerification(sender) || !hasApprovedVerification(recipient)) return response.status(403).json({ error: "Both members must be aged 18 or older and have approved identity verification before invites unlock." });
   const reverse = await prisma.connectionInvite.findFirst({ where: { senderId: input.recipientId, recipientId: sender.id } });
   if (reverse) return response.status(409).json({ error: `This connection already exists with status ${reverse.status}.`, inviteId: reverse.id });
   const invite = await prisma.connectionInvite.upsert({ where: { senderId_recipientId: { senderId: sender.id, recipientId: input.recipientId } }, update: { status: "pending", message: input.message }, create: { senderId: sender.id, ...input } });
@@ -374,7 +383,7 @@ function oppositeGender(value?: string | null) {
   return undefined;
 }
 
-function ageFromDate(value?: Date | string | null) { if (!value) return null; const birth = new Date(value); const now = new Date(); let age = now.getFullYear() - birth.getFullYear(); if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age -= 1; return age; }
+const ageFromDate = ageFromBirthDate;
 function dateForAge(age: number) { const date = new Date(); date.setFullYear(date.getFullYear() - age); return date; }
 function distanceKm(aLat?: number | null, aLng?: number | null, bLat?: number | null, bLng?: number | null) { if (aLat == null || aLng == null || bLat == null || bLng == null) return null; const rad = (value: number) => value * Math.PI / 180; const dLat = rad(bLat - aLat), dLng = rad(bLng - aLng); const value = Math.sin(dLat / 2) ** 2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2; return Math.round(6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value)) * 10) / 10; }
 function compatibility(viewer: any, candidate: any) { const first = new Set((viewer.interests || []).map((item: any) => item.interest.toLowerCase())); const second = new Set((candidate.interests || []).map((item: any) => item.interest.toLowerCase())); const common = [...first].filter(value => second.has(value)).length; const union = new Set([...first, ...second]).size || 1; const interestScore = common / union * 70; const goalScore = viewer.fitnessGoal && candidate.fitnessGoal && viewer.fitnessGoal.toLowerCase() === candidate.fitnessGoal.toLowerCase() ? 20 : 0; const ageDifference = Math.abs((ageFromDate(viewer.birthDate) || 0) - (ageFromDate(candidate.birthDate) || 0)); return Math.max(0, Math.min(100, Math.round(interestScore + goalScore + Math.max(0, 10 - ageDifference * 2)))); }

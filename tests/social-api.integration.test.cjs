@@ -6,6 +6,7 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+const ageRestrictionMessage = "Match Making is available only for users aged 18 years or older.";
 
 async function api(route, options = {}, expected = [200]) {
   const response = await fetch(`${baseUrl}${route}`, options);
@@ -46,8 +47,6 @@ async function register(label, stamp, extra = {}) {
     fitnessGoal: "Karate strength",
     profileBio: `Automated social test profile for ${label}. Looking for safe training partners.`,
     fitnessLevel: "intermediate",
-    preferredAgeMin: 18,
-    preferredAgeMax: 35,
     interests: ["Karate", "Gym"],
     ...extra
   }), [201]);
@@ -62,8 +61,14 @@ test("FitSaathi Life social APIs provide free verified profiles, invites, chat, 
     const alice = await register("alice", stamp);
     const bob = await register("bob", stamp);
     const admin = await register("admin", stamp);
-    userIds.push(alice.id, bob.id, admin.id);
+    const minor = await register("minor", stamp, { birthDate: "2012-01-01" });
+    userIds.push(alice.id, bob.id, admin.id, minor.id);
     await prisma.user.update({ where: { id: admin.id }, data: { role: "admin" } });
+
+    assert.equal((await api("/auth/me", auth(minor.token))).id, minor.id, "a minor account should be created and remain signed in");
+    assert.equal((await api("/social/eligibility", auth(minor.token))).eligible, false);
+    assert.equal((await api("/social/discover", auth(minor.token), [403])).error, ageRestrictionMessage);
+    assert.equal((await api("/matches/interests?interest=Karate", auth(minor.token), [403])).error, ageRestrictionMessage);
 
     await prisma.userProfilePhoto.createMany({
       data: [alice.id, bob.id].flatMap((userId, userIndex) => [1, 2, 3, 4].map((sortOrder) => ({
@@ -117,7 +122,7 @@ test("FitSaathi Life social APIs provide free verified profiles, invites, chat, 
     await api("/social/reports", json("POST", { targetId: conversation.id, type: "chat", reason: "Automated moderation report for API test." }, alice.token), [201]);
     await api("/social/emergency", json("POST", { message: "Automated emergency request for API test." }, alice.token), [201]);
 
-    assert.ok((await api("/social/admin/overview", auth(admin.token))).users >= 3);
+    assert.ok((await api("/social/admin/overview", auth(admin.token))).users >= 4);
     assert.ok(Array.isArray(await api("/social/admin/verifications", auth(admin.token))));
     assert.ok(Array.isArray(await api("/social/admin/reports", auth(admin.token))));
     assert.ok(Array.isArray(await api("/social/admin/conversations", auth(admin.token))));
