@@ -92,4 +92,8 @@ This repo is now designed to deploy as a single Vercel Next.js project:
 4. Do not set `NEXT_PUBLIC_API_URL` unless you intentionally want to call a separate external API.
 5. Vercel should use `npm run build`, which runs `prisma generate` before `next build`.
 
-Uploads use private Blob storage. Active dojo business photos are streamed through the application API; verification documents remain behind authenticated owner/admin endpoints.
+Provider registration uploads use Vercel Blob's authenticated client-upload flow. The browser validates and compresses one file at a time, requests a short-lived upload token from `/api/provider-uploads`, uploads directly to the private Blob store, and then submits only storage path strings to `/api/coaches` or `/api/dojos`. Image bytes and Base64 data never pass through those Vercel registration functions. The Blob read/write token remains server-only.
+
+Local development uses the same path-only registration contract with a one-file-at-a-time fallback under `PRIVATE_UPLOAD_PATH/provider-registration`; that directory is never exposed by the static `/uploads` route. Public coach and dojo photos are streamed through profile-media API endpoints. Certificates and Aadhaar files are served only through authenticated, owner/admin-checked, `no-store` document endpoints, and raw private paths are excluded from public provider responses.
+
+For Vercel deployments, connect a private Blob store and set `BLOB_READ_WRITE_TOKEN` (plus `BLOB_STORE_ID` when the integration supplies it). No Supabase Storage bucket or storage-policy migration is used by this flow. Keep `ENABLE_AADHAAR_VERIFICATION` and `NEXT_PUBLIC_ENABLE_AADHAAR_VERIFICATION` equal so the dojo form and server validation agree.

@@ -29,10 +29,7 @@ export async function POST(request: Request) {
           providerOwnerId: user.id,
           providerProfileId: booking.coachId || booking.dojoId || "",
           sessionDate: booking.preferredDate,
-          codeHash,
-          status: "active",
-          usedAt: null,
-          expiresAt: { gt: now }
+          codeHash
         },
         orderBy: { createdAt: "desc" }
       });
@@ -40,6 +37,7 @@ export async function POST(request: Request) {
 
       const existing = await tx.attendance.findFirst({ where: { bookingId: booking.id, sessionDate: booking.preferredDate, status: "marked" } });
       if (existing) return { attendance: existing, reused: true };
+      if (attendanceCode.status !== "active" || attendanceCode.usedAt || attendanceCode.expiresAt <= now) return null;
 
       const attendance = await tx.attendance.create({
         data: {

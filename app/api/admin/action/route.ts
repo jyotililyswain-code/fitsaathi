@@ -6,6 +6,7 @@ import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
 import { getClientIp, isRateLimited, sanitizeText } from "@/lib/security";
 import { dojoModerationData } from "@/lib/dojo-visibility";
 import { removeUploads } from "@/server/src/uploads";
+import { removeProviderUploads } from "@/server/src/provider-uploads";
 
 type ActionBody = { action?: unknown; targetId?: unknown; value?: unknown; reason?: unknown; settings?: unknown };
 
@@ -64,7 +65,9 @@ export async function POST(request: Request) {
       if (!dojo) return NextResponse.json({ error: "Dojo registration not found." }, { status: 404 });
       const verification = await prisma.providerVerification.findUnique({ where: { profileType_profileId: { profileType: "dojo", profileId: dojo.id } }, select: { certificatePath: true, aadhaarFrontPath: true, aadhaarBackPath: true } });
       await prisma.$transaction([prisma.providerVerification.deleteMany({ where: { profileType: "dojo", profileId: dojo.id } }), prisma.dojo.delete({ where: { id: dojo.id } })]);
-      removeUploads([dojo.imagePath, verification?.certificatePath, verification?.aadhaarFrontPath, verification?.aadhaarBackPath]);
+      const storedPaths = [dojo.imagePath, verification?.certificatePath, verification?.aadhaarFrontPath, verification?.aadhaarBackPath];
+      await removeProviderUploads(storedPaths);
+      removeUploads(storedPaths);
     } else if (action === "delete_user") {
       if (!canDelete(role) || targetId === actor.id) return NextResponse.json({ error: "Delete permission required." }, { status: 403 });
       await prisma.user.delete({ where: { id: targetId } });

@@ -28,20 +28,33 @@ async function register(stamp, label) {
   return { email, id: created.user.id, session };
 }
 
-function providerForm(kind) {
+async function uploadProviderFile(token, registrationType, kind, fileName = "test.jpg", contentType = "image/jpeg") {
   const form = new FormData();
-  const fields = kind === "coach"
-    ? { name: "Flow Coach", phoneNumber: "9876543210", category: "Strength", city: "Delhi", availableDays: "Monday", availableTimings: "6:00 AM, 7:00 PM", bio: "Automated provider flow test." }
-    : { establishmentType: "DOJO", name: "Flow Dojo", ownerName: "Flow Owner", phoneNumber: "9876543211", category: "Karate", city: "Delhi", description: "Automated dojo flow test." };
-  for (const [key, value] of Object.entries(fields)) form.append(key, value);
+  form.set("registrationType", registrationType);
+  form.set("kind", kind);
   const image = fs.readFileSync(path.join(process.cwd(), "public", "scroll-art", "dumbbell.jpg"));
-  form.append("photo", new Blob([image], { type: "image/jpeg" }), "photo.jpg");
-  form.append("aadharFront", new Blob([image], { type: "image/jpeg" }), "aadhaar.jpg");
-  if (kind === "dojo") form.append("certificate", new Blob([image], { type: "image/jpeg" }), "certificate.jpg");
-  return form;
+  form.set("file", new Blob([image], { type: contentType }), fileName);
+  const uploaded = await request(apiUrl, "/provider-uploads/local", { method: "POST", headers: { authorization: `Bearer ${token}` }, body: form }, [201]);
+  return uploaded.data.path;
+}
+
+async function providerBody(kind, account, uploaded) {
+  if (kind === "coach") {
+    const profilePhotoPath = await uploadProviderFile(account.session.accessToken, "coach", "profile");
+    uploaded.push(profilePhotoPath);
+    const aadhaarFrontPath = await uploadProviderFile(account.session.accessToken, "coach", "aadhaar-front");
+    uploaded.push(aadhaarFrontPath);
+    return { name: "Flow Coach", phoneNumber: "9876543210", category: "Strength", city: "Delhi", availableDays: ["Monday"], availableTimings: ["6:00 AM", "7:00 PM"], bio: "Automated provider flow test.", acceptedTerms: true, profilePhotoPath, aadhaarFrontPath };
+  }
+  const businessPhotoPath = await uploadProviderFile(account.session.accessToken, "dojo", "logo");
+  uploaded.push(businessPhotoPath);
+  const certificatePath = await uploadProviderFile(account.session.accessToken, "dojo", "certificate");
+  uploaded.push(certificatePath);
+  return { establishmentType: "DOJO", name: "Flow Dojo", ownerName: "Flow Owner", email: account.email, phoneNumber: "9876543211", category: "Karate", address: "12 Flow Street", city: "Delhi", state: "Delhi", pincode: "110001", experience: "8 years", description: "Automated dojo flow test.", acceptedTerms: true, businessPhotoPath, certificatePath };
 }
 
 function storedFile(filePath) {
+  if (String(filePath).startsWith("local-private:")) return path.join(process.cwd(), "server", "private", "provider-registration", String(filePath).slice("local-private:".length));
   return path.join(process.cwd(), "server", "uploads", String(filePath).replace(/^\/uploads\//, ""));
 }
 
@@ -52,7 +65,7 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
   let coachId, dojoId, bookingId;
   try {
     const coachAccount = await register(stamp, "coach"); userIds.push(coachAccount.id);
-    const coachResult = await request(apiUrl, "/coaches", { method: "POST", headers: { authorization: `Bearer ${coachAccount.session.accessToken}` }, body: providerForm("coach") }, [201]);
+    const coachResult = await request(apiUrl, "/coaches", json("POST", await providerBody("coach", coachAccount, uploaded), coachAccount.session.accessToken), [201]);
     coachId = coachResult.profile.id;
     const coachToken = coachResult.session.accessToken;
     const publicCoach = (await request(apiUrl, "/coaches?limit=100")).find(item => item.id === coachId);
@@ -63,9 +76,7 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     assert.equal((await request(apiUrl, `/coaches/${coachId}`, json("PUT", { bio: "Updated PostgreSQL coach bio." }, coachToken))).bio, "Updated PostgreSQL coach bio.");
 
     const dojoAccount = await register(stamp, "dojo"); userIds.push(dojoAccount.id);
-    const dojoForm = providerForm("dojo");
-    dojoForm.append("email", dojoAccount.email); dojoForm.append("address", "12 Flow Street"); dojoForm.append("state", "Delhi"); dojoForm.append("pincode", "110001"); dojoForm.append("experience", "8 years");
-    const dojoResult = await request(apiUrl, "/dojos", { method: "POST", headers: { authorization: `Bearer ${dojoAccount.session.accessToken}` }, body: dojoForm }, [201]);
+    const dojoResult = await request(apiUrl, "/dojos", json("POST", await providerBody("dojo", dojoAccount, uploaded), dojoAccount.session.accessToken), [201]);
     dojoId = dojoResult.profile.id;
     assert.equal(await prisma.payment.count({ where: { purpose: "dojo_registration", targetId: dojoId } }), 0);
     const dojoToken = dojoResult.session.accessToken;
@@ -80,7 +91,7 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     const adminSession = await request(apiUrl, "/auth/login", json("POST", { email: admin.email, password: "AuditPass123!" }));
     assert.equal((await prisma.dojo.findUniqueOrThrow({ where: { id: dojoId } })).registrationPaymentStatus, "not_required");
     assert.equal((await request(apiUrl, `/admin/providers/coach/${coachId}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).verified, true);
-    assert.equal((await request(apiUrl, `/admin/providers/dojo/${dojoId}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).approved, true);
+    assert.equal((await request(apiUrl, `/admin/providers/dojo/${dojoId}/status`, json("PATCH", { status: "active" }, adminSession.accessToken))).approved, true);
 
     const customer = await register(stamp, "customer"); userIds.push(customer.id);
     const now = new Date();

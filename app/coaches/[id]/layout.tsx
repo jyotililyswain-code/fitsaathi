@@ -34,7 +34,7 @@ export async function generateMetadata({
       title: `${coach.name} - Fitness Coach on FitSaathi`,
       description: `View ${coach.name}'s ${coach.category} coaching profile${coach.city ? ` in ${coach.city}` : ""}, training details, and booking options on FitSaathi.`,
       path: `/coaches/${id}`,
-      image: coach.photoPath || undefined,
+      image: coach.photoPath ? `/api/coaches/${id}/photo` : undefined,
       keywords: [
         coach.name,
         `${coach.category} coach`,

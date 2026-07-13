@@ -11,6 +11,8 @@
     "lint": "eslint app components lib pages server tests middleware.ts --ext .js,.cjs,.ts,.tsx --max-warnings=0",
     "test": "tsx --test tests/*.test.ts",
     "test:payments": "tsx --test tests/manual-upi.test.ts",
+    "test:coach-registration-e2e": "tsx scripts/test-coach-registration-e2e.ts",
+    "test:dojo-registration-e2e": "tsx scripts/test-dojo-registration-e2e.ts",
     "test:local-api": "node --test --test-concurrency=1 tests/local-api.integration.test.cjs tests/postgres-flows.integration.test.cjs tests/source-of-truth.integration.test.cjs tests/social-api.integration.test.cjs",
     "test:db-models": "node --test tests/prisma-models.integration.test.cjs",
     "db:generate": "prisma generate --schema server/prisma/schema.prisma",

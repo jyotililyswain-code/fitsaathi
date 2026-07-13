@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import crypto from "node:crypto";
 import path from "node:path";
 import bcrypt from "bcryptjs";
 import cors from "cors";
@@ -16,7 +17,9 @@ import { databaseRateLimit } from "./rate-limit";
 import { socialRouter } from "./social";
 import { createSupabaseAuthUser, sendSupabasePasswordReset } from "./supabase-auth";
 import { matchesRouter } from "./matches";
-import { discardIncomingUploads, dojoRegistrationUpload, optimizeUploads, readPrivateBlob, removeBlobUploads, removeUploads, upload, uploadDojoRegistrationFiles } from "./uploads";
+import { optimizeUploads, removeUploads, upload } from "./uploads";
+import { containsInlineFileData, isOwnedProviderPath, isProviderRegistrationType, type ProviderRegistrationType } from "../../lib/provider-upload-rules";
+import { assertProviderUpload, handleProviderBlobUpload, localProviderUpload, providerStorageMode, providerUploadError, readProviderUpload, removeProviderUploads, removeUnreferencedProviderUploads, storeLocalProviderUpload } from "./provider-uploads";
 
 const app = express();
 const admins = ["admin", "super_admin", "moderator", "support_admin"];
@@ -24,7 +27,7 @@ const asyncRoute = (handler: (request: any, response: any) => Promise<unknown>) 
 const pricing = (value: unknown) => { const sellerPrice = Math.max(0, Math.round(Number(value) || 0)); return { sellerPrice, customerPrice: sellerPrice + 100, sellerPayout: sellerPrice + 50, platformFee: 50 }; };
 const establishmentTypes = ["DOJO", "GYM", "FITNESS_STUDIO", "YOGA_STUDIO", "MARTIAL_ARTS_ACADEMY", "OTHER"] as const;
 const publicUser = { id: true, name: true, email: true, phone: true, role: true, accountStatus: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
-const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, ...coach }: any) => coach;
+const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, photoPath, ...coach }: any) => ({ ...coach, photoPath: photoPath ? `/api/coaches/${coach.id}/photo` : undefined });
 const publicSellerRecord = ({ phone: _phone, aadhaarPath: _aadhaar, gstNumber: _gst, owner, ...seller }: any) => ({ ...seller, ...(owner ? { owner: { id: owner.id, name: owner.name } } : {}) });
 const publicProductRecord = ({ sellerPrice: _sellerPrice, sellerPayout: _sellerPayout, platformFee: _platformFee, seller, ...product }: any) => ({ ...product, ...(seller ? { seller: publicSellerRecord(seller) } : {}) });
 
@@ -48,12 +51,65 @@ async function issueSession(record: { id: string; name: string; email: string; r
 fs.mkdirSync(config.uploadRoot, { recursive: true });
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: config.frontendOrigin, credentials: true }));
+app.use((request: AuthRequest, response, next) => {
+  request.requestId = String(request.headers["x-request-id"] || crypto.randomUUID()).slice(0, 100);
+  response.setHeader("x-request-id", request.requestId);
+  next();
+});
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan("dev"));
 app.use("/uploads", express.static(config.uploadRoot, { maxAge: "1d", fallthrough: false }));
 app.use("/api/uploads", express.static(config.uploadRoot, { maxAge: "1d", fallthrough: false }));
 app.use("/api", databaseRateLimit(process.env.NODE_ENV === "production" ? 120 : 1000, 60_000));
 app.get("/api/health", asyncRoute(async (_request, response) => { await prisma.$queryRaw`SELECT 1`; response.json({ ok: true, database: "connected", storage: config.uploadRoot }); }));
+
+async function assertProviderRegistrationAccess(user: SessionUser, registrationType: ProviderRegistrationType) {
+  if (!["customer", registrationType].includes(user.role)) {
+    throw providerUploadError(403, "ROLE_NOT_ALLOWED", `This account cannot create a ${registrationType === "coach" ? "coach" : "dojo or gym"} registration.`);
+  }
+  const existing = registrationType === "coach"
+    ? await prisma.coach.findUnique({ where: { ownerId: user.id }, select: { id: true, status: true } })
+    : await prisma.dojo.findUnique({ where: { ownerId: user.id }, select: { id: true, status: true } });
+  if (existing) {
+    throw Object.assign(providerUploadError(409, registrationType === "coach" ? "COACH_PROFILE_EXISTS" : "DOJO_PROFILE_EXISTS", `This account already has a ${registrationType === "coach" ? "coach" : "dojo or gym"} profile.`), { profileId: existing.id, profileStatus: existing.status });
+  }
+}
+
+app.get("/api/provider-uploads/config", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  const registrationType = String(request.query.registrationType || "");
+  if (!isProviderRegistrationType(registrationType)) return response.status(400).json({ success: false, code: "INVALID_REGISTRATION_TYPE", message: "Choose coach or dojo registration." });
+  await assertProviderRegistrationAccess(request.user!, registrationType);
+  const mode = providerStorageMode();
+  if (mode === "unavailable") return response.status(503).json({ success: false, code: "STORAGE_NOT_CONFIGURED", message: "File storage is not configured. Connect a Vercel Blob store and try again." });
+  response.set("Cache-Control", "no-store").json({ success: true, data: { mode, userId: request.user!.id } });
+}));
+
+app.post("/api/provider-uploads", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  const clientPayload = (request.body as any)?.payload?.clientPayload;
+  let metadata: any;
+  try { metadata = JSON.parse(clientPayload || ""); } catch { throw providerUploadError(400, "INVALID_UPLOAD_REQUEST", "Upload metadata is invalid."); }
+  if (!isProviderRegistrationType(metadata?.registrationType)) throw providerUploadError(400, "INVALID_UPLOAD_REQUEST", "Upload metadata is invalid.");
+  await assertProviderRegistrationAccess(request.user!, metadata.registrationType);
+  response.json(await handleProviderBlobUpload(request, request.body, request.user!));
+}));
+
+app.post("/api/provider-uploads/local", authenticate, localProviderUpload.single("file"), asyncRoute(async (request: AuthRequest, response) => {
+  const registrationType = String(request.body.registrationType || "");
+  const kind = String(request.body.kind || "");
+  if (!isProviderRegistrationType(registrationType) || !request.file) throw providerUploadError(422, "INVALID_UPLOAD_REQUEST", "Select a valid file to upload.");
+  await assertProviderRegistrationAccess(request.user!, registrationType);
+  const storedPath = await storeLocalProviderUpload(request.file, registrationType, kind as any, request.user!.id);
+  console.info("provider_upload.local_completed", { requestId: request.requestId, userId: request.user!.id, registrationType, fileKind: kind, size: request.file.size });
+  response.status(201).json({ success: true, message: "File uploaded.", data: { path: storedPath } });
+}));
+
+app.post("/api/provider-uploads/cleanup", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  const parsed = z.object({ paths: z.array(z.string().min(1).max(500)).max(10) }).safeParse(request.body);
+  if (!parsed.success) return response.status(422).json({ success: false, code: "INVALID_CLEANUP_REQUEST", message: "Upload cleanup request is invalid." });
+  const ownedPaths = parsed.data.paths.filter(storedPath => isOwnedProviderPath(storedPath, "coach", request.user!.id) || isOwnedProviderPath(storedPath, "dojo", request.user!.id));
+  await removeUnreferencedProviderUploads(ownedPaths);
+  response.json({ success: true, message: "Unused uploads were removed." });
+}));
 
 const credentials = z.object({ email: z.string().trim().email().transform(v => v.toLowerCase()), password: z.string().min(8).max(100) });
 app.post("/api/auth/register", asyncRoute(async (request, response) => {
@@ -133,37 +189,62 @@ app.get("/api/coaches/:id", asyncRoute(async (request, response) => {
   const item = await prisma.coach.findUnique({ where: { id: String(request.params.id) }, include: { reviews: true } });
   item ? response.json(publicCoach(item)) : response.status(404).json({ error: "Coach not found." });
 }));
-app.post("/api/coaches", authenticate, upload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
-  const files = request.files as Record<string, Express.Multer.File[]>;
-  const incomingFiles = Object.values(files || {}).flat();
-  const parsed = z.object({ name: z.string().min(2), phoneNumber: z.string().min(10), category: z.string().min(2), customCategory: z.string().optional(), city: z.string().min(2), availableTimings: z.string().min(2), bio: z.string().max(2000).optional() }).safeParse(request.body);
+app.get("/api/coaches/:id/photo", asyncRoute(async (request, response) => {
+  const coach = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: { not: "suspended" } }, select: { photoPath: true } });
+  if (!coach?.photoPath) return response.status(404).json({ error: "Coach photo not found." });
+  const photo = await readProviderUpload(coach.photoPath);
+  if (!photo) return response.status(404).json({ error: "Coach photo not found." });
+  response.set({ "Content-Type": photo.contentType, "Content-Length": String(photo.size), "Cache-Control": "private, max-age=300" });
+  photo.stream.pipe(response);
+}));
+app.post("/api/coaches", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  if (containsInlineFileData(request.body)) return response.status(413).json({ success: false, code: "INLINE_FILE_DATA_REJECTED", message: "Upload images first, then submit only their storage paths." });
+  const parsed = z.object({
+    name: z.string().trim().min(2).max(120),
+    phoneNumber: z.string().trim().regex(/^[6-9]\d{9}$/),
+    category: z.string().trim().min(2).max(80),
+    customCategory: z.string().trim().max(80).optional(),
+    city: z.string().trim().min(2).max(80),
+    availableDays: z.array(z.string().trim().min(2).max(20)).max(7).default([]),
+    availableTimings: z.array(z.string().trim().min(2).max(80)).min(1).max(20),
+    bio: z.string().trim().max(2000).optional(),
+    profilePhotoPath: z.string().min(1).max(500).optional(),
+    certificatePath: z.string().min(1).max(500).optional(),
+    aadhaarFrontPath: z.string().min(1).max(500),
+    aadhaarBackPath: z.string().min(1).max(500).optional(),
+    acceptedTerms: z.literal(true),
+  }).refine(input => input.category !== "Other" || Boolean(input.customCategory), { path: ["customCategory"], message: "Enter the coaching category." }).safeParse(request.body);
+  const submittedPaths = [request.body?.profilePhotoPath, request.body?.certificatePath, request.body?.aadhaarFrontPath, request.body?.aadhaarBackPath]
+    .filter((value): value is string => typeof value === "string" && isOwnedProviderPath(value, "coach", request.user!.id));
   if (!parsed.success) {
-    discardIncomingUploads(incomingFiles);
-    return response.status(400).json({ error: "Please correct the coach registration fields.", issues: parsed.error.issues });
+    await removeUnreferencedProviderUploads(submittedPaths);
+    return response.status(422).json({ success: false, code: "COACH_VALIDATION_FAILED", message: "Please correct the coach registration fields.", issues: parsed.error.issues });
   }
   const input = parsed.data;
-  const existing = await prisma.coach.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, status: true } });
-  if (existing) {
-    discardIncomingUploads(incomingFiles);
-    return response.status(409).json({ error: "This account already has a coach profile.", code: "COACH_PROFILE_EXISTS", field: "ownerId", profileId: existing.id, status: existing.status });
+  console.info("coach.registration_started", { requestId: request.requestId, userId: request.user!.id, registrationType: "coach", uploadStage: "validating_paths" });
+  try {
+    await assertProviderRegistrationAccess(request.user!, "coach");
+    await Promise.all([
+      input.profilePhotoPath ? assertProviderUpload(input.profilePhotoPath, "coach", "profile", request.user!.id) : undefined,
+      input.certificatePath ? assertProviderUpload(input.certificatePath, "coach", "certificate", request.user!.id) : undefined,
+      assertProviderUpload(input.aadhaarFrontPath, "coach", "aadhaar-front", request.user!.id),
+      input.aadhaarBackPath ? assertProviderUpload(input.aadhaarBackPath, "coach", "aadhaar-back", request.user!.id) : undefined,
+    ]);
+    const category = input.category === "Other" ? String(input.customCategory) : input.category;
+    const result = await prisma.$transaction(async tx => {
+      const coach = await tx.coach.create({ data: { ownerId: request.user!.id, name: input.name, phoneNumber: input.phoneNumber, category, city: input.city, bio: input.bio, baseFee: 0, platformFee: 0, customerPrice: 0, coachPayout: 0, availableDays: input.availableDays, availableTimings: input.availableTimings, photoPath: input.profilePhotoPath } });
+      await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: coach.id, profileType: "coach", aadhaarFrontPath: input.aadhaarFrontPath, aadhaarBackPath: input.aadhaarBackPath, certificatePath: input.certificatePath } });
+      const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "coach", phone: input.phoneNumber } });
+      return { coach, user };
+    }, { timeout: 20_000 });
+    const session = await issueSession(result.user, response);
+    console.info("coach.registration_created", { requestId: request.requestId, userId: request.user!.id, registrationType: "coach", profileId: result.coach.id, databaseResult: "created" });
+    response.status(201).json({ success: true, message: "Coach registration completed.", data: { coachId: result.coach.id }, profile: result.coach, session });
+  } catch (error) {
+    await removeUnreferencedProviderUploads(submittedPaths);
+    console.error("coach.registration_failed", { requestId: request.requestId, userId: request.user!.id, registrationType: "coach", code: (error as any)?.code || "COACH_REGISTRATION_FAILED" });
+    throw error;
   }
-  if (!files?.aadharFront?.length) {
-    discardIncomingUploads(incomingFiles);
-    return response.status(400).json({ error: "Aadhaar front image is required." });
-  }
-  const [photo, certificate, aadhaarFront, aadhaarBack] = await Promise.all([
-    optimizeUploads(files.photo || [], "providers"), optimizeUploads(files.certificate || [], "providers"), optimizeUploads(files.aadharFront || [], "aadhaar"), optimizeUploads(files.aadharBack || [], "aadhaar")
-  ]);
-  const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
-  const days = Array.isArray(request.body.availableDays) ? request.body.availableDays.map(String) : request.body.availableDays ? [String(request.body.availableDays)] : [];
-  const timings = input.availableTimings.split(",").map(value => value.trim()).filter(Boolean);
-  const result = await prisma.$transaction(async tx => {
-    const coach = await tx.coach.create({ data: { ownerId: request.user!.id, name: input.name, phoneNumber: input.phoneNumber, category, city: input.city, bio: input.bio, baseFee: 0, platformFee: 0, customerPrice: 0, coachPayout: 0, availableDays: days, availableTimings: timings, photoPath: photo[0]?.path } });
-    await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: coach.id, profileType: "coach", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: certificate[0]?.path } });
-    const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "coach", phone: input.phoneNumber } });
-    return { coach, user };
-  }, { timeout: 20_000 });
-  response.status(201).json({ profile: result.coach, session: await issueSession(result.user, response) });
 }));
 app.put("/api/coaches/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const coach = await prisma.coach.findUnique({ where: { id: String(request.params.id) } });
@@ -178,7 +259,9 @@ app.delete("/api/coaches/:id", authenticate, asyncRoute(async (request: AuthRequ
   if (coach.ownerId !== request.user!.id && !["admin", "super_admin"].includes(request.user!.role)) return response.status(403).json({ error: "Not your coach profile." });
   const verification = await prisma.providerVerification.findUnique({ where: { profileType_profileId: { profileType: "coach", profileId: coach.id } } });
   await prisma.$transaction([prisma.providerVerification.deleteMany({ where: { profileType: "coach", profileId: coach.id } }), prisma.coach.delete({ where: { id: coach.id } })]);
-  removeUploads([coach.photoPath, verification?.aadhaarFrontPath, verification?.aadhaarBackPath, verification?.certificatePath]);
+  const storedPaths = [coach.photoPath, verification?.aadhaarFrontPath, verification?.aadhaarBackPath, verification?.certificatePath];
+  await removeProviderUploads(storedPaths);
+  removeUploads(storedPaths);
   response.status(204).end();
 }));
 
@@ -200,7 +283,7 @@ app.get("/api/dojos/:id", asyncRoute(async (request, response) => {
 app.get("/api/dojos/:id/business-photo", asyncRoute(async (request, response) => {
   const dojo = await prisma.dojo.findFirst({ where: { id: String(request.params.id), ...publicDojoWhere() }, select: { imagePath: true } });
   if (!dojo?.imagePath) return response.status(404).json({ error: "Business photo not found." });
-  const photo = await readPrivateBlob(dojo.imagePath);
+  const photo = await readProviderUpload(dojo.imagePath);
   if (!photo) return response.status(404).json({ error: "Business photo not found." });
   response.set({ "Content-Type": photo.contentType, "Content-Length": String(photo.size), "Cache-Control": "no-store, max-age=0" });
   photo.stream.pipe(response);
@@ -211,15 +294,32 @@ app.get("/api/dojos/:id/verification-document", authenticate, asyncRoute(async (
   if (!canManageDojo(request.user!, dojo.ownerId)) return response.status(403).json({ error: "You cannot access documents for this registration." });
   const verification = await prisma.providerVerification.findUnique({ where: { profileType_profileId: { profileType: "dojo", profileId: dojo.id } }, select: { certificatePath: true } });
   if (!verification?.certificatePath) return response.status(404).json({ error: "Verification document not found." });
-  const document = await readPrivateBlob(verification.certificatePath);
+  const document = await readProviderUpload(verification.certificatePath);
   if (!document) return response.status(404).json({ error: "Verification document not found." });
   console.info("dojo.verification_document_accessed", { profileId: dojo.id, actorRole: request.user!.role });
   response.set({ "Content-Type": document.contentType, "Content-Length": String(document.size), "Cache-Control": "private, no-store", "Content-Disposition": "inline" });
   document.stream.pipe(response);
 }));
-app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "photo", maxCount: 1 }, { name: "certificate", maxCount: 1 }, { name: "aadharFront", maxCount: 1 }, { name: "aadharBack", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
-  const files = request.files as Record<string, Express.Multer.File[]>;
-  const incomingFiles = Object.values(files || {}).flat();
+app.get("/api/provider-verifications/:type/:id/:document", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  const type = z.enum(["coach", "dojo"]).parse(request.params.type);
+  const documentKind = z.enum(["certificate", "aadhaar-front", "aadhaar-back"]).parse(request.params.document);
+  const profileId = String(request.params.id);
+  const profile = type === "coach"
+    ? await prisma.coach.findUnique({ where: { id: profileId }, select: { ownerId: true } })
+    : await prisma.dojo.findUnique({ where: { id: profileId }, select: { ownerId: true } });
+  if (!profile) return response.status(404).json({ success: false, code: "PROFILE_NOT_FOUND", message: "Provider registration not found." });
+  if (profile.ownerId !== request.user!.id && !admins.includes(request.user!.role)) return response.status(403).json({ success: false, code: "DOCUMENT_ACCESS_DENIED", message: "You cannot access documents for this registration." });
+  const verification = await prisma.providerVerification.findUnique({ where: { profileType_profileId: { profileType: type, profileId } }, select: { certificatePath: true, aadhaarFrontPath: true, aadhaarBackPath: true } });
+  const storedPath = documentKind === "certificate" ? verification?.certificatePath : documentKind === "aadhaar-front" ? verification?.aadhaarFrontPath : verification?.aadhaarBackPath;
+  if (!storedPath) return response.status(404).json({ success: false, code: "DOCUMENT_NOT_FOUND", message: "Verification document not found." });
+  const document = await readProviderUpload(storedPath);
+  if (!document) return response.status(404).json({ success: false, code: "DOCUMENT_NOT_FOUND", message: "Verification document not found." });
+  console.info("provider_verification.document_accessed", { requestId: request.requestId, userId: request.user!.id, registrationType: type, profileId, documentKind });
+  response.set({ "Content-Type": document.contentType, "Content-Length": String(document.size), "Cache-Control": "private, no-store", "Content-Disposition": "inline", "X-Content-Type-Options": "nosniff" });
+  document.stream.pipe(response);
+}));
+app.post("/api/dojos", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  if (containsInlineFileData(request.body)) return response.status(413).json({ success: false, code: "INLINE_FILE_DATA_REJECTED", message: "Upload images first, then submit only their storage paths." });
   const parsed = z.object({
     establishmentType: z.enum(establishmentTypes),
     customEstablishmentType: z.string().trim().max(80).optional(),
@@ -235,32 +335,48 @@ app.post("/api/dojos", authenticate, dojoRegistrationUpload.fields([{ name: "pho
     pincode: z.string().regex(/^\d{6}$/),
     experience: z.string().trim().min(2).max(100),
     gstNumber: z.string().trim().max(30).optional(),
-    description: z.string().max(2000).optional()
-  }).refine(input => input.establishmentType !== "OTHER" || Boolean(input.customEstablishmentType?.trim()), { path: ["customEstablishmentType"], message: "Enter the establishment type." }).safeParse(request.body);
-  if (!parsed.success) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Please correct the dojo or gym registration fields.", issues: parsed.error.issues }); }
+    description: z.string().trim().max(2000).optional(),
+    businessPhotoPath: z.string().min(1).max(500),
+    certificatePath: z.string().min(1).max(500),
+    aadhaarFrontPath: z.string().min(1).max(500).optional(),
+    aadhaarBackPath: z.string().min(1).max(500).optional(),
+    acceptedTerms: z.literal(true),
+  })
+    .refine(input => input.establishmentType !== "OTHER" || Boolean(input.customEstablishmentType?.trim()), { path: ["customEstablishmentType"], message: "Enter the establishment type." })
+    .refine(input => input.category !== "Other" || Boolean(input.customCategory?.trim()), { path: ["customCategory"], message: "Enter the training category." })
+    .refine(input => !config.enableAadhaarVerification || Boolean(input.aadhaarFrontPath), { path: ["aadhaarFrontPath"], message: "Aadhaar front image is required." })
+    .safeParse(request.body);
+  const submittedPaths = [request.body?.businessPhotoPath, request.body?.certificatePath, request.body?.aadhaarFrontPath, request.body?.aadhaarBackPath]
+    .filter((value): value is string => typeof value === "string" && isOwnedProviderPath(value, "dojo", request.user!.id));
+  if (!parsed.success) {
+    await removeUnreferencedProviderUploads(submittedPaths);
+    return response.status(422).json({ success: false, code: "DOJO_VALIDATION_FAILED", message: "Please correct the dojo or gym registration fields.", issues: parsed.error.issues });
+  }
   const input = parsed.data;
-  const existing = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, status: true } });
-  if (existing) { discardIncomingUploads(incomingFiles); return response.status(409).json({ error: "This account already has a dojo or gym profile.", code: "DOJO_PROFILE_EXISTS", field: "ownerId", profileId: existing.id, status: existing.status }); }
-  if (!files?.photo?.[0]?.size) return response.status(400).json({ error: "Select a non-empty business photo." });
-  if (!files?.certificate?.[0]?.size) return response.status(400).json({ error: "Select a non-empty registration certificate or ownership proof." });
-  if (config.enableAadhaarVerification && !files?.aadharFront?.length) { discardIncomingUploads(incomingFiles); return response.status(400).json({ error: "Aadhaar front image is required." }); }
-  const dojoFiles = await uploadDojoRegistrationFiles(files.photo[0], files.certificate[0]);
-  const category = input.category === "Other" ? String(input.customCategory || "Other") : input.category;
-  let result;
-  const auxiliaryBlobPaths: string[] = [];
+  console.info("dojo.registration_started", { requestId: request.requestId, userId: request.user!.id, registrationType: "dojo", uploadStage: "validating_paths" });
   try {
-    const aadhaarFront = config.enableAadhaarVerification ? await optimizeUploads(files.aadharFront || [], "aadhaar") : [];
-    auxiliaryBlobPaths.push(...aadhaarFront.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
-    const aadhaarBack = config.enableAadhaarVerification ? await optimizeUploads(files.aadharBack || [], "aadhaar") : [];
-    auxiliaryBlobPaths.push(...aadhaarBack.flatMap(file => [file.path, file.thumbnail].filter((value): value is string => Boolean(value))));
-    result = await prisma.$transaction(async tx => {
-    const dojo = await tx.dojo.create({ data: { id: dojoFiles.registrationId, ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, description: input.description, originalPrice: 0, finalPrice: 0, imagePath: dojoFiles.businessPhotoPathname, ...automaticDojoActivation(), registrationPaymentStatus: "not_required" } });
-    await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: aadhaarFront[0]?.path, aadhaarBackPath: aadhaarBack[0]?.path, certificatePath: dojoFiles.verificationDocumentPathname } });
-    const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
-    return { dojo, user };
-  }, { timeout: 20_000 }); } catch (error) { removeUploads(auxiliaryBlobPaths); await removeBlobUploads(dojoFiles.created); throw error; }
-  console.info("dojo.registration_created", { profileId: result.dojo.id, status: result.dojo.status, approved: result.dojo.approved, verified: result.dojo.verified, autoActivated: true, hasBusinessPhoto: true, hasVerificationDocument: true });
-  response.status(201).json({ profile: result.dojo, session: await issueSession(result.user, response) });
+    await assertProviderRegistrationAccess(request.user!, "dojo");
+    await Promise.all([
+      assertProviderUpload(input.businessPhotoPath, "dojo", "logo", request.user!.id),
+      assertProviderUpload(input.certificatePath, "dojo", "certificate", request.user!.id),
+      input.aadhaarFrontPath ? assertProviderUpload(input.aadhaarFrontPath, "dojo", "aadhaar-front", request.user!.id) : undefined,
+      input.aadhaarBackPath ? assertProviderUpload(input.aadhaarBackPath, "dojo", "aadhaar-back", request.user!.id) : undefined,
+    ]);
+    const category = input.category === "Other" ? String(input.customCategory) : input.category;
+    const result = await prisma.$transaction(async tx => {
+      const dojo = await tx.dojo.create({ data: { ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, description: input.description, originalPrice: 0, finalPrice: 0, imagePath: input.businessPhotoPath, ...automaticDojoActivation(), registrationPaymentStatus: "not_required" } });
+      await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: input.aadhaarFrontPath, aadhaarBackPath: input.aadhaarBackPath, certificatePath: input.certificatePath } });
+      const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
+      return { dojo, user };
+    }, { timeout: 20_000 });
+    const session = await issueSession(result.user, response);
+    console.info("dojo.registration_created", { requestId: request.requestId, userId: request.user!.id, registrationType: "dojo", profileId: result.dojo.id, status: result.dojo.status, approved: result.dojo.approved, verified: result.dojo.verified, databaseResult: "created" });
+    response.status(201).json({ success: true, message: "Dojo or gym registration completed.", data: { dojoId: result.dojo.id }, profile: result.dojo, session });
+  } catch (error) {
+    await removeUnreferencedProviderUploads(submittedPaths);
+    console.error("dojo.registration_failed", { requestId: request.requestId, userId: request.user!.id, registrationType: "dojo", code: (error as any)?.code || "DOJO_REGISTRATION_FAILED" });
+    throw error;
+  }
 }));
 app.put("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) } });
@@ -275,7 +391,9 @@ app.delete("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthReques
   if (dojo.ownerId !== request.user!.id && !["admin", "super_admin"].includes(request.user!.role)) return response.status(403).json({ error: "Not your dojo profile." });
   const verification = await prisma.providerVerification.findUnique({ where: { profileType_profileId: { profileType: "dojo", profileId: dojo.id } } });
   await prisma.$transaction([prisma.providerVerification.deleteMany({ where: { profileType: "dojo", profileId: dojo.id } }), prisma.dojo.delete({ where: { id: dojo.id } })]);
-  removeUploads([dojo.imagePath, verification?.aadhaarFrontPath, verification?.aadhaarBackPath, verification?.certificatePath]);
+  const storedPaths = [dojo.imagePath, verification?.aadhaarFrontPath, verification?.aadhaarBackPath, verification?.certificatePath];
+  await removeProviderUploads(storedPaths);
+  removeUploads(storedPaths);
   response.status(204).end();
 }));
 
@@ -476,21 +594,27 @@ app.use("/api/social", socialRouter);
 app.use("/api/matches", matchesRouter);
 
 app.use((_request, response) => response.status(404).json({ error: "API route not found." }));
-app.use((error: any, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+app.use((error: any, request: express.Request, response: express.Response, _next: express.NextFunction) => {
+  const structured = /^\/api\/(?:coaches|dojos|provider-uploads)(?:\/|$)/.test(request.path);
+  const failure = (status: number, code: string, message: string, extra: Record<string, unknown> = {}) => response.status(status).json(structured ? { success: false, code, message, error: message, ...extra } : { error: message, code, ...extra });
   if (error instanceof multer.MulterError) {
-    if (error.code === "LIMIT_FILE_SIZE") return response.status(413).json({ error: "Each file must be 4 MB or smaller." });
-    if (error.code === "LIMIT_UNEXPECTED_FILE") return response.status(400).json({ error: "Use a JPEG, PNG, WebP, or PDF file. The business photo must be an image." });
-    return response.status(400).json({ error: "The selected files could not be uploaded." });
+    if (error.code === "LIMIT_FILE_SIZE") return failure(413, "FILE_TOO_LARGE", "The selected file exceeds the allowed upload size.");
+    if (error.code === "LIMIT_UNEXPECTED_FILE") return failure(422, "UNSUPPORTED_FILE_TYPE", "Use a JPEG, PNG, WebP, or PDF file where allowed.");
+    return failure(400, "UPLOAD_REQUEST_FAILED", "The selected file could not be uploaded.");
   }
-  if (error instanceof z.ZodError) return response.status(400).json({ error: "Invalid request.", issues: error.issues });
+  if (error?.type === "entity.too.large" || error?.status === 413) return failure(413, error?.code || "REQUEST_TOO_LARGE", error?.code === "FILE_TOO_LARGE" ? error.message : "The request is too large. Upload files separately before submitting the form.");
+  if (error instanceof z.ZodError) return failure(422, "VALIDATION_FAILED", "Invalid request.", { issues: error.issues });
   if (error?.code === "P2002") {
     const fields = Array.isArray(error?.meta?.target) ? error.meta.target.map(String) : error?.meta?.target ? [String(error.meta.target)] : [];
     const field = fields[0] || "record";
     const labels: Record<string, string> = { email: "email address", phone: "phone number", ownerId: "owner account", tokenHash: "session token", razorpayOrderId: "payment order", razorpayPaymentId: "payment", transactionId: "UPI transaction ID" };
-    return response.status(409).json({ error: `A record with this ${labels[field] || field} already exists.`, code: `DUPLICATE_${field.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}`, field, fields });
+    return failure(409, `DUPLICATE_${field.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase()}`, `A record with this ${labels[field] || field} already exists.`, { field, fields });
   }
-  console.error(error);
-  response.status(Number(error?.status) || 500).json({ error: error instanceof Error ? error.message : "Server error." });
+  const status = Number(error?.status) || 500;
+  const code = String(error?.code || (status >= 500 ? "UNEXPECTED_SERVER_ERROR" : "REQUEST_FAILED"));
+  const message = status >= 500 ? "We could not complete this request. Please try again." : error instanceof Error ? error.message : "Request failed.";
+  console.error("api.request_failed", { requestId: (request as AuthRequest).requestId, route: request.path, status, code, error: error instanceof Error ? error.name : "unknown" });
+  return failure(status, code, message);
 });
 
 export { app };

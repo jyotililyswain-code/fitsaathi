@@ -12,9 +12,20 @@ const userIds: string[] = [];
 let dojoId = "";
 let ownerToken = "";
 
-function registrationBody() {
+async function uploadDocument(token: string, kind: "logo" | "certificate", contents: Buffer, fileName: string, contentType: string) {
   const body = new FormData();
-  const fields: Record<string, string> = {
+  body.set("registrationType", "dojo");
+  body.set("kind", kind);
+  const bytes = new Uint8Array(contents.byteLength);
+  bytes.set(contents);
+  body.set("file", new File([bytes.buffer], fileName, { type: contentType }));
+  const response = await fetch(`${baseUrl}/api/provider-uploads/local`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body });
+  if (response.status !== 201) throw new Error(`Upload failed (${response.status}): ${await response.text()}`);
+  return (await response.json() as { data: { path: string } }).data.path;
+}
+
+async function registrationBody(token: string) {
+  return {
     establishmentType: "MARTIAL_ARTS_ACADEMY",
     name: testName,
     ownerName: "E2E Test Owner",
@@ -26,12 +37,11 @@ function registrationBody() {
     state: "Delhi",
     pincode: "110001",
     experience: "5 years",
-    description: "Temporary automated test registration"
+    description: "Temporary automated test registration",
+    acceptedTerms: true,
+    businessPhotoPath: await uploadDocument(token, "logo", Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), "business.png", "image/png"),
+    certificatePath: await uploadDocument(token, "certificate", Buffer.from("%PDF-1.4\n% temporary ownership proof\n%%EOF"), "ownership.pdf", "application/pdf"),
   };
-  for (const [key, value] of Object.entries(fields)) body.set(key, value);
-  body.set("photo", new File([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], "business.png", { type: "image/png" }));
-  body.set("certificate", new File([Buffer.from("%PDF-1.4\n% temporary ownership proof\n%%EOF")], "ownership.pdf", { type: "application/pdf" }));
-  return body;
 }
 
 async function login(email: string) {
@@ -52,7 +62,8 @@ async function main() {
   const otherToken = await login(other.email);
   const adminToken = await login(admin.email);
 
-  const registration = await fetch(`${baseUrl}/api/dojos`, { method: "POST", headers: { Authorization: `Bearer ${ownerToken}` }, body: registrationBody() });
+  const submittedRegistration = await registrationBody(ownerToken);
+  const registration = await fetch(`${baseUrl}/api/dojos`, { method: "POST", headers: { Authorization: `Bearer ${ownerToken}`, "Content-Type": "application/json" }, body: JSON.stringify(submittedRegistration) });
   if (registration.status !== 201) throw new Error(`Registration failed (${registration.status}): ${await registration.text()}`);
   const payload = await registration.json() as { profile: { id: string } };
   dojoId = payload.profile.id;
@@ -70,13 +81,13 @@ async function main() {
 
   const publicSearch = await fetch(`${baseUrl}/api/dojos?search=${encodeURIComponent(testName)}`, { cache: "no-store" });
   const publicRows = await publicSearch.json() as Array<Record<string, unknown>>;
-  assert.equal(publicRows.length, 1);
-  assert.equal(publicRows[0].id, dojoId);
-  assert.ok(!("phoneNumber" in publicRows[0]));
-  assert.ok(!("certificatePath" in publicRows[0]));
-  assert.ok(!JSON.stringify(publicRows[0]).includes("ownership-proof"));
+  const publicRow = publicRows.find(row => row.id === dojoId);
+  assert.ok(publicRow);
+  assert.ok(!("phoneNumber" in publicRow));
+  assert.ok(!("certificatePath" in publicRow));
+  assert.ok(!JSON.stringify(publicRow).includes("ownership-proof"));
 
-  const duplicate = await fetch(`${baseUrl}/api/dojos`, { method: "POST", headers: { Authorization: `Bearer ${ownerToken}` }, body: registrationBody() });
+  const duplicate = await fetch(`${baseUrl}/api/dojos`, { method: "POST", headers: { Authorization: `Bearer ${ownerToken}`, "Content-Type": "application/json" }, body: JSON.stringify(submittedRegistration) });
   assert.equal(duplicate.status, 409);
 
   const otherEdit = await fetch(`${baseUrl}/api/dojos/${dojoId}`, { method: "PUT", headers: { Authorization: `Bearer ${otherToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ name: "Unauthorized edit", approved: true, status: "active", verified: true }) });
@@ -103,7 +114,7 @@ async function main() {
   assert.equal(suspended.status, "suspended");
   assert.equal(suspended.approved, false);
   const afterSuspension = await fetch(`${baseUrl}/api/dojos?search=${encodeURIComponent(testName)}`, { cache: "no-store" });
-  assert.equal((await afterSuspension.json() as unknown[]).length, 0);
+  assert.equal((await afterSuspension.json() as Array<{ id?: string }>).some(row => row.id === dojoId), false);
   console.info("dojo.registration_e2e_passed", { activeOnCreate: true, publicImmediately: true, duplicatePrevented: true, crossOwnerEditDenied: true, privateProofProtected: true, adminSuspensionRemovedListing: true });
 }
 

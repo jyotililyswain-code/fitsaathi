@@ -54,6 +54,7 @@ CREATE INDEX IF NOT EXISTS "dojos_status_approved_verified_category_idx"
 ON public.dojos(status, approved, verified, category);
 
 DROP POLICY IF EXISTS "public_read_approved_dojos" ON public.dojos;
+DROP POLICY IF EXISTS "public_read_active_dojos" ON public.dojos;
 CREATE POLICY "public_read_active_dojos"
 ON public.dojos
 FOR SELECT

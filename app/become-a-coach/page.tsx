@@ -6,56 +6,110 @@ import { useState } from "react";
 import { CategorySelect } from "@/components/CategorySelect";
 import { useSessionUser } from "@/lib/auth-client";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
+import { cleanupProviderUploads, getProviderUploadConfiguration, prepareProviderFile, selectedFile, uploadProviderFile } from "@/lib/provider-registration-upload";
+import type { ProviderFileKind } from "@/lib/provider-upload-rules";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
-type ProviderSubmissionStage = "refreshing_session" | "saving_profile" | "uploading_aadhar" | "uploading_aadhaar" | "uploading_attachments" | "saving_verification";
-const stageLabels: Record<ProviderSubmissionStage, string> = {
-  refreshing_session: "Checking your session...",
-  saving_profile: "Creating coach profile...",
-  uploading_aadhar: "Saving Aadhar verification...",
-  uploading_aadhaar: "Saving Aadhar verification...",
-  uploading_attachments: "Uploading optional attachments...",
-  saving_verification: "Saving verification record..."
-};
+type CoachFile = { field: string; kind: ProviderFileKind; label: string; required?: boolean };
+const coachFiles: CoachFile[] = [
+  { field: "photo", kind: "profile", label: "profile photo" },
+  { field: "certificate", kind: "certificate", label: "certificate" },
+  { field: "aadharFront", kind: "aadhaar-front", label: "Aadhaar front", required: true },
+  { field: "aadharBack", kind: "aadhaar-back", label: "Aadhaar back" },
+];
 
 export default function BecomeCoachPage() {
   const router = useRouter();
   const { user } = useSessionUser();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [stage, setStage] = useState<ProviderSubmissionStage | null>(null);
+  const [status, setStatus] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading) return;
     if (!user) {
       setMessage("Please sign in before registering as a coach. Returning you to this form after login...");
       router.push("/login?next=%2Fbecome-a-coach");
       return;
     }
 
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const phoneNumber = normalizePhone(String(formData.get("phoneNumber")));
+    if (!isValidIndianPhone(phoneNumber)) return setMessage("Enter a valid 10 digit Indian mobile number.");
+    if (String(formData.get("category")) === "Other" && !String(formData.get("customCategory") || "").trim()) return setMessage("Enter your coaching category when selecting Other.");
+
+    const missingFile = coachFiles.find(definition => definition.required && !selectedFile(formData, definition.field));
+    if (missingFile) return setMessage(`Please upload the required ${missingFile.label} image.`);
+    const selections = coachFiles.flatMap(definition => {
+      const file = selectedFile(formData, definition.field);
+      return file ? [{ ...definition, file }] : [];
+    });
+
     setLoading(true);
     setMessage("");
-    setStage("refreshing_session");
-
-    const formData = new FormData(event.currentTarget);
-    const phoneNumber = normalizePhone(String(formData.get("phoneNumber")));
-    if (!isValidIndianPhone(phoneNumber)) {
-      setLoading(false);
-      setStage(null);
-      return setMessage("Enter a valid 10 digit Indian mobile number.");
-    }
+    setUploadProgress(0);
+    const uploadedPaths: string[] = [];
+    let saved = false;
     try {
-      setStage("uploading_attachments");
-      const result = await localApi<{ session: { accessToken: string; refreshToken: string; user: unknown } }>("/coaches", { method: "POST", body: formData });
+      setStatus("Checking your session and registration...");
+      const configuration = (await getProviderUploadConfiguration("coach")).data;
+
+      const prepared: Array<CoachFile & { file: File }> = [];
+      for (const selection of selections) {
+        setStatus(`Compressing ${selection.label}...`);
+        prepared.push({ ...selection, file: await prepareProviderFile(selection.file, "coach", selection.kind) });
+      }
+
+      const paths: Partial<Record<ProviderFileKind, string>> = {};
+      for (let index = 0; index < prepared.length; index += 1) {
+        const item = prepared[index];
+        setStatus(`Uploading ${item.label}...`);
+        const path = await uploadProviderFile({
+          configuration,
+          registrationType: "coach",
+          kind: item.kind,
+          file: item.file,
+          onProgress: percentage => setUploadProgress(Math.round(((index + percentage / 100) / prepared.length) * 100)),
+        });
+        paths[item.kind] = path;
+        uploadedPaths.push(path);
+      }
+
+      setStatus("Saving coach profile...");
+      await localApi("/coaches", {
+        method: "POST",
+        body: JSON.stringify({
+          name: String(formData.get("name") || "").trim(),
+          phoneNumber,
+          category: String(formData.get("category") || "").trim(),
+          customCategory: String(formData.get("customCategory") || "").trim() || undefined,
+          city: String(formData.get("city") || "").trim(),
+          availableDays: formData.getAll("availableDays").map(String),
+          availableTimings: String(formData.get("availableTimings") || "").split(",").map(value => value.trim()).filter(Boolean),
+          bio: String(formData.get("bio") || "").trim() || undefined,
+          profilePhotoPath: paths.profile,
+          certificatePath: paths.certificate,
+          aadhaarFrontPath: paths["aadhaar-front"],
+          aadhaarBackPath: paths["aadhaar-back"],
+          acceptedTerms: formData.get("acceptedTerms") === "on",
+        }),
+      });
+      saved = true;
+      form.reset();
       notifyAuthChanged();
+      setStatus("Registration completed successfully.");
       setMessage("Coach profile submitted for verification.");
       router.push("/coach-dashboard");
       router.refresh();
     } catch (error) {
+      if (!saved) await cleanupProviderUploads(uploadedPaths);
       setMessage(error instanceof Error ? error.message : "Could not submit coach profile right now.");
     } finally {
       setLoading(false);
-      setStage(null);
+      if (!saved) setStatus("");
     }
   }
 
@@ -77,29 +131,26 @@ export default function BecomeCoachPage() {
         <fieldset className="mt-3 rounded-xl border border-white/10 bg-ink p-4">
           <legend className="px-1 text-sm font-medium text-white">Available teaching days</legend>
           <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-zinc-300 sm:grid-cols-4">
-            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-              <label key={day} className="flex items-center gap-2">
-                <input name="availableDays" type="checkbox" value={day} className="accent-acid" />
-                {day}
-              </label>
+            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
+              <label key={day} className="flex items-center gap-2"><input name="availableDays" type="checkbox" value={day} className="accent-acid" />{day}</label>
             ))}
           </div>
         </fieldset>
         <input name="availableTimings" required placeholder="Available timings, e.g. 6:00 AM, 7:00 PM" className="field mt-3" />
         <textarea name="bio" rows={5} placeholder="Bio" className="field mt-3" />
         <FileField name="photo" label="Profile photo for bio" accept="image/png,image/jpeg,image/webp" />
-        <FileField name="certificate" label="Certificate or achievement proof" accept="image/png,image/jpeg,image/webp" />
-        <FileField name="aadharFront" label="Aadhar front image for home coach verification" accept="image/png,image/jpeg,image/webp" required />
-        <FileField name="aadharBack" label="Aadhar back image (optional)" accept="image/png,image/jpeg,image/webp" />
+        <FileField name="certificate" label="Certificate or achievement proof" accept="image/png,image/jpeg,image/webp,application/pdf" />
+        <FileField name="aadharFront" label="Aadhaar front image for coach verification" accept="image/png,image/jpeg,image/webp" required />
+        <FileField name="aadharBack" label="Aadhaar back image (optional)" accept="image/png,image/jpeg,image/webp" />
+        <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-zinc-300">
+          <input name="acceptedTerms" type="checkbox" required className="mt-1 accent-acid" />
+          <span>I confirm these details are accurate and accept the terms and privacy policy.</span>
+        </label>
         <button disabled={loading} className="mt-5 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
           {loading ? "Submitting profile..." : "Submit profile"}
         </button>
-        {loading && stage ? <p className="mt-3 text-sm text-acid">{stageLabels[stage]}</p> : null}
-        {message ? (
-          <p className="mt-4 text-sm text-zinc-300">
-            {message}
-          </p>
-        ) : null}
+        {status ? <p className="mt-3 text-sm text-acid">{status}{loading && uploadProgress ? ` ${uploadProgress}%` : ""}</p> : null}
+        {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
       </form>
     </main>
   );

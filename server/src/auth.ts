@@ -5,7 +5,7 @@ import { config } from "./config";
 import { prisma } from "./db";
 
 export type SessionUser = { id: string; email: string; role: string };
-export type AuthRequest = Request & { user?: SessionUser };
+export type AuthRequest = Request & { user?: SessionUser; requestId?: string };
 export const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
 export const accessToken = (user: SessionUser) => jwt.sign(user, config.jwtSecret, { expiresIn: "15m" });
 export const refreshToken = (user: SessionUser) => jwt.sign(user, config.refreshSecret, { expiresIn: "30d", jwtid: crypto.randomUUID() });

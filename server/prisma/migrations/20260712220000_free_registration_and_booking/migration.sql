@@ -1,6 +1,7 @@
 -- FitSaathi registrations and coach/dojo bookings are permanently free.
--- Keep historical payment/order records intact, but remove every monetary and
--- payment-review prerequisite from service bookings and provider listings.
+-- Keep historical payment/order records and provider-listed monthly fees
+-- intact, but remove every FitSaathi fee/payment-review prerequisite from
+-- service bookings and provider registration.
 
 UPDATE public.bookings
 SET
@@ -18,15 +19,6 @@ UPDATE public.bookings
 SET status = 'confirmed'
 WHERE status = 'pending';
 
-UPDATE public.coaches
-SET
-  "baseFee" = 0,
-  "platformFee" = 0,
-  "customerPrice" = 0,
-  "coachPayout" = 0;
-
 UPDATE public.dojos
 SET
-  "originalPrice" = 0,
-  "finalPrice" = 0,
   "registrationPaymentStatus" = 'not_required';
