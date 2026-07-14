@@ -3,21 +3,20 @@ import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma";
 
 const baseUrl = (process.env.COACH_E2E_BASE_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
-const password = `Test-${crypto.randomUUID()}!`;
 const suffix = crypto.randomUUID();
 const userIds: string[] = [];
 let coachId = "";
 let ownerToken = "";
 const uploadedPaths: string[] = [];
 
-async function login(email: string) {
-  const response = await fetch(`${baseUrl}/api/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
-  if (response.status !== 200) throw new Error(`Login failed (${response.status}): ${await response.text()}`);
-  return (await response.json() as { accessToken: string }).accessToken;
+function testToken(user: { id: string; email: string; role: string }) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET must match the local API for this E2E test.");
+  return jwt.sign({ id: user.id, email: user.email, role: user.role }, secret, { expiresIn: "15m" });
 }
 
 async function uploadImage(token: string, kind: "profile" | "aadhaar-front") {
@@ -40,14 +39,15 @@ function localPrivateFile(storedPath: string) {
 }
 
 async function main() {
-  const passwordHash = await bcrypt.hash(password, 4);
+  const ownerEmail = `coach-owner-${suffix}@example.invalid`;
+  const otherEmail = `coach-other-${suffix}@example.invalid`;
   const [owner, other] = await prisma.$transaction([
-    prisma.user.create({ data: { name: "E2E Coach Owner", email: `coach-owner-${suffix}@example.invalid`, passwordHash, role: "customer" } }),
-    prisma.user.create({ data: { name: "E2E Other User", email: `coach-other-${suffix}@example.invalid`, passwordHash, role: "customer" } }),
+    prisma.user.create({ data: { name: "E2E Coach Owner", email: ownerEmail, emailNormalized: ownerEmail, emailVerified: true, role: "customer", accountStatus: "active" } }),
+    prisma.user.create({ data: { name: "E2E Other User", email: otherEmail, emailNormalized: otherEmail, emailVerified: true, role: "customer", accountStatus: "active" } }),
   ]);
   userIds.push(owner.id, other.id);
-  ownerToken = await login(owner.email);
-  const otherToken = await login(other.email);
+  ownerToken = testToken(owner);
+  const otherToken = testToken(other);
   const profilePhotoPath = await uploadImage(ownerToken, "profile");
   const aadhaarFrontPath = await uploadImage(ownerToken, "aadhaar-front");
   const registrationBody = {

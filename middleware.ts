@@ -27,6 +27,7 @@ export function middleware(request: NextRequest) {
     "/register-dojo",
     "/register-seller",
     "/seller/register",
+    "/setup",
   ];
   const isProtectedPage = protectedPrefixes.some(
     (prefix) =>
@@ -85,6 +86,8 @@ export function middleware(request: NextRequest) {
     "/login",
     "/signup",
     "/forgot-password",
+    "/auth",
+    "/setup",
   ];
   if (
     privatePrefixes.some(

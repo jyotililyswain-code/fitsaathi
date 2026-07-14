@@ -1,6 +1,7 @@
 require("dotenv/config");
 
 const assert = require("node:assert/strict");
+const jwt = require("jsonwebtoken");
 const test = require("node:test");
 const { PrismaClient } = require("@prisma/client");
 
@@ -31,26 +32,15 @@ function auth(token) {
 
 async function register(label, stamp, extra = {}) {
   const email = `social-${label}-${stamp}@example.test`;
-  const result = await api("/auth/register", json("POST", {
-    name: `Social ${label}`,
-    email,
-    password: "SocialPass123!",
-    acceptedPolicies: true,
-    acceptedPolicyVersion: "test",
-    gender: label === "bob" ? "male" : "female",
-    birthDate: label === "bob" ? "2000-02-02" : "2001-01-01",
-    city: "Bhubaneswar",
-    state: "Odisha",
-    country: "India",
-    heightCm: 170,
-    weightKg: 68,
-    fitnessGoal: "Karate strength",
-    profileBio: `Automated social test profile for ${label}. Looking for safe training partners.`,
-    fitnessLevel: "intermediate",
-    interests: ["Karate", "Gym"],
-    ...extra
-  }), [201]);
-  return { email, id: result.user.id, token: result.accessToken };
+  const user = await prisma.user.create({ data: {
+    name: `Social ${label}`, email, emailNormalized: email, emailVerified: true, emailVerifiedAt: new Date(), accountStatus: "active",
+    acceptedPolicies: true, acceptedPolicyVersion: "test", gender: extra.gender || (label === "bob" ? "male" : "female"),
+    birthDate: new Date(extra.birthDate || (label === "bob" ? "2000-02-02" : "2001-01-01")), city: "Bhubaneswar", state: "Odisha", country: "India",
+    heightCm: 170, weightKg: 68, fitnessGoal: "Karate strength", profileBio: `Automated social test profile for ${label}. Looking for safe training partners.`,
+    fitnessLevel: "intermediate", onboardingCompleted: true, interests: { create: ["Karate", "Gym"].map(interest => ({ interest })) }
+  } });
+  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET must match the local API for this integration test.");
+  return { email, id: user.id, token: jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" }) };
 }
 
 test("FitSaathi Life social APIs provide free verified profiles, invites, chat, safety, notifications, and admin queues", async () => {

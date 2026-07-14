@@ -13,6 +13,7 @@ export const metadata = generateSeoMetadata({
     "personal trainer registration",
     "fitness trainer India",
   ],
+  noIndex: true,
 });
 
 export default function BecomeCoachLayout({

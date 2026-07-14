@@ -1,10 +1,38 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { cache } from "react";
+import { JsonLd } from "@/components/JsonLd";
 import { prisma } from "@/lib/prisma";
 import { resolveDojoImageUrl } from "@/lib/dojo-image";
-import { generateSeoMetadata } from "@/lib/seo";
+import {
+  generateSeoMetadata,
+  sportsActivityLocationJsonLd,
+} from "@/lib/seo";
 
 export const revalidate = 0;
+
+const getPublicDojo = cache((id: string) =>
+  prisma.dojo.findFirst({
+    where: {
+      id,
+      approved: true,
+      status: "active",
+      owner: { emailVerified: true, accountStatus: "active" },
+    },
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      description: true,
+      establishmentType: true,
+      address: true,
+      city: true,
+      state: true,
+      pincode: true,
+      imagePath: true,
+    },
+  }),
+);
 
 export async function generateMetadata({
   params,
@@ -13,18 +41,8 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   try {
-    const dojo = await prisma.dojo.findUnique({
-      where: { id },
-      select: {
-        name: true,
-        category: true,
-        city: true,
-        imagePath: true,
-        approved: true,
-        status: true,
-      },
-    });
-    if (!dojo || !dojo.approved || dojo.status !== "active") {
+    const dojo = await getPublicDojo(id);
+    if (!dojo) {
       return generateSeoMetadata({
         title: "Dojo Profile - FitSaathi",
         description: "This dojo profile is not available for search indexing.",
@@ -54,10 +72,39 @@ export async function generateMetadata({
   }
 }
 
-export default function DojoProfileLayout({
+export default async function DojoProfileLayout({
   children,
+  params,
 }: {
   children: ReactNode;
+  params: Promise<{ id: string }>;
 }) {
-  return children;
+  const { id } = await params;
+  const dojo = await getPublicDojo(id).catch(() => null);
+  const hasAccurateLocation = Boolean(
+    dojo && (dojo.address || dojo.city || dojo.state || dojo.pincode),
+  );
+
+  if (!dojo || !hasAccurateLocation) return children;
+
+  return (
+    <>
+      <JsonLd
+        data={sportsActivityLocationJsonLd({
+          id: dojo.id,
+          name: dojo.name,
+          category: dojo.category,
+          description: dojo.description,
+          image: dojo.imagePath
+            ? resolveDojoImageUrl(dojo.imagePath, dojo.id)
+            : null,
+          address: dojo.address,
+          city: dojo.city,
+          state: dojo.state,
+          pincode: dojo.pincode,
+        })}
+      />
+      {children}
+    </>
+  );
 }

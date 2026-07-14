@@ -12,6 +12,7 @@ export const metadata = generateSeoMetadata({
     "book dojo",
     "fitness booking India",
   ],
+  noIndex: true,
 });
 
 export default function BookingLayout({ children }: { children: ReactNode }) {

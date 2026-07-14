@@ -1,4 +1,5 @@
-import CoachesPage from "@/app/coaches/page";
+import { Suspense } from "react";
+import CoachDirectory from "@/components/CoachDirectory";
 import { JsonLd } from "@/components/JsonLd";
 import { coachBookingServiceJsonLd, generateSeoMetadata } from "@/lib/seo";
 
@@ -26,7 +27,26 @@ export default function FindCoachPage() {
           ...coachBookingServiceJsonLd,
         }}
       />
-      <CoachesPage includeDojos />
+      <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8">
+        <p className="text-sm font-medium text-acid">Find training near you</p>
+        <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          Find Fitness Coaches, Gyms and Dojos Near You
+        </h1>
+        <p className="mt-4 max-w-2xl leading-7 text-zinc-300">
+          Search FitSaathi for personal trainers, martial arts coaches, active gyms and approved sports academies by specialty and city.
+        </p>
+      </section>
+      <Suspense fallback={<DirectoryLoading label="coaches, gyms and dojos" />}>
+        <CoachDirectory includeDojos />
+      </Suspense>
     </>
+  );
+}
+
+function DirectoryLoading({ label }: { label: string }) {
+  return (
+    <p className="mx-auto max-w-7xl px-4 py-12 text-zinc-400 sm:px-6 lg:px-8">
+      Loading {label}…
+    </p>
   );
 }

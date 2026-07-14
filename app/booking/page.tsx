@@ -19,6 +19,7 @@ export default function BookingPage() {
   const router = useRouter();
   const { user } = useSessionUser();
   const processingRef = useRef(false);
+  const idempotencyKeyRef = useRef("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -54,6 +55,7 @@ export default function BookingPage() {
 
     setLoading(true);
     processingRef.current = true;
+    if (!idempotencyKeyRef.current) idempotencyKeyRef.current = crypto.randomUUID();
     setMessage("");
     try {
       const response = await fetch("/api/bookings/create", {
@@ -71,7 +73,8 @@ export default function BookingPage() {
           preferredTime: String(form.get("preferredTime") || ""),
           notes: String(form.get("notes") || ""),
           acceptedTerms: true,
-          acceptedPrivacy: true
+          acceptedPrivacy: true,
+          idempotencyKey: idempotencyKeyRef.current,
         })
       });
       const booking = await readJsonResponse<CreatedBooking>(response, "Could not create this booking.");

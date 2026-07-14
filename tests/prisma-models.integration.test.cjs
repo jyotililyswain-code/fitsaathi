@@ -11,7 +11,8 @@ test("every Prisma model supports its CRUD lifecycle and required relations", as
   const ids = {};
   try {
     for (const [kind, role] of [["customer", "customer"], ["coach", "coach"], ["dojo", "dojo"], ["seller", "seller"], ["admin", "admin"]]) {
-      const user = await prisma.user.create({ data: { name: `Audit ${kind}`, email: `model-${kind}-${stamp}@example.test`, passwordHash: "not-a-login-hash", role } });
+      const email = `model-${kind}-${stamp}@example.test`;
+      const user = await prisma.user.create({ data: { name: `Audit ${kind}`, email, emailNormalized: email, emailVerified: true, accountStatus: "active", role } });
       ids[`${kind}User`] = user.id;
     }
     assert.equal((await prisma.user.update({ where: { id: ids.customerUser }, data: { address: "Updated address" } })).address, "Updated address");
@@ -52,7 +53,7 @@ test("every Prisma model supports its CRUD lifecycle and required relations", as
     const providerReview = await prisma.providerReview.create({ data: { userId: ids.customerUser, coachId: coach.id, rating: 5 } }); ids.providerReview = providerReview.id;
     assert.equal((await prisma.providerReview.update({ where: { id: providerReview.id }, data: { comment: "Updated" } })).comment, "Updated");
 
-    const notification = await prisma.notification.create({ data: { userId: ids.customerUser, bookingId: booking.id, type: "audit", message: "Audit notification" } }); ids.notification = notification.id;
+    const notification = await prisma.notification.create({ data: { userId: ids.customerUser, bookingId: booking.id, type: "audit", title: "Audit notification", message: "Audit notification" } }); ids.notification = notification.id;
     assert.equal((await prisma.notification.update({ where: { id: notification.id }, data: { read: true } })).read, true);
     const wishlist = await prisma.wishlist.create({ data: { userId: ids.customerUser, productId: product.id } }); ids.wishlist = wishlist.id;
     assert.ok(await prisma.wishlist.findUnique({ where: { id: wishlist.id } }));
@@ -103,7 +104,7 @@ test("every Prisma model supports its CRUD lifecycle and required relations", as
     assert.ok(await prisma.profileView.findUnique({ where: { id: profileView.id } }));
     const socialReview = await prisma.socialReview.create({ data: { authorId: ids.coachUser, subjectId: ids.customerUser, rating: 5, comment: "Audit social review" } }); ids.socialReview = socialReview.id;
     assert.equal((await prisma.socialReview.update({ where: { id: socialReview.id }, data: { rating: 4 } })).rating, 4);
-    const push = await prisma.pushSubscription.create({ data: { userId: ids.customerUser, endpoint: `https://push.example.test/${stamp}`, p256dh: "audit-p256dh-key", auth: "audit-auth" } }); ids.push = push.id;
+    const push = await prisma.pushSubscription.create({ data: { userId: ids.customerUser, endpoint: `https://push.example.test/${stamp}`, endpointHash: `audit-${stamp}`, p256dh: "audit-p256dh-key", auth: "audit-auth" } }); ids.push = push.id;
     assert.ok(await prisma.pushSubscription.findUnique({ where: { id: push.id } }));
     const moderation = await prisma.moderationCase.create({ data: { subjectId: ids.customerUser, targetType: "profile", category: "audit", riskScore: 10 } }); ids.moderation = moderation.id;
     assert.equal((await prisma.moderationCase.update({ where: { id: moderation.id }, data: { status: "clean" } })).status, "clean");

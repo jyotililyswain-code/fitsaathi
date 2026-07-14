@@ -40,7 +40,7 @@ export async function getDojos(filters: { search?: string; category?: string; ci
 }
 export async function getFeaturedDojos(max = 6) { return (await localApi<any[]>(`/dojos?featured=true&limit=${max}`)).map(mapDojo); }
 export async function getDojo(id: string) { return mapDojo(await localApi<any>(`/dojos/${id}`)); }
-export async function getMyDojoStatus() { return localApi<{ id: string; name: string; status: "pending" | "approved" | "active" | "inactive" | "rejected" | "suspended"; approved: boolean; verified: boolean }>("/dojos/me"); }
+export async function getMyDojoStatus() { return localApi<{ id: string; name: string; establishmentType: string; status: "pending" | "approved" | "active" | "inactive" | "rejected" | "suspended"; approved: boolean; verified: boolean }>("/dojos/me"); }
 export async function getBookings(_max = 50): Promise<Booking[]> { return localApi<Booking[]>("/bookings"); }
 export async function getUserBookings(_userId: string, _max = 50) { return getBookings(_max); }
 export async function getProviderBookings(_ownerId: string, _max = 50) { return getBookings(_max); }

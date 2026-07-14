@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   localApi,
   notifyAuthChanged,
@@ -26,7 +27,42 @@ type AuthSessionContextValue = {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
+const publicSeoRoutes = new Set([
+  "/",
+  "/home",
+  "/about",
+  "/contact",
+  "/faq",
+  "/find-coach",
+  "/coaches",
+  "/dojos",
+  "/shop",
+  "/products",
+  "/seller",
+  "/get-started",
+  "/pamphlet",
+  "/policies",
+  "/privacy",
+  "/terms",
+]);
+const publicSeoPrefixes = [
+  "/coaches/",
+  "/dojos/",
+  "/products/",
+  "/sellers/",
+  "/policies/",
+];
+
+export function isPublicSeoRoute(pathname: string) {
+  return (
+    publicSeoRoutes.has(pathname) ||
+    publicSeoPrefixes.some((prefix) => pathname.startsWith(prefix))
+  );
+}
+
 export function AuthSessionProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname() || "/";
+  const publicPage = isPublicSeoRoute(pathname);
   const [user, setUser] = useState<LocalUser | null>(null);
   const [checking, setChecking] = useState(true);
   const [sessionError, setSessionError] = useState("");
@@ -100,11 +136,11 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     <AuthSessionContext.Provider
       value={{ user, checking, reload: () => sync(true) }}
     >
-      {checking ? (
+      {!publicPage && checking ? (
         <main className="grid min-h-screen place-items-center bg-ink px-4 text-sm text-zinc-400">
           Restoring your session...
         </main>
-      ) : sessionError && !user ? (
+      ) : !publicPage && sessionError && !user ? (
         <main className="grid min-h-screen place-items-center bg-ink px-4 text-center text-sm text-zinc-400">
           <section>
             <p>{sessionError}</p>
@@ -136,6 +172,7 @@ export async function establishSupabaseSession(email: string, password: string) 
 
 export async function logoutSession() {
   try {
+    await unsubscribePushOnLogout();
     await clearLocalSession();
   } finally {
     if (supabase) await supabase.auth.signOut({ scope: "local" }).catch(() => undefined);
@@ -145,4 +182,17 @@ export async function logoutSession() {
 
 async function clearLocalSession() {
   await localApi("/auth/logout", { method: "POST" }, false).catch(() => undefined);
+}
+
+async function unsubscribePushOnLogout() {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration("/");
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return;
+    await localApi("/push/unsubscribe", { method: "DELETE", body: JSON.stringify({ endpoint: subscription.endpoint }) }, false).catch(() => undefined);
+    await subscription.unsubscribe().catch(() => false);
+  } catch {
+    // Logout must continue even if this browser cannot reach its push service.
+  }
 }

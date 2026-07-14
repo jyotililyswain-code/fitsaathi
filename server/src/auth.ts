@@ -15,8 +15,8 @@ export async function authenticate(request: AuthRequest, response: Response, nex
   const token = bearer || parseCookies(request.headers.cookie || "").fitsaathi_access || "";
   try {
     const claims = jwt.verify(token, config.jwtSecret) as SessionUser;
-    const user = await prisma.user.findUnique({ where: { id: claims.id }, select: { id: true, email: true, role: true, accountStatus: true } });
-    if (!user || user.accountStatus !== "active") throw new Error("Inactive database user");
+    const user = await prisma.user.findUnique({ where: { id: claims.id }, select: { id: true, email: true, role: true, accountStatus: true, emailVerified: true } });
+    if (!user || user.accountStatus !== "active" || !user.emailVerified) throw new Error("Inactive or unverified database user");
     request.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch { response.status(401).json({ error: "Authentication required." }); }

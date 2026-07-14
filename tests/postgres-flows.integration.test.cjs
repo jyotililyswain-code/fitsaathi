@@ -1,7 +1,9 @@
 require("dotenv/config");
 
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
+const jwt = require("jsonwebtoken");
 const path = require("node:path");
 const test = require("node:test");
 const { PrismaClient } = require("@prisma/client");
@@ -23,9 +25,13 @@ const json = (method, body, token) => ({ method, headers: { "content-type": "app
 
 async function register(stamp, label) {
   const email = `flow-${label}-${stamp}@example.test`;
-  const created = await request(apiUrl, "/auth/register", json("POST", { name: `Flow ${label}`, email, password: "AuditPass123!", phone: `90000000${label.length}0`, birthDate: "2012-01-01" }), [201]);
-  const session = await request(apiUrl, "/auth/login", json("POST", { email, password: "AuditPass123!" }));
-  return { email, id: created.user.id, session };
+  const user = await prisma.user.create({ data: { name: `Flow ${label}`, email, emailNormalized: email, emailVerified: true, emailVerifiedAt: new Date(), accountStatus: "active", phone: `90000000${label.length}0`, birthDate: new Date("2012-01-01") } });
+  return { email, id: user.id, session: { accessToken: testToken(user) } };
+}
+
+function testToken(user) {
+  if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET must match the local API for this integration test.");
+  return jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" });
 }
 
 async function uploadProviderFile(token, registrationType, kind, fileName = "test.jpg", contentType = "image/jpeg") {
@@ -68,11 +74,7 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     const coachResult = await request(apiUrl, "/coaches", json("POST", await providerBody("coach", coachAccount, uploaded), coachAccount.session.accessToken), [201]);
     coachId = coachResult.profile.id;
     const coachToken = coachResult.session.accessToken;
-    const publicCoach = (await request(apiUrl, "/coaches?limit=100")).find(item => item.id === coachId);
-    assert.ok(publicCoach, "new coach should appear in the public coach list");
-    assert.equal("phoneNumber" in publicCoach, false, "public coach records must not expose phone numbers");
-    assert.equal("coachPayout" in publicCoach, false, "public coach records must not expose provider payouts");
-    assert.equal((await request(apiUrl, `/coaches/${coachId}`)).id, coachId);
+    assert.equal((await request(apiUrl, "/coaches?limit=100")).some(item => item.id === coachId), false, "an unapproved coach must not appear publicly");
     assert.equal((await request(apiUrl, `/coaches/${coachId}`, json("PUT", { bio: "Updated PostgreSQL coach bio." }, coachToken))).bio, "Updated PostgreSQL coach bio.");
 
     const dojoAccount = await register(stamp, "dojo"); userIds.push(dojoAccount.id);
@@ -87,17 +89,23 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     assert.equal((await request(apiUrl, `/dojos/${dojoId}`, json("PUT", { description: "Updated PostgreSQL dojo." }, dojoToken))).description, "Updated PostgreSQL dojo.");
 
     const admin = await register(stamp, "admin"); userIds.push(admin.id);
-    await prisma.user.update({ where: { id: admin.id }, data: { role: "admin" } });
-    const adminSession = await request(apiUrl, "/auth/login", json("POST", { email: admin.email, password: "AuditPass123!" }));
+    const adminUser = await prisma.user.update({ where: { id: admin.id }, data: { role: "admin" } });
+    const adminSession = { accessToken: testToken(adminUser) };
     assert.equal((await prisma.dojo.findUniqueOrThrow({ where: { id: dojoId } })).registrationPaymentStatus, "not_required");
     assert.equal((await request(apiUrl, `/admin/providers/coach/${coachId}/status`, json("PATCH", { status: "approved" }, adminSession.accessToken))).verified, true);
     assert.equal((await request(apiUrl, `/admin/providers/dojo/${dojoId}/status`, json("PATCH", { status: "active" }, adminSession.accessToken))).approved, true);
+    const publicCoach = (await request(apiUrl, "/coaches?limit=100")).find(item => item.id === coachId);
+    assert.ok(publicCoach, "an approved coach should appear in the public coach list");
+    assert.equal("phoneNumber" in publicCoach, false, "public coach records must not expose phone numbers");
+    assert.equal("coachPayout" in publicCoach, false, "public coach records must not expose provider payouts");
+    assert.equal((await request(apiUrl, `/coaches/${coachId}`)).id, coachId);
 
     const customer = await register(stamp, "customer"); userIds.push(customer.id);
-    const now = new Date();
-    const preferredDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const preferredTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const booking = await request(nextUrl, "/api/bookings/create", json("POST", { targetType: "coach", targetId: coachId, name: "Flow Customer", phone: "9876543212", city: "Delhi", classType: "home", packageType: "trial", preferredDate, preferredTime, acceptedTerms: true, acceptedPrivacy: true }, customer.session.accessToken), [201]);
+    const bookingDate = new Date();
+    bookingDate.setUTCDate(bookingDate.getUTCDate() + ((8 - bookingDate.getUTCDay()) % 7 || 7));
+    const preferredDate = bookingDate.toISOString().slice(0, 10);
+    const preferredTime = "06:00";
+    const booking = await request(nextUrl, "/api/bookings/create", json("POST", { targetType: "coach", targetId: coachId, name: "Flow Customer", phone: "9876543212", city: "Delhi", classType: "home", packageType: "trial", preferredDate, preferredTime, acceptedTerms: true, acceptedPrivacy: true, idempotencyKey: crypto.randomUUID() }, customer.session.accessToken), [201]);
     bookingId = booking.bookingId;
     assert.equal(await prisma.payment.count({ where: { bookingId } }), 0);
     const confirmedBooking = await prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
@@ -106,13 +114,13 @@ test("PostgreSQL provider, booking, attendance, dashboard, and admin flows work 
     assert.equal(confirmedBooking.platformFee, 0);
     assert.equal(confirmedBooking.status, "confirmed");
     assert.ok((await request(apiUrl, "/bookings", { headers: { authorization: `Bearer ${customer.session.accessToken}` } })).some(item => item.id === bookingId));
-    assert.equal((await request(apiUrl, `/bookings/${bookingId}/status`, json("PATCH", { status: "accepted" }, coachToken))).status, "accepted");
+    assert.equal((await request(nextUrl, "/api/bookings/status", json("POST", { bookingId, status: "accepted" }, coachToken))).booking.status, "accepted");
     const qr = await request(nextUrl, "/api/attendance/token", json("POST", { bookingId }, customer.session.accessToken));
     const scan = await request(nextUrl, "/api/attendance/scan", json("POST", { bookingId, code: qr.code }, coachToken));
     assert.equal(scan.bookingId, bookingId);
     await request(nextUrl, "/api/attendance/scan", json("POST", { bookingId, code: qr.code }, coachToken), [409]);
     assert.ok((await request(apiUrl, "/dashboard/summary", { headers: { authorization: `Bearer ${customer.session.accessToken}` } })).attendance >= 1);
-    assert.equal((await request(apiUrl, `/bookings/${bookingId}/status`, json("PATCH", { status: "completed" }, coachToken))).status, "completed");
+    assert.equal((await request(nextUrl, "/api/bookings/status", json("POST", { bookingId, status: "completed" }, coachToken))).booking.status, "completed");
 
     const verificationFiles = await prisma.providerVerification.findMany({ where: { ownerId: { in: [coachAccount.id, dojoAccount.id] } } });
     for (const item of verificationFiles) uploaded.push(item.aadhaarFrontPath, item.aadhaarBackPath, item.certificatePath);

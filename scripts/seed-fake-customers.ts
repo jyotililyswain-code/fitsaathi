@@ -1,6 +1,4 @@
 import "dotenv/config";
-import { randomBytes } from "node:crypto";
-import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -12,16 +10,16 @@ function fakeCustomerEmail(index: number) {
 }
 
 async function seedFakeCustomers() {
-  // The random password is discarded so seeded accounts cannot be used to sign in.
-  const passwordHash = await bcrypt.hash(randomBytes(48).toString("base64url"), 12);
   const users = Array.from({ length: fakeCustomerCount }, (_, offset) => {
     const index = offset + 1;
+    const email = fakeCustomerEmail(index);
     return {
       name: `Fake Customer ${String(index).padStart(4, "0")}`,
-      email: fakeCustomerEmail(index),
-      passwordHash,
+      email,
+      emailNormalized: email,
       role: "customer" as const,
-      accountStatus: "active",
+      accountStatus: "pending_email_verification",
+      emailVerified: false,
       acceptedPolicies: false,
       onboardingCompleted: false,
       isOnline: false,

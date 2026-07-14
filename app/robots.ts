@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl } from "@/lib/seo";
+import { siteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
+    rules: [{
+      userAgent: ["Googlebot", "Bingbot", "*"],
+      allow: ["/", "/home", "/about", "/contact", "/faq", "/find-coach", "/coaches/", "/dojos/", "/shop", "/products/", "/seller", "/policies/", "/privacy", "/terms"],
       disallow: [
         "/admin",
         "/owner",
@@ -15,6 +15,7 @@ export default function robots(): MetadataRoute.Robots {
         "/coach-dashboard",
         "/dojo-dashboard",
         "/api",
+        "/auth",
         "/profile",
         "/settings",
         "/chat",
@@ -27,16 +28,18 @@ export default function robots(): MetadataRoute.Robots {
         "/verification",
         "/complete-profile",
         "/life",
+        "/booking",
+        "/become-a-coach",
+        "/register-dojo",
+        "/register-seller",
+        "/seller/register",
+        "/setup",
         "/login",
         "/signup",
         "/forgot-password",
       ],
-    },
-    sitemap: absoluteUrl("/sitemap.xml"),
-    host: siteUrlFromAbsolute(),
+    }],
+    sitemap: `${siteUrl}/sitemap.xml`,
+    host: siteUrl,
   };
-}
-
-function siteUrlFromAbsolute() {
-  return absoluteUrl("/").replace(/\/$/, "");
 }

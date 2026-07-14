@@ -1,5 +1,7 @@
 # FitSaathi
 
+Production deployment instructions for mandatory email verification and booking notifications are in [PRODUCTION_AUTH_NOTIFICATIONS.md](./PRODUCTION_AUTH_NOTIFICATIONS.md).
+
 FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, and Vercel Blob. Account and provider registration, identity verification, and coach or dojo booking are free, with no platform or hidden charges. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
 
 ## Run locally
@@ -33,7 +35,7 @@ Copy `.env.example` to `.env` and configure:
 
 Optional external services:
 
-- `NEXT_PUBLIC_SITE_URL`: canonical production site URL.
+- `NEXT_PUBLIC_SITE_URL`: set to the canonical production origin `https://fitsaathi.com`.
 - `NEXT_PUBLIC_GA_ID`: optional Google Analytics measurement ID.
 
 ## Database commands
@@ -90,7 +92,7 @@ This repo is now designed to deploy as a single Vercel Next.js project:
 2. Connect a Vercel Blob store and keep `BLOB_READ_WRITE_TOKEN` available to the project.
 3. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ATTENDANCE_QR_SECRET`, and `NEXT_PUBLIC_SITE_URL`.
 4. Do not set `NEXT_PUBLIC_API_URL` unless you intentionally want to call a separate external API.
-5. Vercel should use `npm run build`, which runs `prisma generate` before `next build`.
+5. Vercel should use `npm run build`, which deploys pending Prisma migrations, regenerates the client, and then runs `next build`. Set `DIRECT_URL` (or `POSTGRES_URL_NON_POOLING`) for migrations when `DATABASE_URL` uses a transaction pooler.
 
 Provider registration uploads use Vercel Blob's authenticated client-upload flow. The browser validates and compresses one file at a time, requests a short-lived upload token from `/api/provider-uploads`, uploads directly to the private Blob store, and then submits only storage path strings to `/api/coaches` or `/api/dojos`. Image bytes and Base64 data never pass through those Vercel registration functions. The Blob read/write token remains server-only.
 

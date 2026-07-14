@@ -10,19 +10,22 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   try {
-    const coach = await prisma.coach.findUnique({
-      where: { id },
+    const coach = await prisma.coach.findFirst({
+      where: {
+        id,
+        verified: true,
+        status: "approved",
+        owner: { emailVerified: true, accountStatus: "active" },
+      },
       select: {
         name: true,
         category: true,
         city: true,
         bio: true,
         photoPath: true,
-        verified: true,
-        status: true,
       },
     });
-    if (!coach || !coach.verified || coach.status !== "approved") {
+    if (!coach) {
       return generateSeoMetadata({
         title: "Coach Profile - FitSaathi",
         description: "This coach profile is not available for search indexing.",

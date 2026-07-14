@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 
-const configuredSiteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://fitsaathi.vercel.app";
-
-export const siteUrl = configuredSiteUrl.replace(/\/$/, "");
+// SEO URLs must never depend on VERCEL_URL or a Preview environment variable.
+// The production origin is deliberately pinned so canonicals, structured data,
+// robots.txt and sitemap.xml always agree.
+export const siteUrl = "https://fitsaathi.com";
 
 export const seoConfig = {
   siteName: "FitSaathi",
   siteUrl,
-  futureDomainNote: "Use NEXT_PUBLIC_SITE_URL when available",
-  defaultTitle: "FitSaathi - Find Fitness Coaches, Dojos & Trainers Near You",
+  defaultTitle:
+    "FitSaathi – Find Fitness Coaches, Gyms and Sports Academies",
   defaultDescription:
-    "Book trusted home fitness coaches, yoga trainers, martial arts teachers, dojos, and fitness services with FitSaathi.",
+    "FitSaathi helps people discover fitness coaches, personal trainers, martial arts trainers, gyms, dojos and sports academies across India.",
   defaultKeywords: [
     "FitSaathi",
     "fitness coach near me",
@@ -24,7 +24,8 @@ export const seoConfig = {
     "fitness marketplace India",
     "personal training India",
   ],
-  defaultOpenGraphImage: "/scroll-art/karate-punch-woman.jpg",
+  defaultOpenGraphImage: "/opengraph-image",
+  logo: "/fitsaathi-logo.svg",
 } as const;
 
 type SeoMetadataInput = {
@@ -41,6 +42,12 @@ export function absoluteUrl(path = "/") {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+export function canonicalUrl(path = "/") {
+  const parsed = new URL(path, siteUrl);
+  const pathname = parsed.pathname === "/" ? "/" : parsed.pathname.replace(/\/$/, "");
+  return `${siteUrl}${pathname}`;
+}
+
 export function generateSeoMetadata({
   title = seoConfig.defaultTitle,
   description = seoConfig.defaultDescription,
@@ -49,7 +56,7 @@ export function generateSeoMetadata({
   image = seoConfig.defaultOpenGraphImage,
   noIndex = false,
 }: SeoMetadataInput = {}): Metadata {
-  const canonical = absoluteUrl(path);
+  const canonical = canonicalUrl(path);
   const imageUrl = absoluteUrl(image);
 
   return {
@@ -57,9 +64,12 @@ export function generateSeoMetadata({
     description,
     keywords,
     alternates: { canonical },
+    applicationName: seoConfig.siteName,
+    category: "fitness",
     openGraph: {
       type: "website",
       siteName: seoConfig.siteName,
+      locale: "en_IN",
       url: canonical,
       title,
       description,
@@ -77,8 +87,23 @@ export function generateSeoMetadata({
       images: [imageUrl],
     },
     robots: noIndex
-      ? { index: false, follow: false, nocache: true }
-      : { index: true, follow: true },
+      ? {
+          index: false,
+          follow: false,
+          nocache: true,
+          googleBot: { index: false, follow: false, noimageindex: true },
+        }
+      : {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+          },
+        },
   };
 }
 
@@ -87,11 +112,13 @@ export const organizationJsonLd = {
   "@id": `${siteUrl}/#organization`,
   name: seoConfig.siteName,
   url: siteUrl,
-  email: "priyanshuswain2000@gmail.com",
-  telephone: "8447640449",
+  logo: {
+    "@type": "ImageObject",
+    url: absoluteUrl(seoConfig.logo),
+  },
   description:
-    "FitSaathi is a fitness marketplace for finding home fitness coaches, personal trainers, yoga trainers, martial arts classes, dojos, and fitness services.",
-  sameAs: [],
+    "FitSaathi helps people find fitness coaches, martial arts trainers, gyms, dojos and sports academies across India.",
+  areaServed: { "@type": "Country", name: "India" },
 };
 
 export const websiteJsonLd = {
@@ -115,3 +142,45 @@ export const coachBookingServiceJsonLd = {
   areaServed: { "@type": "Country", name: "India" },
   provider: { "@id": `${siteUrl}/#organization` },
 };
+
+type SportsLocationInput = {
+  id: string;
+  name: string;
+  category: string;
+  description?: string | null;
+  image?: string | null;
+  phoneNumber?: string | null;
+  isPhoneVerified?: boolean;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
+};
+
+export function sportsActivityLocationJsonLd(location: SportsLocationInput) {
+  const postalAddress = {
+    "@type": "PostalAddress",
+    ...(location.address ? { streetAddress: location.address } : {}),
+    ...(location.city ? { addressLocality: location.city } : {}),
+    ...(location.state ? { addressRegion: location.state } : {}),
+    ...(location.pincode ? { postalCode: location.pincode } : {}),
+    addressCountry: "IN",
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "SportsActivityLocation",
+    "@id": `${canonicalUrl(`/dojos/${location.id}`)}#sports-location`,
+    name: location.name,
+    url: canonicalUrl(`/dojos/${location.id}`),
+    description:
+      location.description ||
+      `${location.name} offers ${location.category} training${location.city ? ` in ${location.city}` : ""}.`,
+    sport: location.category,
+    ...(location.image ? { image: absoluteUrl(location.image) } : {}),
+    ...(location.isPhoneVerified && location.phoneNumber
+      ? { telephone: location.phoneNumber }
+      : {}),
+    address: postalAddress,
+  };
+}

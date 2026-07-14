@@ -6,6 +6,13 @@ const nextConfig = {
     return [
       { source: "/uploads/:path*", destination: "/api/uploads/:path*" }
     ];
+  },
+  async redirects() {
+    return [
+      { source: "/marketplace", destination: "/shop", permanent: true },
+      { source: "/policies/privacy", destination: "/privacy", permanent: true },
+      { source: "/policies/terms", destination: "/terms", permanent: true }
+    ];
   }
 };
 

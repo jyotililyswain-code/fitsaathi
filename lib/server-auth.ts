@@ -17,8 +17,10 @@ export async function requireApiUser(request: Request) {
     const claims = jwt.verify(token, requiredSecret()) as { id?: string; email?: string; role?: string };
     if (!claims.id) throw new Error("Missing user ID");
     const user = await prisma.user.findUnique({ where: { id: claims.id } });
-    if (!user || user.accountStatus !== "active") throw new ApiAuthError("Your session is invalid or expired.", 401);
-    return { id: user.id, uid: user.id, email: user.email, name: user.name, role: user.role };
+    if (!user) throw new ApiAuthError("Your session is invalid or expired.", 401);
+    if (!user.emailVerified) throw new ApiAuthError("Verify your email before using this feature.", 403);
+    if (user.accountStatus !== "active") throw new ApiAuthError("This account cannot use this feature.", 403);
+    return { id: user.id, uid: user.id, authUserId: user.authUserId, email: user.email, name: user.name, role: user.role, emailVerified: user.emailVerified, accountStatus: user.accountStatus };
   } catch (error) {
     if (error instanceof ApiAuthError) throw error;
     throw new ApiAuthError("Your session is invalid or expired.", 401);

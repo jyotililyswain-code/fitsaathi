@@ -11,6 +11,7 @@ export const metadata = generateSeoMetadata({
     "register gym India",
     "fitness academy India",
   ],
+  noIndex: true,
 });
 export default function Layout({ children }: { children: ReactNode }) {
   return children;

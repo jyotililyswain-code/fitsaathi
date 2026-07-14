@@ -21,8 +21,10 @@ async function main() {
 
   try {
     await prisma.$transaction(async tx => {
-      const owner = await tx.user.create({ data: { name: "Visibility Test Owner", email: `dojo-visibility-${suffix}@example.invalid`, passwordHash: "rollback-only-test", role: "customer" } });
-      const otherUser = await tx.user.create({ data: { name: "Other Test User", email: `dojo-other-${suffix}@example.invalid`, passwordHash: "rollback-only-test", role: "customer" } });
+      const ownerEmail = `dojo-visibility-${suffix}@example.invalid`;
+      const otherEmail = `dojo-other-${suffix}@example.invalid`;
+      const owner = await tx.user.create({ data: { name: "Visibility Test Owner", email: ownerEmail, emailNormalized: ownerEmail, emailVerified: true, accountStatus: "active", role: "customer" } });
+      const otherUser = await tx.user.create({ data: { name: "Other Test User", email: otherEmail, emailNormalized: otherEmail, emailVerified: true, accountStatus: "active", role: "customer" } });
       const active = await tx.dojo.create({ data: { id: dojoId, ownerId: owner.id, name: dojoName, ownerName: owner.name, email: owner.email, phoneNumber: "9876543210", category: "Karate", city: "Pune", state: "Maharashtra", pincode: "411001", address: "Test business address", experience: "5 years", imagePath: `dojo/${dojoId}/business-photo/test.webp`, registrationPaymentStatus: "not_required", ...automaticDojoActivation() } });
       await tx.providerVerification.create({ data: { ownerId: owner.id, profileId: active.id, profileType: "dojo", certificatePath: `dojo/${dojoId}/ownership-proof/test.pdf` } });
       assert.equal(active.status, "active");

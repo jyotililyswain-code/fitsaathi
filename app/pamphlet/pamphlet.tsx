@@ -55,7 +55,7 @@ export function Pamphlet() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    QRCode.toDataURL("https://fitsaathi.vercel.app/", { width: 360, margin: 1, errorCorrectionLevel: "H", color: { dark: "#0f2744", light: "#ffffff" } }).then(setQr);
+    QRCode.toDataURL("https://fitsaathi.com/", { width: 360, margin: 1, errorCorrectionLevel: "H", color: { dark: "#0f2744", light: "#ffffff" } }).then(setQr);
   }, []);
 
   async function download() {
@@ -115,7 +115,7 @@ export function Pamphlet() {
             <div className="absolute bottom-0 left-0 h-2 w-full bg-gradient-to-r from-blue-500 via-orange-500 to-emerald-500" />
             <div className="flex h-full items-center justify-between">
               <div className="max-w-[475px]"><p className="text-[10px] font-bold uppercase tracking-[.22em] text-[#a8f000]">One platform. Every fitness goal.</p><h2 className="mt-2 text-[25px] font-black leading-tight">Ready to find your<br/>fitness Saathi?</h2><div className="mt-4 flex gap-5 text-[10px] font-semibold text-blue-100"><span className="flex items-center gap-1.5"><CalendarCheck className="h-4 w-4 text-orange-400"/>Easy booking</span><span className="flex items-center gap-1.5"><Camera className="h-4 w-4 text-orange-400"/>Smart attendance</span><span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-orange-400"/>Verified community</span></div></div>
-              <div className="flex items-center gap-4 rounded-2xl bg-white p-3 text-[#102b4e] shadow-xl">{qr ? <img src={qr} alt="QR code to visit fitsaathi.vercel.app" className="h-[112px] w-[112px]"/> : <QrCode className="h-[112px] w-[112px]"/>}<div className="w-[125px]"><p className="text-[13px] font-black leading-tight">Scan to Visit<br/>FitSaathi Now!</p><p className="mt-2 break-all text-[10px] font-bold text-blue-700">fitsaathi.vercel.app</p></div></div>
+              <div className="flex items-center gap-4 rounded-2xl bg-white p-3 text-[#102b4e] shadow-xl">{qr ? <img src={qr} alt="QR code to visit fitsaathi.com" className="h-[112px] w-[112px]"/> : <QrCode className="h-[112px] w-[112px]"/>}<div className="w-[125px]"><p className="text-[13px] font-black leading-tight">Scan to Visit<br/>FitSaathi Now!</p><p className="mt-2 break-all text-[10px] font-bold text-blue-700">fitsaathi.com</p></div></div>
             </div>
           </footer>
         </div>

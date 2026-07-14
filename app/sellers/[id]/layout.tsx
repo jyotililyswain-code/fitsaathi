@@ -10,11 +10,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   try {
-    const seller = await prisma.seller.findUnique({
-      where: { id },
-      select: { storeName: true, bio: true, profilePath: true, status: true },
+    const seller = await prisma.seller.findFirst({
+      where: {
+        id,
+        status: { in: ["verified", "trusted"] },
+        owner: { emailVerified: true, accountStatus: "active" },
+      },
+      select: { storeName: true, bio: true, profilePath: true },
     });
-    if (!seller || !["verified", "trusted"].includes(seller.status))
+    if (!seller)
       return generateSeoMetadata({
         title: "Fitness Seller - FitSaathi",
         path: `/sellers/${id}`,

@@ -11,13 +11,14 @@ if (!databaseUrl) {
   console.error("DATABASE_URL is required during a Vercel build so database migrations run before deployment.");
   process.exit(1);
 }
+const migrationUrl = process.env.DIRECT_URL?.trim() || process.env.POSTGRES_URL_NON_POOLING?.trim() || databaseUrl;
 
 const prismaCli = require.resolve("prisma/build/index.js");
 const schema = path.join("server", "prisma", "schema.prisma");
 const result = spawnSync(
   process.execPath,
   [prismaCli, "migrate", "deploy", "--schema", schema],
-  { env: process.env, stdio: "inherit" },
+  { env: { ...process.env, DATABASE_URL: migrationUrl }, stdio: "inherit" },
 );
 
 if (result.error) {

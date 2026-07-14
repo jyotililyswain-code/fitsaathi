@@ -1,13 +1,13 @@
 import fs from "node:fs";
 import crypto from "node:crypto";
 import path from "node:path";
-import bcrypt from "bcryptjs";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 import multer from "multer";
 import morgan from "morgan";
 import { z } from "zod";
+import { isStrongPassword, normalizeEmail } from "../../lib/auth/email";
 import { automaticDojoActivation, canManageDojo, dojoModerationData, PUBLIC_DOJO_SELECT, publicDojo, publicDojoWhere } from "../../lib/dojo-visibility";
 import { resolveDojoImageUrl } from "../../lib/dojo-image";
 import { accessToken, allowRoles, authenticate, hashToken, refreshToken, type AuthRequest, type SessionUser } from "./auth";
@@ -16,7 +16,15 @@ import { prisma } from "./db";
 import { validateInterestList } from "./interests";
 import { databaseRateLimit } from "./rate-limit";
 import { socialRouter } from "./social";
-import { createSupabaseAuthUser, sendSupabasePasswordReset } from "./supabase-auth";
+import {
+  createSupabaseAuthUser,
+  deleteSupabaseAuthUser,
+  resendSupabaseSignupOtp,
+  sendSupabasePasswordReset,
+  signInSupabaseUser,
+  updateSupabasePassword,
+  verifySupabaseEmailOtp,
+} from "./supabase-auth";
 import { matchesRouter } from "./matches";
 import { optimizeUploads, removeUploads, upload } from "./uploads";
 import { containsInlineFileData, isOwnedProviderPath, isProviderFileKind, isProviderRegistrationType, type ProviderRegistrationType } from "../../lib/provider-upload-rules";
@@ -27,7 +35,7 @@ const admins = ["admin", "super_admin", "moderator", "support_admin"];
 const asyncRoute = (handler: (request: any, response: any) => Promise<unknown>) => (request: any, response: any, next: any) => Promise.resolve(handler(request, response)).catch(next);
 const pricing = (value: unknown) => { const sellerPrice = Math.max(0, Math.round(Number(value) || 0)); return { sellerPrice, customerPrice: sellerPrice + 100, sellerPayout: sellerPrice + 50, platformFee: 50 }; };
 const establishmentTypes = ["DOJO", "GYM", "FITNESS_STUDIO", "YOGA_STUDIO", "MARTIAL_ARTS_ACADEMY", "OTHER"] as const;
-const publicUser = { id: true, name: true, email: true, phone: true, role: true, accountStatus: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
+const publicUser = { id: true, name: true, email: true, phone: true, role: true, registrationIntent: true, emailVerified: true, emailVerifiedAt: true, accountStatus: true, notificationOnboardingCompleted: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
 const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, photoPath, ...coach }: any) => ({ ...coach, photoPath: photoPath ? `/api/coaches/${coach.id}/photo` : undefined });
 const publicSellerRecord = ({ phone: _phone, aadhaarPath: _aadhaar, gstNumber: _gst, owner, ...seller }: any) => ({ ...seller, ...(owner ? { owner: { id: owner.id, name: owner.name } } : {}) });
 const publicProductRecord = ({ sellerPrice: _sellerPrice, sellerPayout: _sellerPayout, platformFee: _platformFee, seller, ...product }: any) => ({ ...product, ...(seller ? { seller: publicSellerRecord(seller) } : {}) });
@@ -139,28 +147,57 @@ app.post("/api/provider-uploads/cleanup", authenticate, asyncRoute(async (reques
   response.json({ success: true, message: "Unused uploads were removed." });
 }));
 
-const credentials = z.object({ email: z.string().trim().email().transform(v => v.toLowerCase()), password: z.string().min(8).max(100) });
-app.post("/api/auth/register", asyncRoute(async (request, response) => {
-  const input = credentials.extend({ name: z.string().min(2).max(80), phone: z.string().max(20).optional(), gender: z.enum(["male", "female", "other"]).optional(), birthDate: z.coerce.date().optional(), city: z.string().trim().max(80).optional(), state: z.string().trim().max(80).optional(), country: z.string().trim().max(80).optional(), heightCm: z.coerce.number().int().min(100).max(250).optional(), weightKg: z.coerce.number().min(25).max(350).optional(), fitnessGoal: z.string().trim().max(200).optional(), relationshipPreference: z.string().trim().max(80).optional(), profileBio: z.string().trim().max(1200).optional(), fitnessLevel: z.enum(["beginner", "intermediate", "advanced", "athlete"]).optional(), interests: z.array(z.string().trim().min(2).max(50)).max(30).optional(), acceptedPolicies: z.boolean().optional(), acceptedPolicyVersion: z.string().max(40).optional() }).parse(request.body);
-  const existing = await prisma.user.findUnique({ where: { email: input.email }, select: { id: true } });
-  if (existing) return response.status(409).json({ error: "An account with this email address already exists.", code: "DUPLICATE_EMAIL", field: "email" });
-  const passwordHash = await bcrypt.hash(input.password, 12);
-  const { interests = [], password: _password, ...details } = input;
+const emailSchema = z.string().max(254).transform(value => normalizeEmail(value) || "").pipe(z.string().email());
+const passwordSchema = z.string().min(8).max(100).refine(isStrongPassword, "Password must include uppercase, lowercase, a number, and a symbol.");
+const credentials = z.object({ email: emailSchema, password: z.string().min(1).max(100) });
+app.post("/api/auth/register", databaseRateLimit(5, 10 * 60_000, "signup"), asyncRoute(async (request, response) => {
+  const input = credentials.extend({ password: passwordSchema, name: z.string().trim().min(2).max(80), accountType: z.enum(["customer", "coach", "dojo", "gym", "seller"]).default("customer"), phone: z.string().max(20).optional(), gender: z.enum(["male", "female", "other"]).optional(), birthDate: z.coerce.date().optional(), city: z.string().trim().max(80).optional(), state: z.string().trim().max(80).optional(), country: z.string().trim().max(80).optional(), heightCm: z.coerce.number().int().min(100).max(250).optional(), weightKg: z.coerce.number().min(25).max(350).optional(), fitnessGoal: z.string().trim().max(200).optional(), relationshipPreference: z.string().trim().max(80).optional(), profileBio: z.string().trim().max(1200).optional(), fitnessLevel: z.enum(["beginner", "intermediate", "advanced", "athlete"]).optional(), interests: z.array(z.string().trim().min(2).max(50)).max(30).optional(), acceptedPolicies: z.literal(true), acceptedPolicyVersion: z.string().max(40) }).parse(request.body);
+  const existing = await prisma.user.findFirst({ where: { OR: [{ emailNormalized: input.email }, { email: { equals: input.email, mode: "insensitive" } }] }, select: { id: true, authUserId: true, emailVerified: true, accountStatus: true, role: true } });
+  const canClaimLegacyAccount = !existing || ["customer", "coach", "dojo", "seller"].includes(existing.role);
+  if (existing && (existing.authUserId || existing.emailVerified || !canClaimLegacyAccount || ["banned", "suspended", "rejected", "deleted"].includes(existing.accountStatus))) return response.status(409).json({ error: "We could not create this account. Try signing in or contact FitSaathi support.", code: "ACCOUNT_UNAVAILABLE", field: "email" });
+  const { interests = [], password: _password, accountType, ...details } = input;
   const interestList = validateInterestList(interests);
   if (!interestList.ok) return response.status(400).json({ error: interestList.error, field: "interests" });
-  const supabaseAuthUserId = await createSupabaseAuthUser({ email: input.email, password: input.password, name: input.name, phone: input.phone, role: "customer" });
-  const user = await prisma.$transaction(async tx => {
-    const created = await tx.user.create({ data: { ...(supabaseAuthUserId ? { id: supabaseAuthUserId } : {}), ...details, passwordHash, acceptedPolicies: input.acceptedPolicies === true, acceptedAt: input.acceptedPolicies ? new Date() : undefined, onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: publicUser });
-    if (interestList.interests.length) await tx.userInterest.createMany({ data: interestList.interests.map(interest => ({ userId: created.id, interest })) });
-    return created;
-  }, { timeout: 20_000 });
-  response.status(201).json(await issueSession(user, response));
+  const authUser = await createSupabaseAuthUser({ email: input.email, password: input.password, name: input.name, phone: input.phone, registrationIntent: accountType });
+  try {
+    await prisma.$transaction(async tx => {
+      const created = existing
+        ? await tx.user.update({ where: { id: existing.id }, data: { authUserId: authUser.id, email: input.email, emailNormalized: input.email, emailVerified: false, emailVerifiedAt: null, registrationIntent: accountType, accountStatus: "pending_email_verification", acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() }, select: { id: true } })
+        : await tx.user.create({ data: { id: authUser.id, authUserId: authUser.id, ...details, email: input.email, emailNormalized: input.email, emailVerified: false, registrationIntent: accountType, accountStatus: "pending_email_verification", acceptedPolicies: true, acceptedAt: new Date(), onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: { id: true } });
+      if (interestList.interests.length) await tx.userInterest.createMany({ data: interestList.interests.map(interest => ({ userId: created.id, interest })), skipDuplicates: true });
+    }, { timeout: 20_000 });
+  } catch (error) {
+    await deleteSupabaseAuthUser(authUser.id);
+    throw error;
+  }
+  response.status(201).json({ verificationRequired: true, message: "Check your email for the six-digit verification code." });
 }));
-app.post("/api/auth/login", asyncRoute(async (request, response) => {
-  const input = credentials.extend({ acceptedPolicies: z.boolean().optional(), acceptedPolicyVersion: z.string().max(40).optional() }).parse(request.body); const record = await prisma.user.findUnique({ where: { email: input.email } });
-  if (!record || record.accountStatus !== "active" || !await bcrypt.compare(input.password, record.passwordHash)) return response.status(401).json({ error: "Invalid email or password.", code: "INVALID_CREDENTIALS" });
-  const current = input.acceptedPolicies ? await prisma.user.update({ where: { id: record.id }, data: { acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() } }) : record;
-  response.json(await issueSession(current, response));
+app.post("/api/auth/verify-email", databaseRateLimit(10, 10 * 60_000, "verify-email"), asyncRoute(async (request, response) => {
+  const input = z.object({ email: emailSchema, token: z.string().regex(/^\d{6}$/) }).parse(request.body);
+  const verified = await verifySupabaseEmailOtp(input.email, input.token);
+  const confirmedAt = verified.user.email_confirmed_at ? new Date(verified.user.email_confirmed_at) : new Date();
+  const record = await prisma.user.findFirst({ where: { OR: [{ authUserId: verified.user.id }, { emailNormalized: input.email }] } });
+  if (!record) return response.status(409).json({ error: "Your FitSaathi profile could not be completed. Contact support.", code: "PROFILE_NOT_FOUND" });
+  if (["banned", "suspended", "rejected", "deleted"].includes(record.accountStatus)) return response.status(403).json({ error: "This account is not available. Contact FitSaathi support.", code: "ACCOUNT_UNAVAILABLE" });
+  const user = await prisma.user.update({ where: { id: record.id }, data: { authUserId: verified.user.id, email: input.email, emailNormalized: input.email, emailVerified: true, emailVerifiedAt: confirmedAt, accountStatus: "active" }, select: publicUser });
+  response.json({ ...(await issueSession(user, response)), supabaseSession: verified.session, redirectTo: registrationRedirect(user.registrationIntent, user.role) });
+}));
+app.post("/api/auth/resend-verification", databaseRateLimit(3, 10 * 60_000, "resend-verification"), asyncRoute(async (request, response) => {
+  const input = z.object({ email: emailSchema }).parse(request.body);
+  const record = await prisma.user.findFirst({ where: { emailNormalized: input.email }, select: { emailVerified: true, accountStatus: true } });
+  if (record && !record.emailVerified && !["banned", "suspended", "rejected", "deleted"].includes(record.accountStatus)) await resendSupabaseSignupOtp(input.email);
+  response.json({ message: "A new verification code has been sent. Please check your inbox and spam folder." });
+}));
+app.post("/api/auth/login", databaseRateLimit(10, 10 * 60_000, "login"), asyncRoute(async (request, response) => {
+  const input = credentials.extend({ acceptedPolicies: z.boolean().optional(), acceptedPolicyVersion: z.string().max(40).optional() }).parse(request.body);
+  const authenticated = await signInSupabaseUser(input.email, input.password);
+  let record = await prisma.user.findFirst({ where: { OR: [{ authUserId: authenticated.user.id }, { emailNormalized: input.email }, { email: { equals: input.email, mode: "insensitive" } }] } });
+  if (!record) {
+    record = await prisma.user.create({ data: { id: authenticated.user.id, authUserId: authenticated.user.id, name: String(authenticated.user.user_metadata?.name || input.email.split("@")[0]).slice(0, 80), email: input.email, emailNormalized: input.email, emailVerified: true, emailVerifiedAt: new Date(authenticated.user.email_confirmed_at!), accountStatus: "active", acceptedPolicies: input.acceptedPolicies === true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: input.acceptedPolicies ? new Date() : undefined } });
+  }
+  if (["banned", "suspended", "rejected", "deleted"].includes(record.accountStatus)) return response.status(403).json({ error: "This account is not available. Contact FitSaathi support.", code: "ACCOUNT_UNAVAILABLE" });
+  const current = await prisma.user.update({ where: { id: record.id }, data: { authUserId: authenticated.user.id, emailVerified: true, emailVerifiedAt: new Date(authenticated.user.email_confirmed_at!), accountStatus: record.accountStatus === "pending_email_verification" ? "active" : record.accountStatus, ...(input.acceptedPolicies ? { acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() } : {}) } });
+  response.json({ ...(await issueSession(current, response)), supabaseSession: authenticated.session, redirectTo: registrationRedirect(current.registrationIntent, current.role) });
 }));
 app.post("/api/auth/refresh", asyncRoute(async (request, response) => {
   const token = String(request.body?.refreshToken || request.headers.cookie?.match(/(?:^|;\s*)fitsaathi_refresh=([^;]+)/)?.[1] || "");
@@ -169,7 +206,7 @@ app.post("/api/auth/refresh", asyncRoute(async (request, response) => {
     return response.status(401).json({ error: "Refresh session expired." });
   }
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } });
-  if (!stored || stored.expiresAt < new Date() || stored.user.accountStatus !== "active") {
+  if (!stored || stored.expiresAt < new Date() || stored.user.accountStatus !== "active" || !stored.user.emailVerified) {
     clearSessionCookies(response);
     return response.status(401).json({ error: "Refresh session expired." });
   }
@@ -182,17 +219,23 @@ app.post("/api/auth/logout", asyncRoute(async (request, response) => { const tok
 app.get("/api/auth/me", authenticate, asyncRoute(async (request: AuthRequest, response) => response.json(await prisma.user.findUnique({ where: { id: request.user!.id }, select: publicUser }))));
 app.post("/api/auth/forgot-password", asyncRoute(async (request, response) => {
   const input = credentials.pick({ email: true }).parse(request.body);
-  const sent = await sendSupabasePasswordReset(input.email);
-  response.json({ message: sent ? "If the account exists, check your email for a reset link." : "If the account exists, ask an administrator to reset the password. Email delivery is not configured." });
+  await sendSupabasePasswordReset(input.email);
+  response.json({ message: "If the account exists, check your email for a reset link." });
 }));
 app.post("/api/auth/change-password", authenticate, asyncRoute(async (request: AuthRequest, response) => {
-  const input = z.object({ currentPassword: z.string().min(8), newPassword: z.string().min(8).max(100) }).parse(request.body);
-  const user = await prisma.user.findUnique({ where: { id: request.user!.id } });
-  if (!user || !await bcrypt.compare(input.currentPassword, user.passwordHash)) return response.status(401).json({ error: "Current password is incorrect." });
-  await prisma.user.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(input.newPassword, 12) } });
-  await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+  const input = z.object({ currentPassword: z.string().min(8).max(100), newPassword: passwordSchema }).parse(request.body);
+  await updateSupabasePassword(request.user!.email, input.currentPassword, input.newPassword);
+  await prisma.refreshToken.deleteMany({ where: { userId: request.user!.id } });
   response.status(204).end();
 }));
+
+function registrationRedirect(intent: string, role: string) {
+  if (role !== "customer") return role === "coach" ? "/coach-dashboard" : role === "dojo" ? "/dojo-dashboard" : role === "seller" ? "/seller-dashboard" : "/dashboard";
+  if (intent === "coach") return "/become-a-coach";
+  if (intent === "dojo" || intent === "gym") return "/register-dojo";
+  if (intent === "seller") return "/seller/register";
+  return "/dashboard";
+}
 
 app.get("/api/stats", asyncRoute(async (_request, response) => {
   try {
@@ -209,16 +252,16 @@ app.get("/api/stats", asyncRoute(async (_request, response) => {
 app.get("/api/coaches", asyncRoute(async (request, response) => {
   const query = z.object({ featured: z.enum(["true", "false"]).optional(), limit: z.coerce.number().int().min(1).max(100).default(24), search: z.string().trim().max(100).optional(), category: z.string().trim().max(80).optional(), city: z.string().trim().max(80).optional() }).parse(request.query);
   const featured = query.featured === "true";
-  const where: any = { ...(featured ? { verified: true, status: "approved" } : { status: { not: "suspended" } }), ...(query.category ? { category: { contains: query.category, mode: "insensitive" } } : {}), ...(query.city ? { city: { contains: query.city, mode: "insensitive" } } : {}), ...(query.search ? { OR: [{ name: { contains: query.search, mode: "insensitive" } }, { category: { contains: query.search, mode: "insensitive" } }, { bio: { contains: query.search, mode: "insensitive" } }] } : {}) };
+  const where: any = { verified: true, status: "approved", owner: { emailVerified: true, accountStatus: "active" }, ...(query.category ? { category: { contains: query.category, mode: "insensitive" } } : {}), ...(query.city ? { city: { contains: query.city, mode: "insensitive" } } : {}), ...(query.search ? { OR: [{ name: { contains: query.search, mode: "insensitive" } }, { category: { contains: query.search, mode: "insensitive" } }, { bio: { contains: query.search, mode: "insensitive" } }] } : {}) };
   const items = await prisma.coach.findMany({ where, orderBy: featured ? { rating: "desc" } : { createdAt: "desc" }, take: query.limit });
   response.json(items.map(publicCoach));
 }));
 app.get("/api/coaches/:id", asyncRoute(async (request, response) => {
-  const item = await prisma.coach.findUnique({ where: { id: String(request.params.id) }, include: { reviews: true } });
+  const item = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: "approved", verified: true, owner: { emailVerified: true, accountStatus: "active" } }, include: { reviews: true } });
   item ? response.json(publicCoach(item)) : response.status(404).json({ error: "Coach not found." });
 }));
 app.get("/api/coaches/:id/photo", asyncRoute(async (request, response) => {
-  const coach = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: { not: "suspended" } }, select: { photoPath: true } });
+  const coach = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: "approved", verified: true, owner: { emailVerified: true, accountStatus: "active" } }, select: { photoPath: true } });
   if (!coach?.photoPath) return response.status(404).json({ error: "Coach photo not found." });
   const photo = await readProviderUpload(coach.photoPath);
   if (!photo) return response.status(404).json({ error: "Coach photo not found." });
@@ -262,7 +305,7 @@ app.post("/api/coaches", authenticate, asyncRoute(async (request: AuthRequest, r
     const result = await prisma.$transaction(async tx => {
       const coach = await tx.coach.create({ data: { ownerId: request.user!.id, name: input.name, phoneNumber: input.phoneNumber, category, city: input.city, bio: input.bio, baseFee: 0, platformFee: 0, customerPrice: 0, coachPayout: 0, availableDays: input.availableDays, availableTimings: input.availableTimings, photoPath: input.profilePhotoPath } });
       await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: coach.id, profileType: "coach", aadhaarFrontPath: input.aadhaarFrontPath, aadhaarBackPath: input.aadhaarBackPath, certificatePath: input.certificatePath } });
-      const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "coach", phone: input.phoneNumber } });
+      const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "coach", registrationIntent: "coach", phone: input.phoneNumber } });
       return { coach, user };
     }, { timeout: 20_000 });
     const session = await issueSession(result.user, response);
@@ -301,7 +344,7 @@ app.get("/api/dojos", asyncRoute(async (request, response) => {
   response.set("Cache-Control", "no-store, max-age=0").json(items.map(publicDojo));
 }));
 app.get("/api/dojos/me", authenticate, asyncRoute(async (request: AuthRequest, response) => {
-  const dojo = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, name: true, status: true, approved: true, verified: true } });
+  const dojo = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, name: true, establishmentType: true, status: true, approved: true, verified: true } });
   dojo ? response.set("Cache-Control", "no-store, max-age=0").json(dojo) : response.status(404).json({ error: "Dojo registration not found." });
 }));
 app.get("/api/dojos/:id/edit", authenticate, asyncRoute(async (request: AuthRequest, response) => {
@@ -408,7 +451,7 @@ app.post("/api/dojos", authenticate, asyncRoute(async (request: AuthRequest, res
     const result = await prisma.$transaction(async tx => {
       const dojo = await tx.dojo.create({ data: { ownerId: request.user!.id, name: input.name, establishmentType: input.establishmentType, customEstablishmentType: input.establishmentType === "OTHER" ? input.customEstablishmentType : undefined, ownerName: input.ownerName, email: input.email.toLowerCase(), phoneNumber: input.phoneNumber, category, address: input.address, city: input.city, state: input.state, pincode: input.pincode, experience: input.experience, gstNumber: input.gstNumber, description: input.description, originalPrice: 0, finalPrice: 0, imagePath: input.businessPhotoPath, ...automaticDojoActivation(), registrationPaymentStatus: "not_required" } });
       await tx.providerVerification.create({ data: { ownerId: request.user!.id, profileId: dojo.id, profileType: "dojo", aadhaarFrontPath: input.aadhaarFrontPath, aadhaarBackPath: input.aadhaarBackPath, certificatePath: input.certificatePath } });
-      const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", phone: input.phoneNumber } });
+      const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "dojo", registrationIntent: input.establishmentType === "GYM" ? "gym" : "dojo", phone: input.phoneNumber } });
       return { dojo, user };
     }, { timeout: 20_000 });
     const session = await issueSession(result.user, response);
@@ -534,7 +577,7 @@ app.get("/api/seller/me", authenticate, asyncRoute(async (request: AuthRequest, 
 app.post("/api/sellers", authenticate, upload.fields([{ name: "aadhaar", maxCount: 1 }, { name: "profile", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({ storeName: z.string().min(2), phone: z.string().min(8), address: z.string().min(8), bio: z.string().max(1000).optional(), gstNumber: z.string().optional(), website: z.string().optional(), socialLinks: z.string().optional() }).parse(request.body); const files = request.files as Record<string, Express.Multer.File[]>;
   const aadhaar = await optimizeUploads(files?.aadhaar || [], "aadhaar"); const profile = await optimizeUploads(files?.profile || [], "sellers");
-  const result = await prisma.$transaction(async tx => { const seller = await tx.seller.create({ data: { ownerId: request.user!.id, ...input, aadhaarPath: aadhaar[0]?.path, profilePath: profile[0]?.path } }); const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "seller", phone: input.phone } }); return { seller, user }; }, { timeout: 20_000 });
+  const result = await prisma.$transaction(async tx => { const seller = await tx.seller.create({ data: { ownerId: request.user!.id, ...input, aadhaarPath: aadhaar[0]?.path, profilePath: profile[0]?.path } }); const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "seller", registrationIntent: "seller", phone: input.phone } }); return { seller, user }; }, { timeout: 20_000 });
   response.status(201).json({ ...result.seller, session: await issueSession(result.user, response) });
 }));
 app.patch("/api/sellers/:id/verify", authenticate, allowRoles("admin", "super_admin", "moderator"), asyncRoute(async (request: AuthRequest, response) => { const status = z.object({ status: z.enum(["pending", "verified", "trusted", "rejected", "suspended"]) }).parse(request.body).status; const seller = await prisma.seller.update({ where: { id: String(request.params.id) }, data: { status, verified: ["verified", "trusted"].includes(status), trusted: status === "trusted" } }); await prisma.adminLog.create({ data: { actorId: request.user!.id, action: "seller_status", targetId: seller.id, details: { status }, ip: request.ip } }); response.json(seller); }));
@@ -566,18 +609,8 @@ app.get("/api/bookings", authenticate, asyncRoute(async (request: AuthRequest, r
   const where = admins.includes(request.user!.role) ? {} : ["coach", "dojo"].includes(request.user!.role) ? { providerOwnerId: request.user!.id } : { userId: request.user!.id };
   response.json(await prisma.booking.findMany({ where, include: { coach: true, dojo: true, attendance: true }, orderBy: { createdAt: "desc" }, take: 100 }));
 }));
-app.patch("/api/bookings/:id/status", authenticate, asyncRoute(async (request: AuthRequest, response) => {
-  const status = z.object({ status: z.enum(["accepted", "rejected", "completed", "cancelled"]) }).parse(request.body).status;
-  const booking = await prisma.booking.findUnique({ where: { id: String(request.params.id) }, include: { customer: true, providerOwner: true } });
-  if (!booking) return response.status(404).json({ error: "Booking not found." });
-  if (booking.providerOwnerId !== request.user!.id && !admins.includes(request.user!.role)) return response.status(403).json({ error: "You cannot manage this booking." });
-  const visible = ["accepted", "completed"].includes(status);
-  const updated = await prisma.$transaction(async tx => {
-    const item = await tx.booking.update({ where: { id: booking.id }, data: { status, contactVisible: visible, customerPhone: visible ? booking.customerPhone || booking.customer.phone : null, providerPhone: visible ? booking.providerPhone || booking.providerOwner.phone : null, payoutStatus: "not_due" } });
-    if (["accepted", "rejected"].includes(status)) await tx.notification.create({ data: { userId: booking.userId, bookingId: booking.id, type: `booking_${status}`, title: `Booking ${status}`, message: status === "accepted" ? "Your provider accepted the booking." : "Your provider rejected the booking." } });
-    return item;
-  });
-  response.json(updated);
+app.patch("/api/bookings/:id/status", authenticate, asyncRoute(async (_request: AuthRequest, response) => {
+  response.status(405).json({ error: "Use the canonical POST /api/bookings/status endpoint for booking updates.", code: "LEGACY_BOOKING_ENDPOINT_DISABLED" });
 }));
 
 app.get("/api/dashboard/summary", authenticate, asyncRoute(async (request: AuthRequest, response) => {

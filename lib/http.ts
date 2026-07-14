@@ -1,18 +1,18 @@
 export class HttpResponseError extends Error {
-  constructor(message: string, readonly status: number) {
+  constructor(message: string, readonly status: number, readonly code?: string) {
     super(message);
     this.name = "HttpResponseError";
   }
 }
 
 export async function readJsonResponse<T>(response: Response, fallbackMessage = "Request failed."): Promise<T> {
-  const body = await readJsonResponseBody<{ error?: string; message?: string; issues?: Array<{ path?: Array<string | number>; message?: string }> }>(response, fallbackMessage);
+  const body = await readJsonResponseBody<{ error?: string; message?: string; code?: string; issues?: Array<{ path?: Array<string | number>; message?: string }> }>(response, fallbackMessage);
 
   if (!response.ok) {
     const issue = Array.isArray(body?.issues) ? body.issues[0] : null;
     const issueMessage = issue?.message ? `${issue.path?.join(".") || "Field"}: ${issue.message}` : "";
     const message = issueMessage || (typeof body?.error === "string" ? body.error : typeof body?.message === "string" ? body.message : fallbackMessage);
-    throw new HttpResponseError(message, response.status);
+    throw new HttpResponseError(message, response.status, typeof body?.code === "string" ? body.code : undefined);
   }
 
   return body as T;

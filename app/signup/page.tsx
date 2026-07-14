@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { POLICY_VERSION } from "@/lib/policies";
-import { establishSupabaseSession } from "@/lib/auth-client";
-import { localApi, notifyAuthChanged } from "@/lib/local-api";
+import { localApi } from "@/lib/local-api";
+import { normalizeEmail } from "@/lib/auth/email";
 import { SOCIAL_INTERESTS } from "@/lib/social";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 import { AuthModeTabs } from "@/components/AuthModeTabs";
@@ -52,11 +52,12 @@ export default function SignupPage() {
     const form = new FormData(event.currentTarget);
     const password = String(form.get("password"));
     const confirmation = String(form.get("passwordConfirmation"));
-    const email = String(form.get("email")).trim().toLowerCase();
+    const email = normalizeEmail(String(form.get("email")));
     const phone = normalizePhone(String(form.get("phone")));
     const cleanInterests = uniqueInterests(interests.map(normalizeInterestValue).filter(Boolean));
 
     if (!acceptedTerms || !acceptedPrivacy) return setMessage("Accept the Terms and Privacy Policy to continue.");
+    if (!email) return setMessage("Enter a valid email address without spaces.");
     if (!isStrongPassword(password)) return setMessage("Use 8+ characters with uppercase, lowercase, number and symbol.");
     if (password !== confirmation) return setMessage("Passwords do not match.");
     if (!isValidIndianPhone(phone)) return setMessage("Enter a valid 10 digit Indian mobile number.");
@@ -72,6 +73,7 @@ export default function SignupPage() {
           name: String(form.get("name")).trim(),
           email,
           password,
+          accountType: form.get("accountType"),
           phone,
           gender: form.get("gender"),
           birthDate,
@@ -89,9 +91,9 @@ export default function SignupPage() {
           acceptedPolicyVersion: POLICY_VERSION
         })
       });
-      await establishSupabaseSession(email, password);
-      notifyAuthChanged();
-      router.replace("/verification");
+      sessionStorage.setItem("fitsaathi_pending_email", email);
+      sessionStorage.setItem("fitsaathi_registration_intent", String(form.get("accountType") || "customer"));
+      router.replace("/auth/verify-email");
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Signup failed.");
@@ -119,6 +121,13 @@ export default function SignupPage() {
       <form onSubmit={submit} className="rounded-[2rem] border border-white/10 bg-white/[.04] p-5 sm:p-8">
         <Section title="Account">
           <div className="grid gap-3 sm:grid-cols-2">
+            <select name="accountType" required defaultValue="customer" className="field sm:col-span-2" aria-label="Account type">
+              <option value="customer">Customer</option>
+              <option value="coach">Coach</option>
+              <option value="dojo">Dojo owner</option>
+              <option value="gym">Gym owner</option>
+              <option value="seller">Seller</option>
+            </select>
             <Field name="name" placeholder="Full name" />
             <Field name="email" type="email" placeholder="Email" />
             <Field name="phone" type="tel" placeholder="Phone number" />

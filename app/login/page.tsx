@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
-import { establishSupabaseSession } from "@/lib/auth-client";
+import { HttpResponseError } from "@/lib/http";
 import { POLICY_VERSION, requiredAgreementPolicies } from "@/lib/policies";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { dashboardPathForRole } from "@/lib/roles";
 import { AuthModeTabs } from "@/components/AuthModeTabs";
+import { supabase } from "@/lib/supabase";
+import { normalizeEmail } from "@/lib/auth/email";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,19 +23,25 @@ export default function LoginPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email")).trim().toLowerCase();
+    const email = normalizeEmail(String(formData.get("email")));
     const password = String(formData.get("password"));
     if (!accepted) return setMessage("Please agree to the current FitSaathi policies before signing in.");
+    if (!email) return setMessage("Enter a valid email address.");
     setLoading(true);
     setMessage("");
     try {
-      const result = await localApi<{ user: { role: string } }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password, acceptedPolicies: true, acceptedPolicyVersion: POLICY_VERSION }) });
-      await establishSupabaseSession(email, password);
+      const result = await localApi<{ user: { role: string }; redirectTo?: string; supabaseSession: { access_token: string; refresh_token: string } }>("/auth/login", { method: "POST", body: JSON.stringify({ email, password, acceptedPolicies: true, acceptedPolicyVersion: POLICY_VERSION }) });
+      if (supabase) await supabase.auth.setSession(result.supabaseSession);
       notifyAuthChanged();
       const requestedPath = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("next") : null;
-      router.replace(safeAuthRedirect(requestedPath, dashboardPathForRole(result.user.role)));
+      router.replace(safeAuthRedirect(requestedPath, result.redirectTo || dashboardPathForRole(result.user.role)));
       router.refresh();
     } catch (error) {
+      if (error instanceof HttpResponseError && error.code === "EMAIL_VERIFICATION_REQUIRED" && email) {
+        sessionStorage.setItem("fitsaathi_pending_email", email);
+        router.push("/auth/verify-email");
+        return;
+      }
       setMessage(error instanceof Error ? error.message : "Login failed.");
     } finally {
       setLoading(false);

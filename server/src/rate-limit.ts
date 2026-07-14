@@ -1,11 +1,11 @@
 import type { RequestHandler } from "express";
 import { prisma } from "./db";
 
-export const databaseRateLimit = (limit: number, windowMs: number): RequestHandler => async (request, response, next) => {
+export const databaseRateLimit = (limit: number, windowMs: number, namespace = "express"): RequestHandler => async (request, response, next) => {
   try {
     const forwarded = String(request.headers["x-forwarded-for"] || "").split(",")[0]?.trim();
     const ip = forwarded || request.ip || "unknown";
-    const key = `express:${ip}`;
+    const key = `${namespace}:${ip}`;
     const now = new Date();
     const current = await prisma.rateLimitBucket.findUnique({ where: { key } });
     const bucket = !current || current.resetAt <= now

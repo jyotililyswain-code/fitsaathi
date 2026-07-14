@@ -114,84 +114,91 @@ enum PremiumPlan {
 }
 
 model User {
-  id                        String                    @id @default(uuid())
-  name                      String
-  email                     String                    @unique
-  phone                     String?
-  passwordHash              String
-  role                      Role                      @default(customer)
-  accountStatus             String                    @default("active")
-  address                   String?
-  acceptedPolicies          Boolean                   @default(false)
-  acceptedPolicyVersion     String?
-  acceptedAt                DateTime?
-  isPhoneVerified           Boolean                   @default(false)
-  gender                    String?
-  birthDate                 DateTime?
-  city                      String?
-  state                     String?
-  country                   String                    @default("India")
-  heightCm                  Int?
-  weightKg                  Float?
-  fitnessGoal               String?
-  relationshipPreference    String?
-  profileBio                String?
-  fitnessLevel              String?
-  preferredAgeMin           Int?
-  preferredAgeMax           Int?
-  latitude                  Float?
-  longitude                 Float?
-  lastSeenAt                DateTime?
-  isOnline                  Boolean                   @default(false)
-  onboardingCompleted       Boolean                   @default(false)
-  verificationPaymentStatus VerificationPaymentStatus @default(unpaid)
-  verificationPaidUntil     DateTime?
-  premiumUntil              DateTime?
-  createdAt                 DateTime                  @default(now())
-  updatedAt                 DateTime                  @updatedAt
-  seller                    Seller?
-  coach                     Coach?
-  dojo                      Dojo?
-  orders                    Order[]
-  payments                  Payment[]
-  reviews                   Review[]
-  providerReviews           ProviderReview[]
-  notifications             Notification[]
-  wishlists                 Wishlist[]
-  cartItems                 CartItem[]
-  refreshTokens             RefreshToken[]
-  adminLogs                 AdminLog[]                @relation("AdminActor")
-  customerBookings          Booking[]                 @relation("BookingCustomer")
-  providerBookings          Booking[]                 @relation("BookingProvider")
-  attendanceAsCustomer      Attendance[]              @relation("AttendanceCustomer")
-  attendanceScans           Attendance[]              @relation("AttendanceScanner")
-  attendanceCodes           AttendanceCode[]
-  verificationFiles         ProviderVerification[]    @relation("VerificationOwner")
-  reviewedVerifications     ProviderVerification[]    @relation("VerificationReviewer")
-  chatRequests              ChatRequest[]
-  profilePhotos             UserProfilePhoto[]
-  socialVerification        SocialVerification?
-  interests                 UserInterest[]
-  achievements              UserAchievement[]
-  socialLinks               UserSocialLink[]
-  invitesSent               ConnectionInvite[]        @relation("InviteSender")
-  invitesReceived           ConnectionInvite[]        @relation("InviteRecipient")
-  blocksMade                UserBlock[]               @relation("Blocker")
-  blocksReceived            UserBlock[]               @relation("BlockedUser")
-  conversationsAsOne        Conversation[]            @relation("ConversationUserOne")
-  conversationsAsTwo        Conversation[]            @relation("ConversationUserTwo")
-  socialMessages            SocialMessage[]           @relation("MessageSender")
-  typingIndicators          TypingIndicator[]
-  wallet                    Wallet?
-  walletTransactions        WalletTransaction[]
-  premiumSubscriptions      PremiumSubscription[]
-  profileViewsReceived      ProfileView[]             @relation("ProfileViewed")
-  profilesViewed            ProfileView[]             @relation("ProfileViewer")
-  socialReviewsWritten      SocialReview[]            @relation("SocialReviewAuthor")
-  socialReviewsReceived     SocialReview[]            @relation("SocialReviewSubject")
-  pushSubscriptions         PushSubscription[]
-  moderationCases           ModerationCase[]          @relation("ModerationSubject")
-  emergencyRequests         EmergencyRequest[]
+  id                              String                    @id @default(uuid())
+  authUserId                      String?                   @unique @db.Uuid
+  name                            String
+  email                           String                    @unique
+  emailNormalized                 String                    @unique
+  emailVerified                   Boolean                   @default(false)
+  emailVerifiedAt                 DateTime?                 @db.Timestamptz(3)
+  phone                           String?
+  role                            Role                      @default(customer)
+  registrationIntent              String                    @default("customer")
+  accountStatus                   String                    @default("pending_email_verification")
+  notificationOnboardingCompleted Boolean                   @default(false)
+  address                         String?
+  acceptedPolicies                Boolean                   @default(false)
+  acceptedPolicyVersion           String?
+  acceptedAt                      DateTime?
+  isPhoneVerified                 Boolean                   @default(false)
+  gender                          String?
+  birthDate                       DateTime?
+  city                            String?
+  state                           String?
+  country                         String                    @default("India")
+  heightCm                        Int?
+  weightKg                        Float?
+  fitnessGoal                     String?
+  relationshipPreference          String?
+  profileBio                      String?
+  fitnessLevel                    String?
+  preferredAgeMin                 Int?
+  preferredAgeMax                 Int?
+  latitude                        Float?
+  longitude                       Float?
+  lastSeenAt                      DateTime?
+  isOnline                        Boolean                   @default(false)
+  onboardingCompleted             Boolean                   @default(false)
+  verificationPaymentStatus       VerificationPaymentStatus @default(unpaid)
+  verificationPaidUntil           DateTime?
+  premiumUntil                    DateTime?
+  createdAt                       DateTime                  @default(now())
+  updatedAt                       DateTime                  @updatedAt
+  seller                          Seller?
+  coach                           Coach?
+  dojo                            Dojo?
+  orders                          Order[]
+  payments                        Payment[]
+  reviews                         Review[]
+  providerReviews                 ProviderReview[]
+  notifications                   Notification[]            @relation("NotificationRecipient")
+  notificationsActed              Notification[]            @relation("NotificationActor")
+  notificationOutbox              NotificationOutbox[]
+  wishlists                       Wishlist[]
+  cartItems                       CartItem[]
+  refreshTokens                   RefreshToken[]
+  adminLogs                       AdminLog[]                @relation("AdminActor")
+  customerBookings                Booking[]                 @relation("BookingCustomer")
+  providerBookings                Booking[]                 @relation("BookingProvider")
+  attendanceAsCustomer            Attendance[]              @relation("AttendanceCustomer")
+  attendanceScans                 Attendance[]              @relation("AttendanceScanner")
+  attendanceCodes                 AttendanceCode[]
+  verificationFiles               ProviderVerification[]    @relation("VerificationOwner")
+  reviewedVerifications           ProviderVerification[]    @relation("VerificationReviewer")
+  chatRequests                    ChatRequest[]
+  profilePhotos                   UserProfilePhoto[]
+  socialVerification              SocialVerification?
+  interests                       UserInterest[]
+  achievements                    UserAchievement[]
+  socialLinks                     UserSocialLink[]
+  invitesSent                     ConnectionInvite[]        @relation("InviteSender")
+  invitesReceived                 ConnectionInvite[]        @relation("InviteRecipient")
+  blocksMade                      UserBlock[]               @relation("Blocker")
+  blocksReceived                  UserBlock[]               @relation("BlockedUser")
+  conversationsAsOne              Conversation[]            @relation("ConversationUserOne")
+  conversationsAsTwo              Conversation[]            @relation("ConversationUserTwo")
+  socialMessages                  SocialMessage[]           @relation("MessageSender")
+  typingIndicators                TypingIndicator[]
+  wallet                          Wallet?
+  walletTransactions              WalletTransaction[]
+  premiumSubscriptions            PremiumSubscription[]
+  profileViewsReceived            ProfileView[]             @relation("ProfileViewed")
+  profilesViewed                  ProfileView[]             @relation("ProfileViewer")
+  socialReviewsWritten            SocialReview[]            @relation("SocialReviewAuthor")
+  socialReviewsReceived           SocialReview[]            @relation("SocialReviewSubject")
+  pushSubscriptions               PushSubscription[]
+  moderationCases                 ModerationCase[]          @relation("ModerationSubject")
+  emergencyRequests               EmergencyRequest[]
 
   @@index([role, accountStatus])
   @@index([verificationPaymentStatus, verificationPaidUntil])
@@ -461,15 +468,26 @@ model SocialReview {
 }
 
 model PushSubscription {
-  id        String   @id @default(uuid())
-  userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String    @id @default(uuid())
+  userId            String
+  endpoint          String    @unique
+  endpointHash      String    @unique
+  p256dh            String
+  auth              String
+  userAgent         String?
+  deviceName        String?
+  browserName       String?
+  platform          String?
+  isActive          Boolean   @default(true)
+  failureCount      Int       @default(0)
+  lastSuccessAt     DateTime? @db.Timestamptz(3)
+  lastFailureAt     DateTime? @db.Timestamptz(3)
+  lastFailureReason String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([userId, isActive])
   @@map("push_subscriptions")
 }
 
@@ -739,7 +757,8 @@ model OrderItem {
 }
 
 model Booking {
-  id                String         @id @default(uuid())
+  id                String           @id @default(uuid())
+  idempotencyKey    String?          @unique
   userId            String
   providerOwnerId   String
   coachId           String?
@@ -751,7 +770,7 @@ model Booking {
   preferredDate     String
   preferredTime     String?
   notes             String?
-  status            BookingStatus  @default(pending)
+  status            BookingStatus    @default(pending)
   amount            Int
   originalPrice     Int
   platformFee       Int
@@ -759,21 +778,21 @@ model Booking {
   coachPayout       Int
   payoutAmount      Int
   commissionAmount  Int
-  paymentStatus     String         @default("pending")
-  payoutStatus      String         @default("not_due")
+  paymentStatus     String           @default("pending")
+  payoutStatus      String           @default("not_due")
   payoutMonth       String?
-  acceptedPolicies  Boolean        @default(false)
-  contactVisible    Boolean        @default(false)
+  acceptedPolicies  Boolean          @default(false)
+  contactVisible    Boolean          @default(false)
   customerPhone     String?
   providerPhone     String?
-  razorpayOrderId   String?        @unique
+  razorpayOrderId   String?          @unique
   razorpayPaymentId String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  customer          User           @relation("BookingCustomer", fields: [userId], references: [id])
-  providerOwner     User           @relation("BookingProvider", fields: [providerOwnerId], references: [id])
-  coach             Coach?         @relation(fields: [coachId], references: [id])
-  dojo              Dojo?          @relation(fields: [dojoId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  customer          User             @relation("BookingCustomer", fields: [userId], references: [id])
+  providerOwner     User             @relation("BookingProvider", fields: [providerOwnerId], references: [id])
+  coach             Coach?           @relation(fields: [coachId], references: [id])
+  dojo              Dojo?            @relation(fields: [dojoId], references: [id])
   payments          Payment[]
   attendance        Attendance[]
   attendanceCodes   AttendanceCode[]
@@ -928,21 +947,54 @@ model ProviderReview {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  bookingId String?
-  orderId   String?
-  type      String
-  title     String?
-  message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  order     Order?   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id                String               @id @default(uuid())
+  userId            String
+  actorUserId       String?
+  bookingId         String?
+  orderId           String?
+  type              String
+  title             String
+  message           String
+  relatedEntityType String?
+  relatedEntityId   String?
+  actionUrl         String?
+  read              Boolean              @default(false)
+  readAt            DateTime?            @db.Timestamptz(3)
+  deduplicationKey  String?              @unique
+  metadata          Json                 @default("{}")
+  expiresAt         DateTime?            @db.Timestamptz(3)
+  createdAt         DateTime             @default(now())
+  user              User                 @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor             User?                @relation("NotificationActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  booking           Booking?             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  order             Order?               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  outbox            NotificationOutbox[]
 
   @@index([userId, read, createdAt])
+  @@index([bookingId, createdAt])
+  @@index([createdAt])
   @@map("notifications")
+}
+
+model NotificationOutbox {
+  id               String       @id @default(uuid())
+  notificationId   String
+  recipientUserId  String
+  channel          String       @default("web_push")
+  status           String       @default("pending")
+  attemptCount     Int          @default(0)
+  nextAttemptAt    DateTime?    @db.Timestamptz(3)
+  lastAttemptAt    DateTime?    @db.Timestamptz(3)
+  lastError        String?
+  deduplicationKey String       @unique
+  createdAt        DateTime     @default(now())
+  processedAt      DateTime?    @db.Timestamptz(3)
+  notification     Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  recipient        User         @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt, createdAt])
+  @@index([recipientUserId, createdAt])
+  @@map("notification_outbox")
 }
 
 model Wishlist {

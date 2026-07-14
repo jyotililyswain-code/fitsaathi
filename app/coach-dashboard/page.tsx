@@ -9,6 +9,9 @@ import { useSessionUser } from "@/lib/auth-client";
 import { readJsonResponse } from "@/lib/http";
 import { useCollectionCount, useProviderBookings, useReviews } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
+import { NotificationPermissionCard } from "@/components/notifications/NotificationPermissionCard";
+import { BookingRealtimeListener } from "@/components/notifications/BookingRealtimeListener";
+import { useNotifications } from "@/components/notifications/NotificationProvider";
 
 export default function CoachDashboardPage() {
   const { user } = useSessionUser();
@@ -16,19 +19,20 @@ export default function CoachDashboardPage() {
   const reviews = useReviews();
   const students = useCollectionCount("students");
   const attendance = useCollectionCount("attendance");
-  const notifications = useCollectionCount("notifications");
+  const notifications = useNotifications();
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "confirmed" | "accepted" | "rejected" | "completed">("confirmed");
   const acceptedBookings = bookings.data.filter((booking) => ["accepted", "completed"].includes(booking.status || "")).length;
+  const pendingBookings = bookings.data.filter((booking) => ["pending", "confirmed"].includes(booking.status || "pending")).length;
   const visibleBookings = bookings.data.filter((booking) => (booking.status || "pending") === activeTab);
 
-  async function setBookingStatus(id: string, status: "accepted" | "rejected") {
+  async function setBookingStatus(id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) {
     if (!user) return setMessage("Please sign in again.");
     try {
-      const response = await fetch("/api/bookings/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: id, status }) });
+      const response = await fetch("/api/bookings/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: id, status, ...schedule }) });
       await readJsonResponse(response, "Could not update booking.");
       bookings.reload();
-      setMessage(status === "accepted" ? "Booking accepted. The customer was notified and contact numbers are now visible." : "Booking rejected. The customer was notified.");
+      setMessage(status === "accepted" ? "Booking accepted. The customer was notified and contact numbers are now visible." : status === "rejected" ? "Booking rejected. The customer was notified." : `Booking ${status}. The customer was notified.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not reach the booking service. Please try again.");
     }
@@ -36,11 +40,12 @@ export default function CoachDashboardPage() {
   return (
     <AuthGuard role="coach">
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <BookingRealtimeListener onRefresh={bookings.reload} />
       <h1 className="text-4xl font-bold text-white">Coach dashboard</h1>
       <p className="mt-3 text-zinc-400">Registration and all FitSaathi bookings are free, with no platform deductions or hidden charges.</p>
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         <Tile icon={<CheckCircle2 />} label="Accepted bookings" value={String(acceptedBookings)} />
-        <Tile icon={<CalendarDays />} label="Booking requests" value={String(bookings.data.length)} />
+        <Tile icon={<CalendarDays />} label="Pending bookings" value={String(pendingBookings)} />
         <Tile icon={<Users />} label="Students" value={String(students.data)} />
         <Tile icon={<Star />} label="Reviews" value={String(reviews.data.length)} />
       </div>
@@ -48,8 +53,9 @@ export default function CoachDashboardPage() {
         <Tile icon={<CalendarDays />} label="Free platform bookings" value={String(bookings.data.length)} />
         <Tile icon={<CheckCircle2 />} label="Attendance scans" value={String(attendance.data)} />
         <Tile icon={<Clock />} label="Available days" value="Set on profile" />
-        <Tile icon={<Bell />} label="Notifications" value={String(notifications.data)} />
+        <Tile icon={<Bell />} label="Unread notifications" value={String(notifications.unreadCount)} />
       </div>
+      <div className="mt-8"><NotificationPermissionCard /></div>
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
         <Panel title="Booking requests">
           {message ? <p className="mb-3 rounded-xl border border-acid/30 bg-acid/10 p-3 text-sm text-acid">{message}</p> : null}
@@ -86,9 +92,11 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
   return <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><h2 className="mb-4 text-xl font-semibold text-white">{title}</h2>{children}</section>;
 }
 
-function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected") => void }) {
+function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) => void }) {
   const accepted = booking.status === "accepted" || booking.status === "completed";
   const pending = booking.status === "confirmed";
+  const [date, setDate] = useState(booking.preferredDate || "");
+  const [time, setTime] = useState(booking.preferredTime || "");
   return (
     <article className="rounded-2xl border border-white/10 bg-ink/40 p-4">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -108,6 +116,8 @@ function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: s
           Reject
         </button>
       </div> : null}
+      {["confirmed", "accepted"].includes(booking.status || "") ? <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 sm:grid-cols-[1fr_1fr_auto]"><input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={event => setDate(event.target.value)} className="field" aria-label="New booking date" /><input type="time" value={time} onChange={event => setTime(event.target.value)} className="field" aria-label="New booking time" /><button type="button" disabled={!date || !time || (date === booking.preferredDate && time === booking.preferredTime)} onClick={() => onStatus(booking.id, "rescheduled", { preferredDate: date, preferredTime: time })} className="rounded-xl border border-acid/40 px-4 py-2 text-xs font-semibold text-acid disabled:opacity-40">Reschedule</button></div> : null}
+      {booking.status === "accepted" ? <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => onStatus(booking.id, "completed")} className="rounded-full bg-acid px-4 py-2 text-xs font-semibold text-ink">Mark completed</button><button type="button" onClick={() => onStatus(booking.id, "cancelled")} className="rounded-full border border-red-400/30 px-4 py-2 text-xs text-red-300">Cancel booking</button></div> : null}
     </article>
   );
 }

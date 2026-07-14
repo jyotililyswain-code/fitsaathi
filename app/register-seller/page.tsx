@@ -12,6 +12,7 @@ export const metadata = generateSeoMetadata({
     "sports equipment seller",
     "FitSaathi seller",
   ],
+  noIndex: true,
 });
 
 export default SellerRegistrationPage;

@@ -19,7 +19,17 @@ export class SessionRecoveryUnavailableError extends Error {
   }
 }
 
-export type LocalUser = { id: string; name: string; email: string; role: string };
+export type LocalUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  registrationIntent?: string;
+  emailVerified?: boolean;
+  emailVerifiedAt?: string | null;
+  accountStatus?: string;
+  notificationOnboardingCompleted?: boolean;
+};
 
 export function notifyAuthChanged() {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_EVENT));

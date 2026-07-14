@@ -57,10 +57,10 @@ export default function OnboardingPage() {
     if (!checking && user) router.replace(dashboardPathForRole(user.role));
   }, [checking, router, user]);
 
-  if (checking || user) {
+  if (user) {
     return (
       <main className="grid min-h-[calc(100vh-73px)] place-items-center bg-[#08090d] px-4 text-sm text-zinc-400">
-        {checking ? "Restoring your session..." : "Opening your account..."}
+        Opening your account...
       </main>
     );
   }
@@ -132,12 +132,13 @@ export default function OnboardingPage() {
                   India&apos;s verified fitness social network
                 </div>
                 <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[1.02] text-white sm:text-7xl">
-                  Find Fitness Coaches, Dojos &amp; Trainers Near You
+                  FitSaathi – Find Fitness Coaches, Gyms and Sports Academies
                 </h1>
                 <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-300">
-                  FitSaathi helps you find home fitness coaches, personal
-                  trainers, yoga teachers, martial arts classes, dojos, and
-                  fitness services in India.
+                  FitSaathi helps you discover fitness coaches, personal
+                  trainers, martial arts trainers, gyms, dojos and sports
+                  academies across India, with clear provider profiles and
+                  simple booking requests.
                 </p>
                 <div className="mt-9 flex flex-wrap gap-3">
                   <button

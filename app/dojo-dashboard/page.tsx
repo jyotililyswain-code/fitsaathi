@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, CalendarDays, CheckCircle2, Clock, Pencil, Users, WalletCards } from "lucide-react";
+import { BarChart3, Bell, CalendarDays, CheckCircle2, Clock, Pencil, Users, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -10,6 +10,9 @@ import { useSessionUser } from "@/lib/auth-client";
 import { readJsonResponse } from "@/lib/http";
 import { useCollectionCount, useMyDojoStatus, useProviderBookings } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
+import { NotificationPermissionCard } from "@/components/notifications/NotificationPermissionCard";
+import { BookingRealtimeListener } from "@/components/notifications/BookingRealtimeListener";
+import { useNotifications } from "@/components/notifications/NotificationProvider";
 
 export default function DojoDashboardPage() {
   const { user } = useSessionUser();
@@ -17,15 +20,17 @@ export default function DojoDashboardPage() {
   const registration = useMyDojoStatus(user?.id || null);
   const customers = useCollectionCount("students");
   const memberships = useCollectionCount("memberships");
+  const notifications = useNotifications();
   const [message, setMessage] = useState("");
+  const pendingBookings = bookings.data.filter((booking) => ["pending", "confirmed"].includes(booking.status || "pending")).length;
 
-  async function setBookingStatus(id: string, status: "accepted" | "rejected") {
+  async function setBookingStatus(id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) {
     if (!user) return setMessage("Please sign in again.");
     try {
-      const response = await fetch("/api/bookings/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: id, status }) });
+      const response = await fetch("/api/bookings/status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bookingId: id, status, ...schedule }) });
       await readJsonResponse(response, "Could not update booking.");
       bookings.reload();
-      setMessage(status === "accepted" ? "Dojo booking accepted. Contact info is visible." : "Dojo booking rejected.");
+      setMessage(status === "accepted" ? "Booking accepted. Contact info is visible." : status === "rejected" ? "Booking rejected." : `Booking ${status}. The customer was notified.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not reach the booking service. Please try again.");
     }
@@ -34,9 +39,10 @@ export default function DojoDashboardPage() {
   return (
     <AuthGuard role="dojo">
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <BookingRealtimeListener onRefresh={bookings.reload} />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-white">Dojo dashboard</h1>
+            <h1 className="text-4xl font-bold text-white">{registration.data?.establishmentType === "GYM" ? "Gym owner dashboard" : "Dojo owner dashboard"}</h1>
             <p className="mt-3 text-zinc-400">Manage your academy, classes, timings, and free FitSaathi bookings. Registration and bookings have no platform or hidden charges.</p>
           </div>
           {registration.data?.id ? (
@@ -50,11 +56,13 @@ export default function DojoDashboardPage() {
         {registration.data?.status === "inactive" || registration.data?.status === "suspended" ? <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100"><strong className="block text-white">Dojo listing is not public</strong>Contact support if you need help restoring this registration.</div> : null}
         {registration.data?.status === "rejected" ? <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100"><strong className="block text-white">Registration needs attention</strong>Your dojo is not publicly listed. Contact support for review details.</div> : null}
         <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <Tile icon={<CalendarDays />} label="Bookings" value={String(bookings.data.length)} />
+          <Tile icon={<CalendarDays />} label="Pending bookings" value={String(pendingBookings)} />
           <Tile icon={<Users />} label="Customers" value={String(customers.data)} />
           <Tile icon={<CheckCircle2 />} label="Free bookings" value={String(bookings.data.length)} />
           <Tile icon={<WalletCards />} label="Memberships" value={String(memberships.data)} />
         </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-4"><Tile icon={<Bell />} label="Unread notifications" value={String(notifications.unreadCount)} /></div>
+        <div className="mt-8"><NotificationPermissionCard /></div>
         <div className="mt-8 grid gap-4 lg:grid-cols-2">
           <Panel title="Booking Requests">
             {message ? <p className="mb-3 rounded-xl border border-acid/30 bg-acid/10 p-3 text-sm text-acid">{message}</p> : null}
@@ -79,9 +87,11 @@ export default function DojoDashboardPage() {
   );
 }
 
-function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected") => void }) {
+function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) => void }) {
   const confirmed = booking.status === "accepted" || booking.status === "completed";
   const pending = booking.status === "confirmed";
+  const [date, setDate] = useState(booking.preferredDate || "");
+  const [time, setTime] = useState(booking.preferredTime || "");
   return (
     <article className="rounded-2xl border border-white/10 bg-ink/40 p-4">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
@@ -100,6 +110,8 @@ function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: s
           Reject
         </button>
       </div> : null}
+      {["confirmed", "accepted"].includes(booking.status || "") ? <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 sm:grid-cols-[1fr_1fr_auto]"><input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={event => setDate(event.target.value)} className="field" aria-label="New booking date" /><input type="time" value={time} onChange={event => setTime(event.target.value)} className="field" aria-label="New booking time" /><button type="button" disabled={!date || !time || (date === booking.preferredDate && time === booking.preferredTime)} onClick={() => onStatus(booking.id, "rescheduled", { preferredDate: date, preferredTime: time })} className="rounded-xl border border-acid/40 px-4 py-2 text-xs font-semibold text-acid disabled:opacity-40">Reschedule</button></div> : null}
+      {booking.status === "accepted" ? <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => onStatus(booking.id, "completed")} className="rounded-full bg-acid px-4 py-2 text-xs font-semibold text-ink">Mark completed</button><button type="button" onClick={() => onStatus(booking.id, "cancelled")} className="rounded-full border border-red-400/30 px-4 py-2 text-xs text-red-300">Cancel booking</button></div> : null}
     </article>
   );
 }

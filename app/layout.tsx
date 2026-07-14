@@ -13,11 +13,21 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import "./globals.css";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 
 export const metadata: Metadata = {
   ...generateSeoMetadata(),
   metadataBase: new URL(siteUrl),
   title: seoConfig.defaultTitle,
+  description: seoConfig.defaultDescription,
+  authors: [{ name: "FitSaathi", url: siteUrl }],
+  creator: "FitSaathi",
+  publisher: "FitSaathi",
+  icons: {
+    icon: [{ url: "/fitsaathi-logo.svg", type: "image/svg+xml" }],
+    shortcut: "/fitsaathi-logo.svg",
+    apple: "/fitsaathi-logo.svg",
+  },
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
@@ -47,9 +57,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </>
         ) : null}
         <AuthSessionProvider>
-          <Header />
-          {children}
-          <Footer />
+          <NotificationProvider>
+            <Header />
+            {children}
+            <Footer />
+          </NotificationProvider>
         </AuthSessionProvider>
       </body>
     </html>

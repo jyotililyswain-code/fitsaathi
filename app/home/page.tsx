@@ -287,7 +287,7 @@ export default function HomePage() {
             India&apos;s fitness social platform
           </p>
           <h1 className="mt-6 text-5xl font-black leading-tight text-white sm:text-7xl">
-            Find Fitness Coaches, Dojos &amp; Trainers Near You
+            Explore Fitness Coaches and Academies with FitSaathi
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
             FitSaathi helps you discover home fitness coaches, personal

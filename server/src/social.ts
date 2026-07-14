@@ -258,9 +258,8 @@ socialRouter.post("/emergency", asyncRoute(async (request: AuthRequest, response
   response.status(201).json(await prisma.emergencyRequest.create({ data: { userId: request.user!.id, ...input } }));
 }));
 
-socialRouter.post("/push-subscriptions", asyncRoute(async (request: AuthRequest, response) => {
-  const input = z.object({ endpoint: z.string().url(), keys: z.object({ p256dh: z.string().min(10), auth: z.string().min(5) }) }).parse(request.body);
-  response.status(201).json(await prisma.pushSubscription.upsert({ where: { endpoint: input.endpoint }, update: { userId: request.user!.id, p256dh: input.keys.p256dh, auth: input.keys.auth }, create: { userId: request.user!.id, endpoint: input.endpoint, p256dh: input.keys.p256dh, auth: input.keys.auth } }));
+socialRouter.post("/push-subscriptions", asyncRoute(async (_request: AuthRequest, response) => {
+  response.status(405).json({ error: "Use the secure /api/push/subscribe endpoint.", code: "LEGACY_PUSH_ENDPOINT_DISABLED" });
 }));
 
 socialRouter.get("/notifications", asyncRoute(async (request: AuthRequest, response) => {

@@ -1,5 +1,11 @@
 {
   "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/cron/notifications",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "functions": {
     "pages/api/[...path].ts": {
       "maxDuration": 30
