@@ -1,4 +1,5 @@
 import type { Prisma, ProviderStatus } from "@prisma/client";
+import { resolveDojoImageUrl } from "@/lib/dojo-image";
 
 export const PUBLIC_DOJO_SELECT = {
   id: true,
@@ -12,6 +13,8 @@ export const PUBLIC_DOJO_SELECT = {
   finalPrice: true,
   rating: true,
   imagePath: true,
+  imageFit: true,
+  imagePosition: true,
   status: true,
   approved: true,
   verified: true
@@ -59,7 +62,9 @@ export function publicDojo(record: PublicDojoRecord) {
     originalPrice: record.originalPrice,
     finalPrice: record.finalPrice,
     rating: record.rating,
-    imagePath: record.imagePath ? `/api/dojos/${record.id}/business-photo` : undefined,
+    imagePath: record.imagePath ? resolveDojoImageUrl(record.imagePath, record.id) : undefined,
+    imageFit: record.imageFit,
+    imagePosition: record.imagePosition,
     status: record.status,
     approved: record.approved,
     verified: record.verified

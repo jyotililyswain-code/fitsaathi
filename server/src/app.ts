@@ -9,6 +9,7 @@ import multer from "multer";
 import morgan from "morgan";
 import { z } from "zod";
 import { automaticDojoActivation, canManageDojo, dojoModerationData, PUBLIC_DOJO_SELECT, publicDojo, publicDojoWhere } from "../../lib/dojo-visibility";
+import { resolveDojoImageUrl } from "../../lib/dojo-image";
 import { accessToken, allowRoles, authenticate, hashToken, refreshToken, type AuthRequest, type SessionUser } from "./auth";
 import { config } from "./config";
 import { prisma } from "./db";
@@ -18,7 +19,7 @@ import { socialRouter } from "./social";
 import { createSupabaseAuthUser, sendSupabasePasswordReset } from "./supabase-auth";
 import { matchesRouter } from "./matches";
 import { optimizeUploads, removeUploads, upload } from "./uploads";
-import { containsInlineFileData, isOwnedProviderPath, isProviderRegistrationType, type ProviderRegistrationType } from "../../lib/provider-upload-rules";
+import { containsInlineFileData, isOwnedProviderPath, isProviderFileKind, isProviderRegistrationType, type ProviderRegistrationType } from "../../lib/provider-upload-rules";
 import { assertProviderUpload, handleProviderBlobUpload, localProviderUpload, providerStorageMode, providerUploadError, readProviderUpload, removeProviderUploads, removeUnreferencedProviderUploads, storeLocalProviderUpload } from "./provider-uploads";
 
 const app = express();
@@ -30,6 +31,18 @@ const publicUser = { id: true, name: true, email: true, phone: true, role: true,
 const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, photoPath, ...coach }: any) => ({ ...coach, photoPath: photoPath ? `/api/coaches/${coach.id}/photo` : undefined });
 const publicSellerRecord = ({ phone: _phone, aadhaarPath: _aadhaar, gstNumber: _gst, owner, ...seller }: any) => ({ ...seller, ...(owner ? { owner: { id: owner.id, name: owner.name } } : {}) });
 const publicProductRecord = ({ sellerPrice: _sellerPrice, sellerPayout: _sellerPayout, platformFee: _platformFee, seller, ...product }: any) => ({ ...product, ...(seller ? { seller: publicSellerRecord(seller) } : {}) });
+const editableDojoSelect = {
+  id: true,
+  name: true,
+  description: true,
+  category: true,
+  city: true,
+  address: true,
+  phoneNumber: true,
+  imagePath: true,
+  imageFit: true,
+  imagePosition: true,
+} as const;
 
 const sessionCookie = { httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: "/" };
 
@@ -75,10 +88,23 @@ async function assertProviderRegistrationAccess(user: SessionUser, registrationT
   }
 }
 
+async function assertProviderUploadAccess(user: SessionUser, registrationType: ProviderRegistrationType, profileId?: string) {
+  if (!profileId) return assertProviderRegistrationAccess(user, registrationType);
+  const profile = registrationType === "dojo"
+    ? await prisma.dojo.findUnique({ where: { id: profileId }, select: { ownerId: true } })
+    : await prisma.coach.findUnique({ where: { id: profileId }, select: { ownerId: true } });
+  if (!profile) throw providerUploadError(404, "PROFILE_NOT_FOUND", "Provider profile not found.");
+  const allowed = registrationType === "dojo"
+    ? canManageDojo(user, profile.ownerId)
+    : user.id === profile.ownerId || admins.includes(user.role);
+  if (!allowed) throw providerUploadError(403, "PROFILE_EDIT_DENIED", "You do not have permission to edit this profile.");
+}
+
 app.get("/api/provider-uploads/config", authenticate, asyncRoute(async (request: AuthRequest, response) => {
-  const registrationType = String(request.query.registrationType || "");
-  if (!isProviderRegistrationType(registrationType)) return response.status(400).json({ success: false, code: "INVALID_REGISTRATION_TYPE", message: "Choose coach or dojo registration." });
-  await assertProviderRegistrationAccess(request.user!, registrationType);
+  const parsed = z.object({ registrationType: z.enum(["coach", "dojo"]), profileId: z.string().uuid().optional() }).safeParse(request.query);
+  if (!parsed.success) return response.status(400).json({ success: false, code: "INVALID_REGISTRATION_TYPE", message: "Choose a valid provider profile." });
+  const { registrationType, profileId } = parsed.data;
+  await assertProviderUploadAccess(request.user!, registrationType, profileId);
   const mode = providerStorageMode();
   if (mode === "unavailable") return response.status(503).json({ success: false, code: "STORAGE_NOT_CONFIGURED", message: "File storage is not configured. Connect a Vercel Blob store and try again." });
   response.set("Cache-Control", "no-store").json({ success: true, data: { mode, userId: request.user!.id } });
@@ -89,16 +115,18 @@ app.post("/api/provider-uploads", authenticate, asyncRoute(async (request: AuthR
   let metadata: any;
   try { metadata = JSON.parse(clientPayload || ""); } catch { throw providerUploadError(400, "INVALID_UPLOAD_REQUEST", "Upload metadata is invalid."); }
   if (!isProviderRegistrationType(metadata?.registrationType)) throw providerUploadError(400, "INVALID_UPLOAD_REQUEST", "Upload metadata is invalid.");
-  await assertProviderRegistrationAccess(request.user!, metadata.registrationType);
+  const profileId = metadata?.profileId == null ? undefined : z.string().uuid().parse(metadata.profileId);
+  await assertProviderUploadAccess(request.user!, metadata.registrationType, profileId);
   response.json(await handleProviderBlobUpload(request, request.body, request.user!));
 }));
 
 app.post("/api/provider-uploads/local", authenticate, localProviderUpload.single("file"), asyncRoute(async (request: AuthRequest, response) => {
   const registrationType = String(request.body.registrationType || "");
   const kind = String(request.body.kind || "");
-  if (!isProviderRegistrationType(registrationType) || !request.file) throw providerUploadError(422, "INVALID_UPLOAD_REQUEST", "Select a valid file to upload.");
-  await assertProviderRegistrationAccess(request.user!, registrationType);
-  const storedPath = await storeLocalProviderUpload(request.file, registrationType, kind as any, request.user!.id);
+  const profileId = request.body.profileId ? z.string().uuid().parse(request.body.profileId) : undefined;
+  if (!isProviderRegistrationType(registrationType) || !isProviderFileKind(kind) || !request.file) throw providerUploadError(422, "INVALID_UPLOAD_REQUEST", "Select a valid file to upload.");
+  await assertProviderUploadAccess(request.user!, registrationType, profileId);
+  const storedPath = await storeLocalProviderUpload(request.file, registrationType, kind, request.user!.id);
   console.info("provider_upload.local_completed", { requestId: request.requestId, userId: request.user!.id, registrationType, fileKind: kind, size: request.file.size });
   response.status(201).json({ success: true, message: "File uploaded.", data: { path: storedPath } });
 }));
@@ -276,6 +304,20 @@ app.get("/api/dojos/me", authenticate, asyncRoute(async (request: AuthRequest, r
   const dojo = await prisma.dojo.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, name: true, status: true, approved: true, verified: true } });
   dojo ? response.set("Cache-Control", "no-store, max-age=0").json(dojo) : response.status(404).json({ error: "Dojo registration not found." });
 }));
+app.get("/api/dojos/:id/edit", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  const dojo = await prisma.dojo.findUnique({
+    where: { id: String(request.params.id) },
+    select: { ...editableDojoSelect, ownerId: true },
+  });
+  if (!dojo) return response.status(404).json({ success: false, code: "DOJO_NOT_FOUND", message: "Dojo profile not found." });
+  if (!canManageDojo(request.user!, dojo.ownerId)) return response.status(403).json({ success: false, code: "DOJO_EDIT_DENIED", message: "You do not have permission to edit this dojo." });
+  const { ownerId: _ownerId, imagePath, ...editableDojo } = dojo;
+  response.set("Cache-Control", "private, no-store").json({
+    ...editableDojo,
+    hasImage: Boolean(imagePath),
+    imageUrl: resolveDojoImageUrl(imagePath, dojo.id),
+  });
+}));
 app.get("/api/dojos/:id", asyncRoute(async (request, response) => {
   const item = await prisma.dojo.findFirst({ where: { id: String(request.params.id), ...publicDojoWhere() }, select: PUBLIC_DOJO_SELECT });
   item ? response.set("Cache-Control", "no-store, max-age=0").json(publicDojo(item)) : response.status(404).json({ error: "Dojo not found." });
@@ -380,10 +422,53 @@ app.post("/api/dojos", authenticate, asyncRoute(async (request: AuthRequest, res
 }));
 app.put("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) } });
-  if (!dojo) return response.status(404).json({ error: "Dojo not found." });
-  if (!canManageDojo(request.user!, dojo.ownerId)) return response.status(403).json({ error: "Not your dojo profile." });
-  const input = z.object({ name: z.string().min(2).optional(), category: z.string().optional(), city: z.string().optional(), description: z.string().optional() }).parse(request.body);
-  response.json(await prisma.dojo.update({ where: { id: dojo.id }, data: { ...input, originalPrice: 0, finalPrice: 0 } }));
+  if (!dojo) return response.status(404).json({ success: false, code: "DOJO_NOT_FOUND", message: "Dojo profile not found." });
+  if (!canManageDojo(request.user!, dojo.ownerId)) return response.status(403).json({ success: false, code: "DOJO_EDIT_DENIED", message: "You do not have permission to edit this dojo." });
+  if (containsInlineFileData(request.body)) return response.status(413).json({ success: false, code: "INLINE_FILE_DATA_REJECTED", message: "Upload the image first, then save its storage path." });
+  const input = z.object({
+    name: z.string().trim().min(2).max(120).optional(),
+    category: z.string().trim().min(2).max(80).optional(),
+    city: z.string().trim().min(2).max(80).optional(),
+    address: z.string().trim().min(5).max(500).optional(),
+    phoneNumber: z.string().trim().regex(/^[6-9]\d{9}$/, "Enter a valid 10 digit Indian mobile number.").optional(),
+    description: z.string().trim().max(2000).optional(),
+    imageFit: z.enum(["contain", "cover"]).optional(),
+    imagePosition: z.enum(["top", "center", "bottom"]).optional(),
+    imagePath: z.string().trim().min(1).max(500).nullable().optional(),
+  }).parse(request.body);
+  const hasImageUpdate = Object.prototype.hasOwnProperty.call(input, "imagePath");
+  const nextImagePath = hasImageUpdate ? input.imagePath : dojo.imagePath;
+  const imageChanged = hasImageUpdate && nextImagePath !== dojo.imagePath;
+  if (imageChanged && nextImagePath) await assertProviderUpload(nextImagePath, "dojo", "logo", request.user!.id);
+  const { imagePath: _imagePath, ...profileInput } = input;
+  let updated;
+  try {
+    updated = await prisma.dojo.update({
+      where: { id: dojo.id },
+      data: {
+        ...profileInput,
+        ...(hasImageUpdate ? { imagePath: nextImagePath } : {}),
+        originalPrice: 0,
+        finalPrice: 0,
+      },
+      select: editableDojoSelect,
+    });
+  } catch (error) {
+    if (imageChanged && nextImagePath) await removeUnreferencedProviderUploads([nextImagePath]).catch(() => undefined);
+    throw error;
+  }
+  if (imageChanged && dojo.imagePath) {
+    await removeUnreferencedProviderUploads([dojo.imagePath]).catch(error => {
+      console.warn("dojo.profile_old_image_cleanup_failed", { requestId: request.requestId, profileId: dojo.id, error: error instanceof Error ? error.name : "unknown" });
+    });
+  }
+  console.info("dojo.profile_updated", { requestId: request.requestId, profileId: dojo.id, actorId: request.user!.id, imageChanged, imageFit: updated.imageFit, imagePosition: updated.imagePosition });
+  const { imagePath, ...editableDojo } = updated;
+  response.set("Cache-Control", "no-store").json({
+    ...editableDojo,
+    hasImage: Boolean(imagePath),
+    imageUrl: resolveDojoImageUrl(imagePath, updated.id),
+  });
 }));
 app.delete("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const dojo = await prisma.dojo.findUnique({ where: { id: String(request.params.id) } });

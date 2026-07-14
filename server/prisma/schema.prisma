@@ -574,6 +574,8 @@ model Dojo {
   finalPrice                Int              @default(0)
   rating                    Float            @default(0)
   imagePath                 String?
+  imageFit                  String           @default("contain")
+  imagePosition             String           @default("center")
   phoneNumber               String?
   isPhoneVerified           Boolean          @default(false)
   availableDays             String[]         @default([])

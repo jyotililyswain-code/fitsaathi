@@ -1,3 +1,5 @@
+import type { DojoImageFit, DojoImagePosition } from "@/lib/dojo-image";
+
 export type Badge = "verified" | "elite" | "legendary" | "none";
 
 export type AttendanceRisk = "green" | "yellow" | "red" | "unknown";
@@ -45,6 +47,8 @@ export type Dojo = {
   finalPrice?: number;
   rating?: number;
   imageUrl?: string;
+  imageFit?: DojoImageFit;
+  imagePosition?: DojoImagePosition;
   description?: string;
   approved?: boolean;
   verified?: boolean;

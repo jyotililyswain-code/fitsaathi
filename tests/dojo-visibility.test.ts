@@ -38,14 +38,40 @@ test("public dojo projection excludes ownership and contact data", () => {
     finalPrice: 1000,
     rating: 0,
     imagePath: "dojo/dojo-id/business-photo/private.webp",
+    imageFit: "contain",
+    imagePosition: "center",
     status: "active",
     approved: true,
     verified: false
   });
   assert.equal(output.imagePath, "/api/dojos/dojo-id/business-photo");
+  assert.equal(output.imageFit, "contain");
+  assert.equal(output.imagePosition, "center");
   assert.equal(output.verified, false);
   assert.ok(!("ownerId" in output));
   assert.ok(!("phoneNumber" in output));
   assert.ok(!("certificatePath" in output));
   assert.ok(!JSON.stringify(output).includes("private.webp"));
+});
+
+test("legacy full dojo image URLs remain usable without duplicate URL prefixes", () => {
+  const output = publicDojo({
+    id: "legacy-dojo",
+    name: "Legacy Dojo",
+    description: null,
+    category: "Karate",
+    address: null,
+    city: "Delhi",
+    experience: null,
+    originalPrice: 0,
+    finalPrice: 0,
+    rating: 0,
+    imagePath: "https://example.supabase.co/storage/v1/object/public/dojo-images/photo.webp",
+    imageFit: "contain",
+    imagePosition: "center",
+    status: "active",
+    approved: true,
+    verified: false,
+  });
+  assert.equal(output.imagePath, "https://example.supabase.co/storage/v1/object/public/dojo-images/photo.webp");
 });

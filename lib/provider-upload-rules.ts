@@ -25,9 +25,9 @@ const rules: Record<ProviderFileKind, ProviderFileRule> = {
   logo: {
     label: "Business photo",
     allowedContentTypes: imageTypes,
-    maximumSizeInBytes: 2 * MB,
-    maximumSourceSizeInBytes: 20 * MB,
-    maximumImageDimension: 1400,
+    maximumSizeInBytes: 5 * MB,
+    maximumSourceSizeInBytes: 5 * MB,
+    maximumImageDimension: 2000,
     quality: 0.8,
   },
   certificate: {
@@ -99,6 +99,26 @@ export function providerBlobPathname(
   contentType: string,
 ) {
   return `${registrationType}/${userId}/${kind}/${uniqueId}.${extensionForContentType(contentType)}`;
+}
+
+export function validateProviderFileSelection(
+  file: Pick<File, "name" | "size" | "type">,
+  registrationType: ProviderRegistrationType,
+  kind: ProviderFileKind,
+) {
+  const rule = providerFileRule(registrationType, kind);
+  if (!rule) return "This file is not valid for the selected registration.";
+  if (/image\/(?:hei[cf])/.test(file.type.toLowerCase()) || /\.(?:hei[cf])$/i.test(file.name)) {
+    return `${rule.label} must be JPG, PNG, or WebP. Convert the HEIC/HEIF photo before uploading.`;
+  }
+  if (!rule.allowedContentTypes.includes(file.type)) {
+    return `${rule.label} must be ${kind === "certificate" ? "JPG, PNG, WebP, or PDF" : "JPG, PNG, or WebP"}.`;
+  }
+  if (!file.size) return `${rule.label} is empty. Select the file again.`;
+  if (file.size > rule.maximumSourceSizeInBytes) {
+    return `${rule.label} must be ${Math.round(rule.maximumSourceSizeInBytes / MB)} MB or smaller.`;
+  }
+  return null;
 }
 
 export function isOwnedProviderPath(

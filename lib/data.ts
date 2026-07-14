@@ -1,4 +1,5 @@
 import { API_URL, localApi } from "@/lib/local-api";
+import { resolveDojoImageUrl } from "@/lib/dojo-image";
 import { rankProducts, type Product, type Seller } from "@/lib/marketplace";
 import { DEFAULT_PLATFORM_FEE } from "@/lib/pricing";
 import type { Booking, Coach, Dojo, PlatformStats, Review } from "@/lib/types";
@@ -24,7 +25,7 @@ function mapCoach(item: any): Coach {
 }
 
 function mapDojo(item: any): Dojo {
-  return { ...item, price: item.originalPrice, imageUrl: asset(item.imagePath), approvalStatus: item.status };
+  return { ...item, price: item.originalPrice, imageUrl: resolveDojoImageUrl(item.imagePath, item.id, apiOrigin), approvalStatus: item.status };
 }
 
 export async function getCoaches(max = 24) { return (await localApi<any[]>(`/coaches?limit=${max}`)).map(mapCoach); }

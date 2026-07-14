@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { prisma } from "@/lib/prisma";
+import { resolveDojoImageUrl } from "@/lib/dojo-image";
 import { generateSeoMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
@@ -35,7 +36,7 @@ export async function generateMetadata({
       title: `${dojo.name} - Dojo / Academy on FitSaathi`,
       description: `View ${dojo.name}'s ${dojo.category} training details${dojo.city ? ` in ${dojo.city}` : ""} and booking options on FitSaathi.`,
       path: `/dojos/${id}`,
-      image: dojo.imagePath ? `/api/dojos/${id}/business-photo` : undefined,
+      image: dojo.imagePath ? resolveDojoImageUrl(dojo.imagePath, id) : undefined,
       keywords: [
         dojo.name,
         dojo.category,

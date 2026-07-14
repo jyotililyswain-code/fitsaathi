@@ -1,6 +1,7 @@
 "use client";
 
-import { BarChart3, CalendarDays, CheckCircle2, Clock, Users, WalletCards } from "lucide-react";
+import Link from "next/link";
+import { BarChart3, CalendarDays, CheckCircle2, Clock, Pencil, Users, WalletCards } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
@@ -33,8 +34,18 @@ export default function DojoDashboardPage() {
   return (
     <AuthGuard role="dojo">
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold text-white">Dojo dashboard</h1>
-        <p className="mt-3 text-zinc-400">Manage your academy, classes, timings, and free FitSaathi bookings. Registration and bookings have no platform or hidden charges.</p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-white">Dojo dashboard</h1>
+            <p className="mt-3 text-zinc-400">Manage your academy, classes, timings, and free FitSaathi bookings. Registration and bookings have no platform or hidden charges.</p>
+          </div>
+          {registration.data?.id ? (
+            <Link href={`/owner/dojos/${registration.data.id}/edit`} className="focus-ring inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full border border-acid/40 px-4 py-2.5 text-sm font-semibold text-acid transition hover:bg-acid hover:text-ink sm:w-auto">
+              <Pencil className="h-4 w-4" aria-hidden="true" />
+              Edit profile
+            </Link>
+          ) : null}
+        </div>
         {registration.data?.status === "active" && !registration.data.verified ? <div className="mt-5 rounded-2xl border border-acid/30 bg-acid/10 p-4 text-sm text-emerald-100"><strong className="block text-white">Your dojo is live</strong>Your profile appears in public search. The verified badge remains under document review.</div> : null}
         {registration.data?.status === "inactive" || registration.data?.status === "suspended" ? <div className="mt-5 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-100"><strong className="block text-white">Dojo listing is not public</strong>Contact support if you need help restoring this registration.</div> : null}
         {registration.data?.status === "rejected" ? <div className="mt-5 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-100"><strong className="block text-white">Registration needs attention</strong>Your dojo is not publicly listed. Contact support for review details.</div> : null}

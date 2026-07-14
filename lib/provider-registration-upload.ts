@@ -5,6 +5,7 @@ import {
   extensionForContentType,
   providerBlobPathname,
   providerFileRule,
+  validateProviderFileSelection,
   type ProviderFileKind,
   type ProviderRegistrationType,
 } from "@/lib/provider-upload-rules";
@@ -20,27 +21,21 @@ type UploadResult = {
   data: { path: string };
 };
 
-export async function getProviderUploadConfiguration(registrationType: ProviderRegistrationType) {
-  return localApi<UploadConfiguration>(`/provider-uploads/config?registrationType=${registrationType}`);
+export async function getProviderUploadConfiguration(registrationType: ProviderRegistrationType, profileId?: string) {
+  const query = new URLSearchParams({ registrationType });
+  if (profileId) query.set("profileId", profileId);
+  return localApi<UploadConfiguration>(`/provider-uploads/config?${query}`);
 }
 
 export async function prepareProviderFile(file: File, registrationType: ProviderRegistrationType, kind: ProviderFileKind) {
   const rule = providerFileRule(registrationType, kind);
   if (!rule) throw new Error("This file is not valid for the selected registration.");
-  if (isHeic(file)) throw new Error(`${rule.label} must be JPG, PNG, or WebP. Convert the HEIC/HEIF photo before uploading.`);
-  if (!rule.allowedContentTypes.includes(file.type)) {
-    const allowed = kind === "certificate" ? "JPG, PNG, WebP, or PDF" : "JPG, PNG, or WebP";
-    throw new Error(`${rule.label} must be ${allowed}.`);
-  }
-  if (!file.size) throw new Error(`${rule.label} is empty. Select the file again.`);
+  const selectionError = validateProviderFileSelection(file, registrationType, kind);
+  if (selectionError) throw new Error(selectionError);
   if (file.type === "application/pdf") {
     if (file.size > rule.maximumSizeInBytes) throw new Error(`${rule.label} PDF must be 5 MB or smaller.`);
     return file;
   }
-  if (file.size > rule.maximumSourceSizeInBytes) {
-    throw new Error(`${rule.label} is too large to process safely. Select an image smaller than 20 MB.`);
-  }
-
   try {
     const compressed = await compressImage(file, rule.label, rule.maximumImageDimension, rule.quality, finalImageLimit(kind, rule.maximumSizeInBytes));
     return compressed;
@@ -55,9 +50,10 @@ export async function uploadProviderFile(options: {
   registrationType: ProviderRegistrationType;
   kind: ProviderFileKind;
   file: File;
+  profileId?: string;
   onProgress?: (percentage: number) => void;
 }) {
-  const { configuration, registrationType, kind, file, onProgress } = options;
+  const { configuration, registrationType, kind, file, profileId, onProgress } = options;
   const rule = providerFileRule(registrationType, kind);
   if (!rule) throw new Error("This file is not valid for the selected registration.");
 
@@ -67,7 +63,7 @@ export async function uploadProviderFile(options: {
       const result = await upload(pathname, file, {
         access: "private",
         handleUploadUrl: `${API_URL}/provider-uploads`,
-        clientPayload: JSON.stringify({ registrationType, kind }),
+        clientPayload: JSON.stringify({ registrationType, kind, profileId }),
         contentType: file.type,
         multipart: false,
         onUploadProgress: progress => onProgress?.(progress.percentage),
@@ -78,6 +74,7 @@ export async function uploadProviderFile(options: {
     const body = new FormData();
     body.set("registrationType", registrationType);
     body.set("kind", kind);
+    if (profileId) body.set("profileId", profileId);
     body.set("file", file, file.name || `upload.${extensionForContentType(file.type)}`);
     onProgress?.(5);
     const result = await localApi<UploadResult>("/provider-uploads/local", { method: "POST", body });
@@ -167,10 +164,6 @@ async function canvasBlob(canvas: HTMLCanvasElement, contentType: string, qualit
 
 function finalImageLimit(kind: ProviderFileKind, defaultMaximum: number) {
   return kind === "certificate" ? 3 * 1024 * 1024 : defaultMaximum;
-}
-
-function isHeic(file: File) {
-  return /image\/(?:hei[cf])/.test(file.type.toLowerCase()) || /\.(?:hei[cf])$/i.test(file.name);
 }
 
 function replaceExtension(name: string, extension: string) {
