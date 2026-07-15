@@ -42,7 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: {
           verified: true,
           status: "approved",
-          owner: { emailVerified: true, accountStatus: "active" },
+          owner: { accountStatus: "active" },
         },
         select: { id: true, updatedAt: true },
       }),
@@ -50,7 +50,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         where: {
           approved: true,
           status: "active",
-          owner: { emailVerified: true, accountStatus: "active" },
+          owner: { accountStatus: "active" },
         },
         select: { id: true, updatedAt: true },
       }),
@@ -59,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           status: "approved",
           seller: {
             status: { in: ["verified", "trusted"] },
-            owner: { emailVerified: true, accountStatus: "active" },
+            owner: { accountStatus: "active" },
           },
         },
         select: { id: true, updatedAt: true },
@@ -67,7 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       prisma.seller.findMany({
         where: {
           status: { in: ["verified", "trusted"] },
-          owner: { emailVerified: true, accountStatus: "active" },
+          owner: { accountStatus: "active" },
         },
         select: { id: true, updatedAt: true },
       }),

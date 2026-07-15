@@ -19,11 +19,9 @@ import { socialRouter } from "./social";
 import {
   createSupabaseAuthUser,
   deleteSupabaseAuthUser,
-  resendSupabaseSignupOtp,
   sendSupabasePasswordReset,
   signInSupabaseUser,
   updateSupabasePassword,
-  verifySupabaseEmailOtp,
 } from "./supabase-auth";
 import { matchesRouter } from "./matches";
 import { optimizeUploads, removeUploads, upload } from "./uploads";
@@ -158,45 +156,32 @@ app.post("/api/auth/register", databaseRateLimit(5, 10 * 60_000, "signup"), asyn
   const { interests = [], password: _password, accountType, ...details } = input;
   const interestList = validateInterestList(interests);
   if (!interestList.ok) return response.status(400).json({ error: interestList.error, field: "interests" });
-  const authUser = await createSupabaseAuthUser({ email: input.email, password: input.password, name: input.name, phone: input.phone, registrationIntent: accountType });
+  const authenticated = await createSupabaseAuthUser({ email: input.email, password: input.password, name: input.name, phone: input.phone, registrationIntent: accountType });
   try {
-    await prisma.$transaction(async tx => {
+    const user = await prisma.$transaction(async tx => {
       const created = existing
-        ? await tx.user.update({ where: { id: existing.id }, data: { authUserId: authUser.id, email: input.email, emailNormalized: input.email, emailVerified: false, emailVerifiedAt: null, registrationIntent: accountType, accountStatus: "pending_email_verification", acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() }, select: { id: true } })
-        : await tx.user.create({ data: { id: authUser.id, authUserId: authUser.id, ...details, email: input.email, emailNormalized: input.email, emailVerified: false, registrationIntent: accountType, accountStatus: "pending_email_verification", acceptedPolicies: true, acceptedAt: new Date(), onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: { id: true } });
+        ? await tx.user.update({ where: { id: existing.id }, data: { authUserId: authenticated.user.id, email: input.email, emailNormalized: input.email, emailVerified: true, emailVerifiedAt: new Date(), registrationIntent: accountType, accountStatus: "active", acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() }, select: publicUser })
+        : await tx.user.create({ data: { id: authenticated.user.id, authUserId: authenticated.user.id, ...details, email: input.email, emailNormalized: input.email, emailVerified: true, emailVerifiedAt: new Date(), registrationIntent: accountType, accountStatus: "active", acceptedPolicies: true, acceptedAt: new Date(), onboardingCompleted: Boolean(input.gender && input.birthDate && input.city && input.state && input.heightCm && input.weightKg && input.fitnessGoal && input.profileBio) }, select: publicUser });
       if (interestList.interests.length) await tx.userInterest.createMany({ data: interestList.interests.map(interest => ({ userId: created.id, interest })), skipDuplicates: true });
+      return created;
     }, { timeout: 20_000 });
+    response.status(201).json({ ...(await issueSession(user, response)), supabaseSession: authenticated.session, redirectTo: registrationRedirect(user.registrationIntent, user.role), verificationRequired: false });
   } catch (error) {
-    await deleteSupabaseAuthUser(authUser.id);
+    await deleteSupabaseAuthUser(authenticated.user.id);
     throw error;
   }
-  response.status(201).json({ verificationRequired: true, message: "Check your email for the six-digit verification code." });
 }));
-app.post("/api/auth/verify-email", databaseRateLimit(10, 10 * 60_000, "verify-email"), asyncRoute(async (request, response) => {
-  const input = z.object({ email: emailSchema, token: z.string().regex(/^\d{6}$/) }).parse(request.body);
-  const verified = await verifySupabaseEmailOtp(input.email, input.token);
-  const confirmedAt = verified.user.email_confirmed_at ? new Date(verified.user.email_confirmed_at) : new Date();
-  const record = await prisma.user.findFirst({ where: { OR: [{ authUserId: verified.user.id }, { emailNormalized: input.email }] } });
-  if (!record) return response.status(409).json({ error: "Your TheFitSaathi profile could not be completed. Contact support.", code: "PROFILE_NOT_FOUND" });
-  if (["banned", "suspended", "rejected", "deleted"].includes(record.accountStatus)) return response.status(403).json({ error: "This account is not available. Contact TheFitSaathi support.", code: "ACCOUNT_UNAVAILABLE" });
-  const user = await prisma.user.update({ where: { id: record.id }, data: { authUserId: verified.user.id, email: input.email, emailNormalized: input.email, emailVerified: true, emailVerifiedAt: confirmedAt, accountStatus: "active" }, select: publicUser });
-  response.json({ ...(await issueSession(user, response)), supabaseSession: verified.session, redirectTo: registrationRedirect(user.registrationIntent, user.role) });
-}));
-app.post("/api/auth/resend-verification", databaseRateLimit(3, 10 * 60_000, "resend-verification"), asyncRoute(async (request, response) => {
-  const input = z.object({ email: emailSchema }).parse(request.body);
-  const record = await prisma.user.findFirst({ where: { emailNormalized: input.email }, select: { emailVerified: true, accountStatus: true } });
-  if (record && !record.emailVerified && !["banned", "suspended", "rejected", "deleted"].includes(record.accountStatus)) await resendSupabaseSignupOtp(input.email);
-  response.json({ message: "A new verification code has been sent. Please check your inbox and spam folder." });
-}));
+app.post("/api/auth/verify-email", (_request, response) => response.status(410).json({ error: "Email OTP verification is no longer required.", code: "OTP_DISABLED" }));
+app.post("/api/auth/resend-verification", (_request, response) => response.status(410).json({ error: "Email OTP verification is no longer required.", code: "OTP_DISABLED" }));
 app.post("/api/auth/login", databaseRateLimit(10, 10 * 60_000, "login"), asyncRoute(async (request, response) => {
   const input = credentials.extend({ acceptedPolicies: z.boolean().optional(), acceptedPolicyVersion: z.string().max(40).optional() }).parse(request.body);
   const authenticated = await signInSupabaseUser(input.email, input.password);
   let record = await prisma.user.findFirst({ where: { OR: [{ authUserId: authenticated.user.id }, { emailNormalized: input.email }, { email: { equals: input.email, mode: "insensitive" } }] } });
   if (!record) {
-    record = await prisma.user.create({ data: { id: authenticated.user.id, authUserId: authenticated.user.id, name: String(authenticated.user.user_metadata?.name || input.email.split("@")[0]).slice(0, 80), email: input.email, emailNormalized: input.email, emailVerified: true, emailVerifiedAt: new Date(authenticated.user.email_confirmed_at!), accountStatus: "active", acceptedPolicies: input.acceptedPolicies === true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: input.acceptedPolicies ? new Date() : undefined } });
+    record = await prisma.user.create({ data: { id: authenticated.user.id, authUserId: authenticated.user.id, name: String(authenticated.user.user_metadata?.name || input.email.split("@")[0]).slice(0, 80), email: input.email, emailNormalized: input.email, emailVerified: true, emailVerifiedAt: new Date(), accountStatus: "active", acceptedPolicies: input.acceptedPolicies === true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: input.acceptedPolicies ? new Date() : undefined } });
   }
   if (["banned", "suspended", "rejected", "deleted"].includes(record.accountStatus)) return response.status(403).json({ error: "This account is not available. Contact TheFitSaathi support.", code: "ACCOUNT_UNAVAILABLE" });
-  const current = await prisma.user.update({ where: { id: record.id }, data: { authUserId: authenticated.user.id, emailVerified: true, emailVerifiedAt: new Date(authenticated.user.email_confirmed_at!), accountStatus: record.accountStatus === "pending_email_verification" ? "active" : record.accountStatus, ...(input.acceptedPolicies ? { acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() } : {}) } });
+  const current = await prisma.user.update({ where: { id: record.id }, data: { authUserId: authenticated.user.id, emailVerified: true, emailVerifiedAt: record.emailVerifiedAt || new Date(), accountStatus: record.accountStatus === "pending_email_verification" ? "active" : record.accountStatus, ...(input.acceptedPolicies ? { acceptedPolicies: true, acceptedPolicyVersion: input.acceptedPolicyVersion, acceptedAt: new Date() } : {}) } });
   response.json({ ...(await issueSession(current, response)), supabaseSession: authenticated.session, redirectTo: registrationRedirect(current.registrationIntent, current.role) });
 }));
 app.post("/api/auth/refresh", asyncRoute(async (request, response) => {
@@ -206,7 +191,7 @@ app.post("/api/auth/refresh", asyncRoute(async (request, response) => {
     return response.status(401).json({ error: "Refresh session expired." });
   }
   const stored = await prisma.refreshToken.findUnique({ where: { tokenHash: hashToken(token) }, include: { user: true } });
-  if (!stored || stored.expiresAt < new Date() || stored.user.accountStatus !== "active" || !stored.user.emailVerified) {
+  if (!stored || stored.expiresAt < new Date() || stored.user.accountStatus !== "active") {
     clearSessionCookies(response);
     return response.status(401).json({ error: "Refresh session expired." });
   }
@@ -252,16 +237,16 @@ app.get("/api/stats", asyncRoute(async (_request, response) => {
 app.get("/api/coaches", asyncRoute(async (request, response) => {
   const query = z.object({ featured: z.enum(["true", "false"]).optional(), limit: z.coerce.number().int().min(1).max(100).default(24), search: z.string().trim().max(100).optional(), category: z.string().trim().max(80).optional(), city: z.string().trim().max(80).optional() }).parse(request.query);
   const featured = query.featured === "true";
-  const where: any = { verified: true, status: "approved", owner: { emailVerified: true, accountStatus: "active" }, ...(query.category ? { category: { contains: query.category, mode: "insensitive" } } : {}), ...(query.city ? { city: { contains: query.city, mode: "insensitive" } } : {}), ...(query.search ? { OR: [{ name: { contains: query.search, mode: "insensitive" } }, { category: { contains: query.search, mode: "insensitive" } }, { bio: { contains: query.search, mode: "insensitive" } }] } : {}) };
+  const where: any = { verified: true, status: "approved", owner: { accountStatus: "active" }, ...(query.category ? { category: { contains: query.category, mode: "insensitive" } } : {}), ...(query.city ? { city: { contains: query.city, mode: "insensitive" } } : {}), ...(query.search ? { OR: [{ name: { contains: query.search, mode: "insensitive" } }, { category: { contains: query.search, mode: "insensitive" } }, { bio: { contains: query.search, mode: "insensitive" } }] } : {}) };
   const items = await prisma.coach.findMany({ where, orderBy: featured ? { rating: "desc" } : { createdAt: "desc" }, take: query.limit });
   response.json(items.map(publicCoach));
 }));
 app.get("/api/coaches/:id", asyncRoute(async (request, response) => {
-  const item = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: "approved", verified: true, owner: { emailVerified: true, accountStatus: "active" } }, include: { reviews: true } });
+  const item = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: "approved", verified: true, owner: { accountStatus: "active" } }, include: { reviews: true } });
   item ? response.json(publicCoach(item)) : response.status(404).json({ error: "Coach not found." });
 }));
 app.get("/api/coaches/:id/photo", asyncRoute(async (request, response) => {
-  const coach = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: "approved", verified: true, owner: { emailVerified: true, accountStatus: "active" } }, select: { photoPath: true } });
+  const coach = await prisma.coach.findFirst({ where: { id: String(request.params.id), status: "approved", verified: true, owner: { accountStatus: "active" } }, select: { photoPath: true } });
   if (!coach?.photoPath) return response.status(404).json({ error: "Coach photo not found." });
   const photo = await readProviderUpload(coach.photoPath);
   if (!photo) return response.status(404).json({ error: "Coach photo not found." });

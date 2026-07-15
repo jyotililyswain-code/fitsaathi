@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { POLICY_VERSION } from "@/lib/policies";
-import { localApi } from "@/lib/local-api";
+import { localApi, notifyAuthChanged } from "@/lib/local-api";
+import { supabase } from "@/lib/supabase";
 import { normalizeEmail } from "@/lib/auth/email";
 import { SOCIAL_INTERESTS } from "@/lib/social";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
@@ -67,7 +68,7 @@ export default function SignupPage() {
     setLoading(true);
     setMessage("");
     try {
-      await localApi("/auth/register", {
+      const result = await localApi<{ redirectTo: string; supabaseSession: { access_token: string; refresh_token: string } }>("/auth/register", {
         method: "POST",
         body: JSON.stringify({
           name: String(form.get("name")).trim(),
@@ -91,9 +92,9 @@ export default function SignupPage() {
           acceptedPolicyVersion: POLICY_VERSION
         })
       });
-      sessionStorage.setItem("fitsaathi_pending_email", email);
-      sessionStorage.setItem("fitsaathi_registration_intent", String(form.get("accountType") || "customer"));
-      router.replace("/auth/verify-email");
+      if (supabase) await supabase.auth.setSession(result.supabaseSession);
+      notifyAuthChanged();
+      router.replace(result.redirectTo || "/dashboard");
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Signup failed.");
@@ -110,7 +111,7 @@ export default function SignupPage() {
         <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">Tell us how you move.</h1>
         <p className="mt-3 text-zinc-400">Your public profile is separate from private verification documents. Registration and verification are free, with no charges or hidden fees.</p>
         <div className="mt-6 grid gap-2 sm:grid-cols-4">
-          {["Account", "Interests", "Verification", "Complete"].map((step, index) => (
+          {["Account", "Interests", "Complete"].map((step, index) => (
             <div key={step} className={`rounded-2xl border px-4 py-3 text-sm ${index === 0 ? "border-acid bg-acid/10 text-acid" : "border-white/10 text-zinc-400"}`}>
               <span className="mr-2 font-black">{index + 1}</span>{step}
             </div>

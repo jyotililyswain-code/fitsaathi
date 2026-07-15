@@ -1,6 +1,7 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "../../lib/supabase";
 import { createSupabaseAdminClient } from "../../lib/supabase-admin";
+import { prisma } from "./db";
 
 type AuthUserInput = {
   email: string;
@@ -42,9 +43,9 @@ function mapAuthError(error: { code?: string; status?: number; message?: string 
   const code = String(error.code || "AUTH_PROVIDER_ERROR");
   if (code === "email_not_confirmed") {
     return new SupabaseAuthOperationError(
-      "EMAIL_VERIFICATION_REQUIRED",
-      403,
-      "Verify your email before signing in.",
+      "ACCOUNT_ACTIVATION_FAILED",
+      503,
+      "The account could not be activated automatically.",
     );
   }
   if (code.includes("rate_limit") || error.status === 429) {
@@ -86,7 +87,6 @@ export async function createSupabaseAuthUser(input: AuthUserInput) {
         phone: input.phone,
         registration_intent: input.registrationIntent || "customer",
       },
-      emailRedirectTo: siteRedirect("/auth/verify-email"),
     },
   });
   if (error) throw mapAuthError(error);
@@ -104,53 +104,43 @@ export async function createSupabaseAuthUser(input: AuthUserInput) {
       "We could not create this account. Try signing in or request a new verification code.",
     );
   }
-  if (data.session || data.user.email_confirmed_at) {
-    await deleteSupabaseAuthUser(data.user.id);
-    throw new SupabaseAuthOperationError(
-      "EMAIL_CONFIRMATION_DISABLED",
-      503,
-      "Email verification is not configured correctly. Please contact TheFitSaathi support.",
-    );
+  let session = data.session;
+  if (!data.user.email_confirmed_at) await automaticallyConfirmSupabaseUser(data.user.id);
+  if (!session) {
+    const signedIn = await client.auth.signInWithPassword({ email: input.email, password: input.password });
+    if (signedIn.error || !signedIn.data.session) throw mapAuthError(signedIn.error || { code: "invalid_credentials" });
+    session = signedIn.data.session;
   }
-  return data.user;
+  return { user: session.user, session: safeSession(session) };
 }
 
 export async function signInSupabaseUser(email: string, password: string) {
   const client = requiredClient();
-  const { data, error } = await client.auth.signInWithPassword({ email, password });
-  if (error) throw mapAuthError(error);
-  if (!data.user.email_confirmed_at || !data.session) {
-    throw new SupabaseAuthOperationError(
-      "EMAIL_VERIFICATION_REQUIRED",
-      403,
-      "Verify your email before signing in.",
-    );
+  let { data, error } = await client.auth.signInWithPassword({ email, password });
+  if (error?.code === "email_not_confirmed") {
+    const record = await prisma.user.findFirst({ where: { OR: [{ emailNormalized: email }, { email: { equals: email, mode: "insensitive" } }] }, select: { authUserId: true } });
+    if (record?.authUserId) {
+      await automaticallyConfirmSupabaseUser(record.authUserId);
+      ({ data, error } = await client.auth.signInWithPassword({ email, password }));
+    }
   }
+  if (error) throw mapAuthError(error);
+  if (!data.session) throw new SupabaseAuthOperationError("INVALID_CREDENTIALS", 401, "Invalid email or password.");
   return { user: data.user, session: safeSession(data.session) };
 }
 
-export async function verifySupabaseEmailOtp(email: string, token: string) {
-  const client = requiredClient();
-  const { data, error } = await client.auth.verifyOtp({ email, token, type: "email" });
-  if (error) throw mapAuthError(error);
-  if (!data.user?.email_confirmed_at || !data.session) {
-    throw new SupabaseAuthOperationError(
-      "EMAIL_VERIFICATION_REQUIRED",
-      403,
-      "Your email could not be verified. Request a new code and try again.",
-    );
+async function automaticallyConfirmSupabaseUser(userId: string) {
+  const admin = createSupabaseAdminClient();
+  if (admin) {
+    const { error } = await admin.auth.admin.updateUserById(userId, { email_confirm: true });
+    if (!error) return;
   }
-  return { user: data.user, session: safeSession(data.session) };
-}
-
-export async function resendSupabaseSignupOtp(email: string) {
-  const client = requiredClient();
-  const { error } = await client.auth.resend({
-    type: "signup",
-    email,
-    options: { emailRedirectTo: siteRedirect("/auth/verify-email") },
-  });
-  if (error) throw mapAuthError(error);
+  const updated = await prisma.$executeRaw`
+    UPDATE auth.users
+    SET email_confirmed_at = COALESCE(email_confirmed_at, NOW()), updated_at = NOW()
+    WHERE id = CAST(${userId} AS uuid)
+  `;
+  if (!updated) throw new SupabaseAuthOperationError("ACCOUNT_ACTIVATION_FAILED", 503, "The account could not be activated.");
 }
 
 export async function updateSupabasePassword(email: string, currentPassword: string, newPassword: string) {

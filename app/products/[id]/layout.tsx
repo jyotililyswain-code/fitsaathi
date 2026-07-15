@@ -13,7 +13,7 @@ const getPublicProduct = cache((id: string) =>
       status: "approved",
       seller: {
         status: { in: ["verified", "trusted"] },
-        owner: { emailVerified: true, accountStatus: "active" },
+        owner: { accountStatus: "active" },
       },
     },
     select: {

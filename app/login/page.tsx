@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
-import { HttpResponseError } from "@/lib/http";
 import { POLICY_VERSION, requiredAgreementPolicies } from "@/lib/policies";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { dashboardPathForRole } from "@/lib/roles";
@@ -37,11 +36,6 @@ export default function LoginPage() {
       router.replace(safeAuthRedirect(requestedPath, result.redirectTo || dashboardPathForRole(result.user.role)));
       router.refresh();
     } catch (error) {
-      if (error instanceof HttpResponseError && error.code === "EMAIL_VERIFICATION_REQUIRED" && email) {
-        sessionStorage.setItem("fitsaathi_pending_email", email);
-        router.push("/auth/verify-email");
-        return;
-      }
       setMessage(error instanceof Error ? error.message : "Login failed.");
     } finally {
       setLoading(false);

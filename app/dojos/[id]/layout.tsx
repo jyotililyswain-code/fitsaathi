@@ -19,7 +19,7 @@ const getPublicDojo = cache((id: string) =>
       id,
       approved: true,
       status: "active",
-      owner: { emailVerified: true, accountStatus: "active" },
+      owner: { accountStatus: "active" },
     },
     select: {
       id: true,

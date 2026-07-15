@@ -11,7 +11,7 @@ const getPublicSeller = cache((id: string) =>
     where: {
       id,
       status: { in: ["verified", "trusted"] },
-      owner: { emailVerified: true, accountStatus: "active" },
+      owner: { accountStatus: "active" },
     },
     select: { storeName: true, bio: true, profilePath: true },
   }),

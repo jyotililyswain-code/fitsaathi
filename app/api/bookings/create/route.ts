@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     const provider = coach || dojo;
     if (!provider || !customer) return NextResponse.json({ error: "Provider not found." }, { status: 404 });
     if (provider.ownerId === user.id) return NextResponse.json({ error: "You cannot book your own provider profile." }, { status: 409 });
-    if (!provider.owner.emailVerified || provider.owner.accountStatus !== "active") return NextResponse.json({ error: "This provider is not available for booking." }, { status: 409 });
+    if (provider.owner.accountStatus !== "active") return NextResponse.json({ error: "This provider is not available for booking." }, { status: 409 });
     if (coach && (!coach.verified || coach.status !== "approved")) return NextResponse.json({ error: "This coach is not available for booking." }, { status: 409 });
     if (dojo && (!dojo.approved || dojo.status !== "active")) return NextResponse.json({ error: "This dojo or gym is not available for booking." }, { status: 409 });
     const selectedDay = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(new Date(`${input.preferredDate}T00:00:00.000Z`)).toLowerCase();

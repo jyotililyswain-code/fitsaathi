@@ -119,12 +119,12 @@ model User {
   name                            String
   email                           String                    @unique
   emailNormalized                 String                    @unique
-  emailVerified                   Boolean                   @default(false)
+  emailVerified                   Boolean                   @default(true)
   emailVerifiedAt                 DateTime?                 @db.Timestamptz(3)
   phone                           String?
   role                            Role                      @default(customer)
   registrationIntent              String                    @default("customer")
-  accountStatus                   String                    @default("pending_email_verification")
+  accountStatus                   String                    @default("active")
   notificationOnboardingCompleted Boolean                   @default(false)
   address                         String?
   acceptedPolicies                Boolean                   @default(false)

@@ -36,7 +36,7 @@ export function publicDojoWhere(filters: DojoSearchFilters = {}): Prisma.DojoWhe
   return {
     status: "active",
     approved: true,
-    owner: { emailVerified: true, accountStatus: "active" },
+    owner: { accountStatus: "active" },
     ...(category ? { category: { contains: category, mode: "insensitive" } } : {}),
     ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
     ...(search ? { OR: [

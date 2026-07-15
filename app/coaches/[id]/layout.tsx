@@ -12,7 +12,7 @@ const getPublicCoach = cache((id: string) =>
       id,
       verified: true,
       status: "approved",
-      owner: { emailVerified: true, accountStatus: "active" },
+      owner: { accountStatus: "active" },
     },
     select: {
       name: true,
