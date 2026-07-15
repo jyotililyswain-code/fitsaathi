@@ -1,22 +1,34 @@
 import { Suspense } from "react";
 import CoachDirectory from "@/components/CoachDirectory";
 import { JsonLd } from "@/components/JsonLd";
-import { coachBookingServiceJsonLd, generateSeoMetadata } from "@/lib/seo";
+import {
+  coachBookingServiceJsonLd,
+  generateSeoMetadata,
+  hasSearchParameters,
+} from "@/lib/seo";
 
-export const metadata = generateSeoMetadata({
-  title: "Find Fitness Coaches and Dojos Near You - FitSaathi",
-  description:
-    "Search and book home fitness coaches, personal trainers, yoga trainers, martial arts teachers, and sports coaches near you with FitSaathi.",
-  path: "/find-coach",
-  keywords: [
-    "find coach",
-    "fitness coach near me",
-    "home fitness coach",
-    "personal trainer at home",
-    "yoga trainer",
-    "martial arts coach",
-  ],
-});
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const query = await searchParams;
+  return generateSeoMetadata({
+    title: "Find Fitness Coaches, Gyms and Dojos Near You",
+    description:
+      "Search and book home fitness coaches, personal trainers, yoga trainers, martial arts teachers, and sports coaches near you with TheFitSaathi.",
+    path: "/find-coach",
+    noIndex: hasSearchParameters(query),
+    keywords: [
+      "find coach",
+      "fitness coach near me",
+      "home fitness coach",
+      "personal trainer at home",
+      "yoga trainer",
+      "martial arts coach",
+    ],
+  });
+}
 
 export default function FindCoachPage() {
   return (
@@ -33,7 +45,7 @@ export default function FindCoachPage() {
           Find Fitness Coaches, Gyms and Dojos Near You
         </h1>
         <p className="mt-4 max-w-2xl leading-7 text-zinc-300">
-          Search FitSaathi for personal trainers, martial arts coaches, active gyms and approved sports academies by specialty and city.
+          Search TheFitSaathi for personal trainers, martial arts coaches, active gyms and approved sports academies by specialty and city.
         </p>
       </section>
       <Suspense fallback={<DirectoryLoading label="coaches, gyms and dojos" />}>

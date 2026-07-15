@@ -18,7 +18,7 @@ export function moderateText(value: string) {
 
 export function saferUsername(value: string) {
   const safe = value.replace(/[^a-zA-Z0-9_. ]/g, "").replace(/\s+/g, " ").trim().slice(0, 40);
-  return safe || `FitSaathi Member ${crypto.randomInt(1000, 9999)}`;
+  return safe || `TheFitSaathi Member ${crypto.randomInt(1000, 9999)}`;
 }
 
 export async function inspectPhoto(file: Express.Multer.File) {

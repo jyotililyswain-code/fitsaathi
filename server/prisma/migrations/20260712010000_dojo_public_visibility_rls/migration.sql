@@ -1,4 +1,4 @@
--- Dojo records are managed through the authenticated FitSaathi server.
+-- Dojo records are managed through the authenticated TheFitSaathi server.
 -- Direct Supabase clients may read only the explicitly granted public columns
 -- and only after both moderation fields indicate approval.
 ALTER TABLE public.dojos ENABLE ROW LEVEL SECURITY;

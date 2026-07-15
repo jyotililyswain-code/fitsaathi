@@ -118,7 +118,7 @@ export function PolicyLayout({ policy }: { policy: Policy }) {
 
           <div className="rounded-2xl border border-acid/20 bg-acid/[0.08] p-6">
             <h2 className="text-xl font-semibold text-white">Need help with this policy?</h2>
-            <p className="mt-2 text-zinc-300">Contact FitSaathi support for policy questions, refund reviews, data requests, safety reports, or account issues.</p>
+            <p className="mt-2 text-zinc-300">Contact TheFitSaathi support for policy questions, refund reviews, data requests, safety reports, or account issues.</p>
             <Link href="/contact" className="mt-5 inline-flex rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white">
               Contact support
             </Link>
@@ -134,12 +134,12 @@ export function PolicyFooterLinks() {
     <footer className="border-t border-white/10 bg-black/20 px-4 py-8">
       <div className="mx-auto flex max-w-7xl flex-wrap gap-4 text-sm text-zinc-400">
         {policies.slice(0, 6).map((policy) => (
-          <Link key={policy.slug} href={`/policies/${policy.slug}`} className="transition hover:text-acid">
+          <Link key={policy.slug} href={policy.slug === "privacy" ? "/privacy" : policy.slug === "terms" ? "/terms" : `/policies/${policy.slug}`} className="transition hover:text-acid">
             {policy.title}
           </Link>
         ))}
         <Link href="/contact" className="transition hover:text-acid">Support</Link>
-        <Link href="/about" className="transition hover:text-acid">About FitSaathi</Link>
+        <Link href="/about" className="transition hover:text-acid">About TheFitSaathi</Link>
       </div>
     </footer>
   );

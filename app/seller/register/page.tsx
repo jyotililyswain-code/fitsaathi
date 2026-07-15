@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useSessionUser } from "@/lib/auth-client";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
@@ -46,7 +47,7 @@ export default function SellerRegistrationPage() {
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
       <section>
-        <p className="text-sm text-acid">FitSaathi sellers</p>
+        <p className="text-sm text-acid">TheFitSaathi sellers</p>
         <h1 className="mt-2 text-4xl font-bold text-white">Open your fitness store</h1>
         <p className="mt-4 leading-7 text-zinc-400">Submit your store and identity details. Verification files remain in local private storage.</p>
       </section>
@@ -64,6 +65,13 @@ export default function SellerRegistrationPage() {
         </div>
         <File name="aadhaarImage" label="Aadhaar proof image" />
         <File name="profileImage" label="Store profile image" />
+        <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-zinc-300">
+          <input name="acceptedTerms" type="checkbox" required className="mt-1 accent-acid" />
+          <span>
+            I accept the <Link href="/terms" className="text-acid underline">Terms and Conditions</Link>{" "}
+            and <Link href="/privacy" className="text-acid underline">Privacy Policy</Link>.
+          </span>
+        </label>
         <button disabled={loading} className="mt-5 w-full rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:bg-zinc-700">{loading ? "Submitting securely…" : "Submit seller application"}</button>
         {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
       </form>

@@ -15,7 +15,7 @@ export default function PoliciesPage() {
               <ShieldCheck className="h-4 w-4 text-acid" />
               Policy version {POLICY_VERSION}
             </div>
-            <h1 className="mt-5 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">FitSaathi Policy Center</h1>
+            <h1 className="mt-5 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">TheFitSaathi Policy Center</h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300">
               Clear rules for free registrations, identity verification, coach and dojo bookings, transparent shop totals, safety, conduct, and community trust.
             </p>
@@ -24,7 +24,7 @@ export default function PoliciesPage() {
           <div className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {policies.map((policy, index) => (
               <FadeUp key={policy.slug} delay={Math.min(index * 0.04, 0.24)}>
-                <Link href={`/policies/${policy.slug}`} className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-xl transition hover:-translate-y-1 hover:border-acid/40 hover:shadow-glow">
+                <Link href={policy.slug === "privacy" ? "/privacy" : policy.slug === "terms" ? "/terms" : `/policies/${policy.slug}`} className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.05] p-5 backdrop-blur-xl transition hover:-translate-y-1 hover:border-acid/40 hover:shadow-glow">
                   <div className="flex items-start justify-between gap-4">
                     <h2 className="text-lg font-semibold text-white">{policy.title}</h2>
                     <ArrowRight className="h-5 w-5 flex-none text-zinc-500 transition group-hover:text-acid" />
@@ -41,7 +41,7 @@ export default function PoliciesPage() {
             <p className="mt-2 text-zinc-300">New users must agree to these policies before an account is created.</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {requiredAgreementPolicies.map((policy) => (
-                <Link key={policy.slug} href={`/policies/${policy.slug}`} className="rounded-full border border-white/10 px-3 py-2 text-sm text-zinc-300 transition hover:border-acid/40 hover:text-acid">
+                <Link key={policy.slug} href={policy.slug === "privacy" ? "/privacy" : policy.slug === "terms" ? "/terms" : `/policies/${policy.slug}`} className="rounded-full border border-white/10 px-3 py-2 text-sm text-zinc-300 transition hover:border-acid/40 hover:text-acid">
                   {policy.title}
                 </Link>
               ))}

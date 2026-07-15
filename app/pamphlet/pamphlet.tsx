@@ -55,7 +55,7 @@ export function Pamphlet() {
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
-    QRCode.toDataURL("https://fitsaathi.com/", { width: 360, margin: 1, errorCorrectionLevel: "H", color: { dark: "#0f2744", light: "#ffffff" } }).then(setQr);
+    QRCode.toDataURL("https://thefitsaathi.com/", { width: 360, margin: 1, errorCorrectionLevel: "H", color: { dark: "#0f2744", light: "#ffffff" } }).then(setQr);
   }, []);
 
   async function download() {
@@ -64,7 +64,7 @@ export function Pamphlet() {
     try {
       const dataUrl = await toPng(posterRef.current, { pixelRatio: 2, cacheBust: true, backgroundColor: "#ffffff" });
       const link = document.createElement("a");
-      link.download = "FitSaathi-Pamphlet.png";
+      link.download = "TheFitSaathi-Pamphlet.png";
       link.href = dataUrl;
       link.click();
     } finally { setDownloading(false); }
@@ -73,7 +73,7 @@ export function Pamphlet() {
   return (
     <main className="pamphlet-page min-h-screen bg-[#eaf1f7] px-3 py-8 text-slate-900 sm:px-6 sm:py-12">
       <div className="pamphlet-toolbar mx-auto mb-5 flex max-w-[794px] items-center justify-between gap-4">
-        <div><p className="text-xs font-bold uppercase tracking-[.18em] text-blue-700">Promotional poster</p><h1 className="text-xl font-black text-slate-900">FitSaathi Pamphlet</h1></div>
+        <div><p className="text-xs font-bold uppercase tracking-[.18em] text-blue-700">Promotional poster</p><h1 className="text-xl font-black text-slate-900">TheFitSaathi Pamphlet</h1></div>
         <button onClick={download} disabled={downloading || !qr} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-60">
           <Download className="h-4 w-4" /> {downloading ? "Preparing…" : "Download Pamphlet"}
         </button>
@@ -86,7 +86,7 @@ export function Pamphlet() {
             <div className="absolute inset-y-0 right-0 w-[44%] bg-gradient-to-br from-[#087f5b] to-[#0a9b6d] [clip-path:polygon(30%_0,100%_0,100%_100%,0_100%)]" />
             <div className="relative flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500 shadow-lg"><Dumbbell className="h-7 w-7" /></span><div className="text-[35px] font-black leading-none tracking-[-.04em]">Fit<span className="text-[#a8f000]">Saathi</span></div></div>
+                <div className="flex items-center gap-3"><span className="grid h-12 w-12 place-items-center rounded-2xl bg-orange-500 shadow-lg"><Dumbbell className="h-7 w-7" /></span><div className="text-[35px] font-black leading-none tracking-[-.04em]">TheFit<span className="text-[#a8f000]">Saathi</span></div></div>
                 <p className="mt-6 text-[24px] font-black leading-tight">Your Fitness. Your Journey.<br/><span className="text-[#ffbd59]">Our Saathi.</span></p>
                 <p className="mt-2 text-[11px] font-semibold uppercase tracking-[.2em] text-blue-100">India&apos;s fitness & wellness community</p>
               </div>
@@ -115,7 +115,7 @@ export function Pamphlet() {
             <div className="absolute bottom-0 left-0 h-2 w-full bg-gradient-to-r from-blue-500 via-orange-500 to-emerald-500" />
             <div className="flex h-full items-center justify-between">
               <div className="max-w-[475px]"><p className="text-[10px] font-bold uppercase tracking-[.22em] text-[#a8f000]">One platform. Every fitness goal.</p><h2 className="mt-2 text-[25px] font-black leading-tight">Ready to find your<br/>fitness Saathi?</h2><div className="mt-4 flex gap-5 text-[10px] font-semibold text-blue-100"><span className="flex items-center gap-1.5"><CalendarCheck className="h-4 w-4 text-orange-400"/>Easy booking</span><span className="flex items-center gap-1.5"><Camera className="h-4 w-4 text-orange-400"/>Smart attendance</span><span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-orange-400"/>Verified community</span></div></div>
-              <div className="flex items-center gap-4 rounded-2xl bg-white p-3 text-[#102b4e] shadow-xl">{qr ? <img src={qr} alt="QR code to visit fitsaathi.com" className="h-[112px] w-[112px]"/> : <QrCode className="h-[112px] w-[112px]"/>}<div className="w-[125px]"><p className="text-[13px] font-black leading-tight">Scan to Visit<br/>FitSaathi Now!</p><p className="mt-2 break-all text-[10px] font-bold text-blue-700">fitsaathi.com</p></div></div>
+              <div className="flex items-center gap-4 rounded-2xl bg-white p-3 text-[#102b4e] shadow-xl">{qr ? <img src={qr} alt="QR code to visit thefitsaathi.com" width={112} height={112} className="h-[112px] w-[112px]"/> : <QrCode className="h-[112px] w-[112px]"/>}<div className="w-[125px]"><p className="text-[13px] font-black leading-tight">Scan to Visit<br/>TheFitSaathi Now!</p><p className="mt-2 break-all text-[10px] font-bold text-blue-700">thefitsaathi.com</p></div></div>
             </div>
           </footer>
         </div>

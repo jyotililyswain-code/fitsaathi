@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { GuestOnly } from "@/components/GuestOnly";
 import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
-  title: "Create a FitSaathi Account",
+  title: "Create a TheFitSaathi Account",
   path: "/signup",
   noIndex: true,
 });

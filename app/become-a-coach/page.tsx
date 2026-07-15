@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { CategorySelect } from "@/components/CategorySelect";
@@ -118,7 +119,7 @@ export default function BecomeCoachPage() {
       <section>
         <p className="text-sm text-acid">Become a coach</p>
         <h1 className="mt-2 text-4xl font-bold text-white">Register with real profile details</h1>
-        <p className="mt-4 leading-7 text-zinc-400">Coach registration and customer bookings are completely free. FitSaathi adds no registration fee, booking fee, platform charge, or hidden charge.</p>
+        <p className="mt-4 leading-7 text-zinc-400">Coach registration and customer bookings are completely free. TheFitSaathi adds no registration fee, booking fee, platform charge, or hidden charge.</p>
       </section>
       <form onSubmit={submit} className="rounded-2xl border border-white/10 bg-white/[0.05] p-6">
         <input name="name" required placeholder="Coach name" className="field" />
@@ -126,7 +127,7 @@ export default function BecomeCoachPage() {
         <CategorySelect className="mt-3" />
         <input name="city" required placeholder="City" className="field mt-3" />
         <div className="mt-3 rounded-xl border border-acid/30 bg-acid/10 p-4 text-sm leading-6 text-zinc-200">
-          <strong className="text-acid">Free registration.</strong> Your profile and bookings have a ₹0 FitSaathi charge with no hidden fees.
+          <strong className="text-acid">Free registration.</strong> Your profile and bookings have a ₹0 TheFitSaathi charge with no hidden fees.
         </div>
         <fieldset className="mt-3 rounded-xl border border-white/10 bg-ink p-4">
           <legend className="px-1 text-sm font-medium text-white">Available teaching days</legend>
@@ -144,7 +145,11 @@ export default function BecomeCoachPage() {
         <FileField name="aadharBack" label="Aadhaar back image (optional)" accept="image/png,image/jpeg,image/webp" />
         <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-zinc-300">
           <input name="acceptedTerms" type="checkbox" required className="mt-1 accent-acid" />
-          <span>I confirm these details are accurate and accept the terms and privacy policy.</span>
+          <span>
+            I confirm these details are accurate and accept the{" "}
+            <Link href="/terms" className="text-acid underline">Terms and Conditions</Link>{" "}
+            and <Link href="/privacy" className="text-acid underline">Privacy Policy</Link>.
+          </span>
         </label>
         <button disabled={loading} className="mt-5 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
           {loading ? "Submitting profile..." : "Submit profile"}

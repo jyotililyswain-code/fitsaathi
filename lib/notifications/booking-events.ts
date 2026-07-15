@@ -5,11 +5,11 @@ type BookingEvent = "created" | "accepted" | "rejected" | "cancelled" | "cancell
 
 const copy: Record<BookingEvent, { type: string; title: string; message: string }> = {
   created: { type: "booking_created", title: "New booking received", message: "You received a new customer booking. Open your dashboard to review it." },
-  accepted: { type: "booking_accepted", title: "Booking accepted", message: "Your booking has been accepted. Open FitSaathi to view the details." },
-  rejected: { type: "booking_rejected", title: "Booking not accepted", message: "The provider could not accept this booking. Open FitSaathi for more information." },
-  cancelled: { type: "booking_cancelled", title: "Booking cancelled", message: "A booking has been cancelled. Open FitSaathi to view the updated details." },
-  cancelled_by_provider: { type: "booking_cancelled_by_provider", title: "Booking cancelled by provider", message: "Your provider cancelled this booking. Open FitSaathi for the updated status." },
-  rescheduled: { type: "booking_rescheduled", title: "Booking schedule updated", message: "A booking date or time has been changed. Open FitSaathi to review it." },
+  accepted: { type: "booking_accepted", title: "Booking accepted", message: "Your booking has been accepted. Open TheFitSaathi to view the details." },
+  rejected: { type: "booking_rejected", title: "Booking not accepted", message: "The provider could not accept this booking. Open TheFitSaathi for more information." },
+  cancelled: { type: "booking_cancelled", title: "Booking cancelled", message: "A booking has been cancelled. Open TheFitSaathi to view the updated details." },
+  cancelled_by_provider: { type: "booking_cancelled_by_provider", title: "Booking cancelled by provider", message: "Your provider cancelled this booking. Open TheFitSaathi for the updated status." },
+  rescheduled: { type: "booking_rescheduled", title: "Booking schedule updated", message: "A booking date or time has been changed. Open TheFitSaathi to review it." },
   payment_confirmed: { type: "payment_confirmed", title: "Payment confirmed", message: "Payment for your booking has been confirmed." },
   completed: { type: "booking_completed", title: "Booking completed", message: "Your booking has been marked as completed." },
 };

@@ -44,7 +44,7 @@ export default function CompleteProfilePage() {
           </p>
           <h1 className="mt-3 text-4xl font-black text-white">Complete your profile to find matches</h1>
           <p className="mt-3 max-w-3xl leading-7 text-zinc-300">
-            FitSaathi only shows verified registered users in Interest Match Search. Private documents stay encrypted and are never returned in public APIs.
+            TheFitSaathi only shows verified registered users in Interest Match Search. Private documents stay encrypted and are never returned in public APIs.
           </p>
           <div className="mt-6 rounded-2xl border border-white/10 bg-ink/70 p-4">
             <div className="flex items-center justify-between text-sm">
@@ -86,7 +86,7 @@ export default function CompleteProfilePage() {
 
         <p className="mt-8 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[.04] p-4 text-sm leading-6 text-zinc-400">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-acid" />
-          Once these checks are complete and approved, return to the homepage and use “Find Your FitSaathi by Interest”.
+          Once these checks are complete and approved, return to the homepage and use “Find Your Fitness Partner by Interest”.
         </p>
       </main>
     </AuthGuard>

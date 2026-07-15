@@ -47,7 +47,7 @@ export default function VerificationPage() {
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-acid text-ink"><ShieldCheck /></div>
             <h1 className="mt-5 text-4xl font-black text-white">Verify your identity</h1>
             <p className="mt-4 leading-7 text-zinc-400">
-              Verification is required before your profile appears in FitSaathi Life. Members only see your verified badge, age, gender, interests, bio and public photos.
+              Verification is required before your profile appears in TheFitSaathi Life. Members only see your verified badge, age, gender, interests, bio and public photos.
             </p>
             <div className="mt-6 rounded-2xl border border-acid/20 bg-acid/5 p-5">
               <p className="flex items-center gap-2 font-semibold text-white"><FileLock2 className="text-acid" />Private by design</p>

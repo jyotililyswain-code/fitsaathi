@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { Home, Search, Send } from "lucide-react";
+import { generateSeoMetadata } from "@/lib/seo";
+
+export const metadata = generateSeoMetadata({
+  title: "Page Not Found",
+  description:
+    "The requested TheFitSaathi page could not be found. Browse coaches, dojos, academies and fitness services instead.",
+  noIndex: true,
+});
 
 export default function NotFound() {
   return (

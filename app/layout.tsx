@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
@@ -18,19 +18,35 @@ import { NotificationProvider } from "@/components/notifications/NotificationPro
 export const metadata: Metadata = {
   ...generateSeoMetadata(),
   metadataBase: new URL(siteUrl),
-  title: seoConfig.defaultTitle,
+  title: {
+    default: seoConfig.defaultTitle,
+    template: `%s | ${seoConfig.siteName}`,
+  },
   description: seoConfig.defaultDescription,
-  authors: [{ name: "FitSaathi", url: siteUrl }],
-  creator: "FitSaathi",
-  publisher: "FitSaathi",
+  authors: [{ name: "TheFitSaathi", url: siteUrl }],
+  creator: "TheFitSaathi",
+  publisher: "TheFitSaathi",
+  referrer: "origin-when-cross-origin",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   icons: {
-    icon: [{ url: "/fitsaathi-logo.svg", type: "image/svg+xml" }],
-    shortcut: "/fitsaathi-logo.svg",
-    apple: "/fitsaathi-logo.svg",
+    icon: [{ url: "/thefitsaathi-logo.svg", type: "image/svg+xml" }],
+    shortcut: "/thefitsaathi-logo.svg",
+    apple: "/apple-icon",
   },
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  colorScheme: "dark",
+  themeColor: "#c8ff00",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

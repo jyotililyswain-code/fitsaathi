@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "FitSaathi – Find Fitness Coaches, Gyms and Sports Academies";
+  "TheFitSaathi – Find Fitness Coaches, Gyms and Sports Academies";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -35,10 +35,10 @@ export default function OpenGraphImage() {
                 width: "112px",
               }}
             >
-              FS
+              TFS
             </div>
             <div style={{ color: "#c8ff00", display: "flex", fontSize: "62px", fontWeight: 900 }}>
-              FitSaathi
+              TheFitSaathi
             </div>
           </div>
           <div style={{ display: "flex", fontSize: "58px", fontWeight: 800, lineHeight: 1.12, marginTop: "55px", maxWidth: "1040px" }}>
@@ -48,7 +48,7 @@ export default function OpenGraphImage() {
             Coaches · Martial arts trainers · Gyms · Dojos · Sports academies
           </div>
           <div style={{ color: "#c8ff00", display: "flex", fontSize: "25px", fontWeight: 700, marginTop: "42px" }}>
-            fitsaathi.com
+            thefitsaathi.com
           </div>
         </div>
       </div>

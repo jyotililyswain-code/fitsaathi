@@ -49,7 +49,7 @@ export function ManualUpiPayment({
           <div className="relative h-full w-full overflow-hidden">
             <Image
               src="/payments/phonepe-upi-qr-source.png"
-              alt="PhonePe scanner QR for FitSaathi payment"
+              alt="PhonePe scanner QR for TheFitSaathi payment"
               width={1366}
               height={768}
               unoptimized

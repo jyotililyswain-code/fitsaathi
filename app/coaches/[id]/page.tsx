@@ -58,7 +58,7 @@ export default function CoachProfilePage() {
         </div>
         {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <Info label="FitSaathi booking charge" value="Free — no hidden fees" />
+          <Info label="TheFitSaathi booking charge" value="Free — no hidden fees" />
           <Info label="Rating" value={data?.rating ? String(data.rating) : "No reviews yet"} />
           <Info label="City" value={data?.city || "Not set"} />
         </div>

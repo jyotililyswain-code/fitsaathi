@@ -3,17 +3,17 @@ import type { Metadata } from "next";
 // SEO URLs must never depend on VERCEL_URL or a Preview environment variable.
 // The production origin is deliberately pinned so canonicals, structured data,
 // robots.txt and sitemap.xml always agree.
-export const siteUrl = "https://fitsaathi.com";
+export const siteUrl = "https://thefitsaathi.com";
 
 export const seoConfig = {
-  siteName: "FitSaathi",
+  siteName: "TheFitSaathi",
   siteUrl,
   defaultTitle:
-    "FitSaathi – Find Fitness Coaches, Gyms and Sports Academies",
+    "TheFitSaathi – Find Fitness Coaches, Gyms and Sports Academies",
   defaultDescription:
-    "FitSaathi helps people discover fitness coaches, personal trainers, martial arts trainers, gyms, dojos and sports academies across India.",
+    "Find fitness coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services with TheFitSaathi.",
   defaultKeywords: [
-    "FitSaathi",
+    "TheFitSaathi",
     "fitness coach near me",
     "home fitness coach",
     "personal trainer at home",
@@ -25,7 +25,7 @@ export const seoConfig = {
     "personal training India",
   ],
   defaultOpenGraphImage: "/opengraph-image",
-  logo: "/fitsaathi-logo.svg",
+  logo: "/thefitsaathi-logo.svg",
 } as const;
 
 type SeoMetadataInput = {
@@ -42,10 +42,41 @@ export function absoluteUrl(path = "/") {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+export function seoImageUrl(
+  path: string = seoConfig.defaultOpenGraphImage,
+) {
+  const value = path.trim();
+  if (/^(?:data|blob):/i.test(value)) {
+    return absoluteUrl(seoConfig.defaultOpenGraphImage);
+  }
+  if (/^https?:\/\//i.test(value)) {
+    const parsed = new URL(value);
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === "fitsaathi.com" ||
+      hostname === "www.fitsaathi.com" ||
+      hostname === "www.thefitsaathi.com" ||
+      hostname.endsWith(".vercel.app")
+    ) {
+      return `${siteUrl}${parsed.pathname}${parsed.search}`;
+    }
+    return value;
+  }
+  return absoluteUrl(value);
+}
+
 export function canonicalUrl(path = "/") {
   const parsed = new URL(path, siteUrl);
   const pathname = parsed.pathname === "/" ? "/" : parsed.pathname.replace(/\/$/, "");
   return `${siteUrl}${pathname}`;
+}
+
+export function hasSearchParameters(
+  searchParams: Record<string, string | string[] | undefined>,
+) {
+  return Object.values(searchParams).some((value) =>
+    Array.isArray(value) ? value.length > 0 : Boolean(value),
+  );
 }
 
 export function generateSeoMetadata({
@@ -57,10 +88,12 @@ export function generateSeoMetadata({
   noIndex = false,
 }: SeoMetadataInput = {}): Metadata {
   const canonical = canonicalUrl(path);
-  const imageUrl = absoluteUrl(image);
+  const imageUrl = seoImageUrl(image);
+  const includesBrand = title.includes(seoConfig.siteName);
+  const documentTitle = includesBrand ? title : `${title} | ${seoConfig.siteName}`;
 
   return {
-    title,
+    title: { absolute: documentTitle },
     description,
     keywords,
     alternates: { canonical },
@@ -71,18 +104,21 @@ export function generateSeoMetadata({
       siteName: seoConfig.siteName,
       locale: "en_IN",
       url: canonical,
-      title,
+      title: documentTitle,
       description,
       images: [
         {
           url: imageUrl,
-          alt: `${seoConfig.siteName} fitness coach booking platform`,
+          ...(image === seoConfig.defaultOpenGraphImage
+            ? { width: 1200, height: 630, type: "image/png" }
+            : {}),
+          alt: `${documentTitle} social preview image`,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title,
+      title: documentTitle,
       description,
       images: [imageUrl],
     },
@@ -115,9 +151,11 @@ export const organizationJsonLd = {
   logo: {
     "@type": "ImageObject",
     url: absoluteUrl(seoConfig.logo),
+    width: 512,
+    height: 512,
   },
   description:
-    "FitSaathi helps people find fitness coaches, martial arts trainers, gyms, dojos and sports academies across India.",
+    "TheFitSaathi helps people find fitness coaches, martial arts trainers, gyms, dojos and sports academies across India.",
   areaServed: { "@type": "Country", name: "India" },
 };
 
@@ -149,8 +187,6 @@ type SportsLocationInput = {
   category: string;
   description?: string | null;
   image?: string | null;
-  phoneNumber?: string | null;
-  isPhoneVerified?: boolean;
   address?: string | null;
   city?: string | null;
   state?: string | null;
@@ -158,6 +194,9 @@ type SportsLocationInput = {
 };
 
 export function sportsActivityLocationJsonLd(location: SportsLocationInput) {
+  const image = location.image && !/^(?:data|blob):/i.test(location.image)
+    ? seoImageUrl(location.image)
+    : undefined;
   const postalAddress = {
     "@type": "PostalAddress",
     ...(location.address ? { streetAddress: location.address } : {}),
@@ -177,10 +216,22 @@ export function sportsActivityLocationJsonLd(location: SportsLocationInput) {
       location.description ||
       `${location.name} offers ${location.category} training${location.city ? ` in ${location.city}` : ""}.`,
     sport: location.category,
-    ...(location.image ? { image: absoluteUrl(location.image) } : {}),
-    ...(location.isPhoneVerified && location.phoneNumber
-      ? { telephone: location.phoneNumber }
-      : {}),
+    ...(image ? { image } : {}),
     address: postalAddress,
+  };
+}
+
+export function breadcrumbJsonLd(
+  items: Array<{ name: string; path: string }>,
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: canonicalUrl(item.path),
+    })),
   };
 }

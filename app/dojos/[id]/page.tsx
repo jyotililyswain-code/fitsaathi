@@ -50,7 +50,7 @@ export default function DojoProfilePage() {
         </div>
         <p className="mt-2 text-zinc-400">{data?.category || "Category not set"} {data?.city ? `in ${data.city}` : ""}</p>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <Info label="FitSaathi booking charge" value="Free — no hidden fees" />
+          <Info label="TheFitSaathi booking charge" value="Free — no hidden fees" />
           <Info label="Rating" value={data?.rating ? String(data.rating) : "No reviews yet"} />
           <Info label="City" value={data?.city || "Not set"} />
         </div>

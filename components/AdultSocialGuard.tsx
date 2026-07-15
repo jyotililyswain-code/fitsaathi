@@ -50,7 +50,7 @@ function AccessMessage({ message }: { message: string }) {
       <section className="rounded-2xl border border-amber-400/20 bg-white/[0.05] p-6">
         <h1 className="text-3xl font-bold text-white">Match Making unavailable</h1>
         <p role="alert" className="mt-3 leading-7 text-zinc-300">{message}</p>
-        <p className="mt-3 text-sm leading-6 text-zinc-500">Your FitSaathi account and all other website features remain available.</p>
+        <p className="mt-3 text-sm leading-6 text-zinc-500">Your TheFitSaathi account and all other website features remain available.</p>
       </section>
     </main>
   );

@@ -1,4 +1,4 @@
--- FitSaathi verified-email accounts and reliable booking notifications.
+-- TheFitSaathi verified-email accounts and reliable booking notifications.
 -- This migration is additive except for deleting legacy application password hashes;
 -- Supabase Auth is the only password authority after this deployment.
 
@@ -128,7 +128,7 @@ ALTER TABLE public.notifications
   ADD COLUMN IF NOT EXISTS "expiresAt" timestamptz;
 
 UPDATE public.notifications
-SET title = 'FitSaathi update'
+SET title = 'TheFitSaathi update'
 WHERE title IS NULL OR btrim(title) = '';
 ALTER TABLE public.notifications ALTER COLUMN title SET NOT NULL;
 

@@ -43,7 +43,7 @@ export default function DojoDashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-4xl font-bold text-white">{registration.data?.establishmentType === "GYM" ? "Gym owner dashboard" : "Dojo owner dashboard"}</h1>
-            <p className="mt-3 text-zinc-400">Manage your academy, classes, timings, and free FitSaathi bookings. Registration and bookings have no platform or hidden charges.</p>
+            <p className="mt-3 text-zinc-400">Manage your academy, classes, timings, and free TheFitSaathi bookings. Registration and bookings have no platform or hidden charges.</p>
           </div>
           {registration.data?.id ? (
             <Link href={`/owner/dojos/${registration.data.id}/edit`} className="focus-ring inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full border border-acid/40 px-4 py-2.5 text-sm font-semibold text-acid transition hover:bg-acid hover:text-ink sm:w-auto">

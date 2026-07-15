@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 import { CategorySelect } from "@/components/CategorySelect";
 import { useSessionUser } from "@/lib/auth-client";
@@ -172,7 +173,11 @@ export default function RegisterDojoPage() {
         </> : null}
         <label className="mt-4 flex items-start gap-3 text-sm leading-6 text-zinc-300">
           <input name="acceptedTerms" type="checkbox" required className="mt-1 accent-acid" />
-          <span>I confirm these business details are accurate and accept the terms and privacy policy.</span>
+          <span>
+            I confirm these business details are accurate and accept the{" "}
+            <Link href="/terms" className="text-acid underline">Terms and Conditions</Link>{" "}
+            and <Link href="/privacy" className="text-acid underline">Privacy Policy</Link>.
+          </span>
         </label>
         <button disabled={loading} className="mt-5 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
           {loading ? "Submitting registration..." : "Register Dojo / Gym"}

@@ -15,7 +15,8 @@ export default async function handler(request: NextApiRequest, response: NextApi
     console.error("api.catch_all_failed", error);
     if (!response.headersSent) {
       response.status(500).json({
-        error: "The API could not start. Check DATABASE_URL or POSTGRES_URL in Vercel environment variables."
+        error: "The API could not start. Please try again shortly.",
+        code: "API_STARTUP_FAILED"
       });
     }
   }

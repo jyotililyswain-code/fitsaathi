@@ -125,7 +125,7 @@ export default function DojoDirectory() {
           href="/contact"
           className="rounded-lg border border-white/15 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-acid/50 hover:text-acid"
         >
-          Contact FitSaathi support
+          Contact TheFitSaathi support
         </Link>
       </nav>
     </main>

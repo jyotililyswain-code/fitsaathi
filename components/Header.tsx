@@ -11,7 +11,7 @@ import { OwnerPopover } from "@/components/OwnerPopover";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const nav = [
-  ["Home", "/home"],
+  ["Home", "/"],
   ["Find Fitness Partner", "/life"],
   ["Find Coach", "/find-coach"],
   ["Become a Coach", "/become-a-coach"],
@@ -49,10 +49,10 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-white/10 bg-ink/75 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-screen-2xl items-center justify-between gap-1 px-2 py-3 min-[360px]:px-3 sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
         <Link
-          href="/home"
+          href="/"
           className="text-xl font-bold tracking-tight text-white"
         >
-          Fit<span className="text-acid">Saathi</span>
+          TheFit<span className="text-acid">Saathi</span>
         </Link>
         <div
           className="hidden min-w-0 flex-1 items-center justify-center gap-3 overflow-hidden px-3 text-xs font-medium text-zinc-300 2xl:flex"

@@ -132,10 +132,10 @@ export default function OnboardingPage() {
                   India&apos;s verified fitness social network
                 </div>
                 <h1 className="mt-6 max-w-3xl text-5xl font-black leading-[1.02] text-white sm:text-7xl">
-                  FitSaathi – Find Fitness Coaches, Gyms and Sports Academies
+                  TheFitSaathi – Find Fitness Coaches, Gyms and Sports Academies
                 </h1>
                 <p className="mt-6 max-w-xl text-lg leading-8 text-zinc-300">
-                  FitSaathi helps you discover fitness coaches, personal
+                  TheFitSaathi helps you discover fitness coaches, personal
                   trainers, martial arts trainers, gyms, dojos and sports
                   academies across India, with clear provider profiles and
                   simple booking requests.

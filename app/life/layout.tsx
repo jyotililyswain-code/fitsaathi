@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { AdultSocialGuard } from "@/components/AdultSocialGuard";
 import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
-  title: "Private Fitness Community - FitSaathi",
+  title: "Private Fitness Community - TheFitSaathi",
   path: "/life",
   noIndex: true,
 });

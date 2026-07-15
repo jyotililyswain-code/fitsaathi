@@ -22,7 +22,7 @@ export class SupabaseAuthOperationError extends Error {
 }
 
 function siteRedirect(path: string) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.FRONTEND_ORIGIN || "https://fitsaathi.com";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.FRONTEND_ORIGIN || "https://thefitsaathi.com";
   return siteUrl ? new URL(path, siteUrl).toString() : undefined;
 }
 
@@ -109,7 +109,7 @@ export async function createSupabaseAuthUser(input: AuthUserInput) {
     throw new SupabaseAuthOperationError(
       "EMAIL_CONFIRMATION_DISABLED",
       503,
-      "Email verification is not configured correctly. Please contact FitSaathi support.",
+      "Email verification is not configured correctly. Please contact TheFitSaathi support.",
     );
   }
   return data.user;

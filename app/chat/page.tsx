@@ -76,7 +76,7 @@ export default function ChatPage() {
               </Link>
             ))
           ) : (
-            <EmptyState title="No chats yet" body="Accept an invite from FitSaathi Life to unlock your first safe chat." />
+            <EmptyState title="No chats yet" body="Accept an invite from TheFitSaathi Life to unlock your first safe chat." />
           )}
         </div>
       </main>

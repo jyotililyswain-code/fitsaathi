@@ -58,7 +58,7 @@ export default function InvitesPage() {
                     {person?.profilePhotos?.[0]?.path ? <img src={socialAsset(person.profilePhotos[0].path)} alt="" className="h-full w-full object-cover" /> : person?.name?.[0] || "F"}
                   </div>
                   <div>
-                    <p className="font-bold text-white">{person?.name || "FitSaathi member"}</p>
+                    <p className="font-bold text-white">{person?.name || "TheFitSaathi member"}</p>
                     <p className="text-sm text-zinc-400">{item.message || "Fitness connection invite"}</p>
                     <p className="mt-1 inline-flex items-center gap-1 text-xs capitalize text-acid">
                       <Clock3 className="h-3 w-3" />
@@ -83,7 +83,7 @@ export default function InvitesPage() {
               </article>
             );
           }) : (
-            <EmptyState title="No invites yet" body="Explore FitSaathi Life and invite someone with shared interests." />
+            <EmptyState title="No invites yet" body="Explore TheFitSaathi Life and invite someone with shared interests." />
           )}
         </div>
       </main>

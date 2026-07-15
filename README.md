@@ -1,8 +1,8 @@
-# FitSaathi
+# TheFitSaathi
 
 Production deployment instructions for mandatory email verification and booking notifications are in [PRODUCTION_AUTH_NOTIFICATIONS.md](./PRODUCTION_AUTH_NOTIFICATIONS.md).
 
-FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, and Vercel Blob. Account and provider registration, identity verification, and coach or dojo booking are free, with no platform or hidden charges. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
+TheFitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, and Vercel Blob. Account and provider registration, identity verification, and coach or dojo booking are free, with no platform or hidden charges. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
 
 ## Run locally
 
@@ -35,7 +35,7 @@ Copy `.env.example` to `.env` and configure:
 
 Optional external services:
 
-- `NEXT_PUBLIC_SITE_URL`: set to the canonical production origin `https://fitsaathi.com`.
+- `NEXT_PUBLIC_SITE_URL`: set to the canonical production origin `https://thefitsaathi.com`.
 - `NEXT_PUBLIC_GA_ID`: optional Google Analytics measurement ID.
 
 ## Database commands
@@ -64,7 +64,7 @@ The integration suites cover every Prisma model plus authentication, provider re
 
 ## Free services and marketplace purchases
 
-FitSaathi does not charge for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. These flows do not require a wallet recharge, UPI transfer, transaction ID, payment screenshot, platform fee, or hidden charge.
+TheFitSaathi does not charge for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. These flows do not require a wallet recharge, UPI transfer, transaction ID, payment screenshot, platform fee, or hidden charge.
 
 Marketplace product purchases remain separate. Before a shop order is placed, the customer must see the product total, delivery total, and any other mandatory order amount. Shop order payment, receipt, and refund records must never be used to gate or activate the free registration, verification, or booking flows.
 

@@ -145,19 +145,19 @@ const seoServiceSections = [
   ],
   [
     "Book Home Fitness Training",
-    "FitSaathi makes it easier to connect with coaches for home training, fitness guidance, martial arts practice, and personal workout support.",
+    "TheFitSaathi makes it easier to connect with coaches for home training, fitness guidance, martial arts practice, and personal workout support.",
   ],
   [
     "Register Your Dojo or Academy",
-    "Dojos, martial arts academies, yoga centers, and fitness trainers can register on FitSaathi to reach more students.",
+    "Dojos, martial arts academies, yoga centers, and fitness trainers can register on TheFitSaathi to reach more students.",
   ],
   [
     "Join as a Coach",
-    "Fitness coaches, personal trainers, yoga teachers, karate coaches, boxing coaches, and martial arts instructors can join FitSaathi and grow their coaching work.",
+    "Fitness coaches, personal trainers, yoga teachers, karate coaches, boxing coaches, and martial arts instructors can join TheFitSaathi and grow their coaching work.",
   ],
   [
     "Fitness Marketplace for India",
-    "FitSaathi is built for people in India who want easier access to fitness coaching, martial arts classes, dojos, and fitness products.",
+    "TheFitSaathi is built for people in India who want easier access to fitness coaching, martial arts classes, dojos, and fitness products.",
   ],
 ] as const;
 
@@ -260,7 +260,7 @@ export default function HomePage() {
         method: "POST",
         body: JSON.stringify({
           recipientId: userId,
-          message: "Let's connect through FitSaathi Interest Match.",
+          message: "Let's connect through TheFitSaathi Interest Match.",
         }),
       });
       setMatchMessage("Invite sent. Chat will unlock after they accept.");
@@ -287,10 +287,10 @@ export default function HomePage() {
             India&apos;s fitness social platform
           </p>
           <h1 className="mt-6 text-5xl font-black leading-tight text-white sm:text-7xl">
-            Explore Fitness Coaches and Academies with FitSaathi
+            Explore Fitness Coaches and Academies with TheFitSaathi
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
-            FitSaathi helps you discover home fitness coaches, personal
+            TheFitSaathi helps you discover home fitness coaches, personal
             trainers, yoga teachers, martial arts trainers, dojos, and fitness
             services in one place.
           </p>
@@ -341,7 +341,7 @@ export default function HomePage() {
               href="/life"
               className="inline-flex items-center gap-2 rounded-full bg-acid px-6 py-4 font-bold text-ink"
             >
-              Explore FitSaathi Life <ArrowRight className="h-5 w-5" />
+              Explore TheFitSaathi Life <ArrowRight className="h-5 w-5" />
             </Link>
             <Link
               href="/find-coach"
@@ -374,7 +374,7 @@ export default function HomePage() {
                 Interest Match Search
               </p>
               <h2 className="mt-3 text-3xl font-black text-white sm:text-5xl">
-                Find Your FitSaathi by Interest
+                Find Your Fitness Partner by Interest
               </h2>
               <p className="mt-3 max-w-3xl leading-7 text-zinc-300">
                 This is separate from normal search. It searches only verified
@@ -445,7 +445,7 @@ export default function HomePage() {
                     {profile.photos[0] ? (
                       <Image
                         src={socialAsset(profile.photos[0])}
-                        alt={`${profile.name} FitSaathi fitness profile`}
+                        alt={`${profile.name} TheFitSaathi fitness profile`}
                         fill
                         unoptimized
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -470,7 +470,7 @@ export default function HomePage() {
                       {profile.gender} · {profile.city || "City not shared"}
                     </p>
                     <p className="mt-3 line-clamp-2 text-sm leading-6 text-zinc-300">
-                      {profile.shortBio || "Verified FitSaathi member."}
+                      {profile.shortBio || "Verified TheFitSaathi member."}
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {profile.interests.slice(0, 4).map((item) => (
@@ -500,7 +500,7 @@ export default function HomePage() {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[.22em] text-acid">
-              Everything FitSaathi can do
+              Everything TheFitSaathi can do
             </p>
             <h2 className="mt-2 text-3xl font-black text-white sm:text-4xl">
               Pick a flow and continue.
@@ -601,7 +601,7 @@ export default function HomePage() {
         <div className="mt-8 grid gap-6 border-y border-white/10 py-8 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
             <h2 className="text-2xl font-bold text-white">
-              Why choose FitSaathi?
+              Why choose TheFitSaathi?
             </h2>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {seoBenefits.map((benefit) => (
@@ -653,7 +653,7 @@ export default function HomePage() {
               href="/contact"
               className="rounded-lg border border-white/15 px-5 py-3 font-semibold text-white transition hover:border-acid/50 hover:text-acid"
             >
-              Contact FitSaathi
+              Contact TheFitSaathi
             </Link>
           </div>
         </div>
@@ -717,7 +717,7 @@ export default function HomePage() {
               href="/signup"
               className="inline-flex rounded-full bg-acid px-6 py-3 font-bold text-ink"
             >
-              Join FitSaathi
+              Join TheFitSaathi
             </Link>
             <Link
               href="/register-seller"
@@ -801,7 +801,7 @@ function LiveSupabaseStats({
             Live from Supabase
           </p>
           <h2 className="mt-2 text-2xl font-black text-white">
-            FitSaathi activity
+            TheFitSaathi activity
           </h2>
         </div>
         <span

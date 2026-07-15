@@ -95,7 +95,7 @@ export function CustomerCareModal({ open, onClose }: { open: boolean; onClose: (
           <Headphones className="h-6 w-6" aria-hidden="true" />
         </span>
         <h2 id="customer-care-title" className="mt-5 pr-12 text-2xl font-bold text-white">Customer Care</h2>
-        <p className="mt-3 text-zinc-300">Need help? Contact FitSaathi support.</p>
+        <p className="mt-3 text-zinc-300">Need help? Contact TheFitSaathi support.</p>
 
         <div className="mt-6 divide-y divide-white/10 rounded-lg border border-white/10 bg-white/[0.03] px-4">
           <div className="flex items-start gap-3 py-4">

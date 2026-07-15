@@ -15,7 +15,7 @@ export function CoachCard({ coach }: { coach: Coach }) {
         {coach.photoUrl ? (
           <Image
             src={coach.photoUrl}
-            alt={`${coach.name} fitness coach on FitSaathi`}
+            alt={`${coach.name} fitness coach on TheFitSaathi`}
             fill
             unoptimized
             sizes="(max-width: 768px) 100vw, 33vw"

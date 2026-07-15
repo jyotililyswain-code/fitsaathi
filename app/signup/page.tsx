@@ -106,7 +106,7 @@ export default function SignupPage() {
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <div className="mb-8">
         <AuthModeTabs current="signup" />
-        <p className="mt-6 text-sm font-semibold uppercase tracking-[.22em] text-acid">Create your FitSaathi identity</p>
+        <p className="mt-6 text-sm font-semibold uppercase tracking-[.22em] text-acid">Create your TheFitSaathi identity</p>
         <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">Tell us how you move.</h1>
         <p className="mt-3 text-zinc-400">Your public profile is separate from private verification documents. Registration and verification are free, with no charges or hidden fees.</p>
         <div className="mt-6 grid gap-2 sm:grid-cols-4">
@@ -188,8 +188,8 @@ export default function SignupPage() {
         </Section>
 
         <div className="mt-7 grid gap-3 text-sm text-zinc-300">
-          <Agreement checked={acceptedTerms} setChecked={setAcceptedTerms}>I accept the <Link className="text-acid" href="/policies/terms">Terms & Conditions</Link>.</Agreement>
-          <Agreement checked={acceptedPrivacy} setChecked={setAcceptedPrivacy}>I accept the <Link className="text-acid" href="/policies/privacy">Privacy Policy</Link> and private verification processing.</Agreement>
+          <Agreement checked={acceptedTerms} setChecked={setAcceptedTerms}>I accept the <Link className="text-acid" href="/terms">Terms & Conditions</Link>.</Agreement>
+          <Agreement checked={acceptedPrivacy} setChecked={setAcceptedPrivacy}>I accept the <Link className="text-acid" href="/privacy">Privacy Policy</Link> and private verification processing.</Agreement>
         </div>
         <button disabled={loading} className="mt-7 w-full rounded-xl bg-acid px-5 py-4 font-bold text-ink disabled:opacity-50">{loading ? "Creating secure profile..." : "Continue to verification"}</button>
         {message ? <p role="alert" className="mt-4 text-sm text-red-300">{message}</p> : null}

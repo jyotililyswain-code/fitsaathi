@@ -1,7 +1,21 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { cache } from "react";
+import { JsonLd } from "@/components/JsonLd";
 import { prisma } from "@/lib/prisma";
-import { generateSeoMetadata } from "@/lib/seo";
+import { breadcrumbJsonLd, generateSeoMetadata } from "@/lib/seo";
+
+const getPublicSeller = cache((id: string) =>
+  prisma.seller.findFirst({
+    where: {
+      id,
+      status: { in: ["verified", "trusted"] },
+      owner: { emailVerified: true, accountStatus: "active" },
+    },
+    select: { storeName: true, bio: true, profilePath: true },
+  }),
+);
 
 export async function generateMetadata({
   params,
@@ -10,37 +24,39 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   try {
-    const seller = await prisma.seller.findFirst({
-      where: {
-        id,
-        status: { in: ["verified", "trusted"] },
-        owner: { emailVerified: true, accountStatus: "active" },
-      },
-      select: { storeName: true, bio: true, profilePath: true },
-    });
-    if (!seller)
-      return generateSeoMetadata({
-        title: "Fitness Seller - FitSaathi",
-        path: `/sellers/${id}`,
-        noIndex: true,
-      });
+    const seller = await getPublicSeller(id);
+    if (!seller) notFound();
     return generateSeoMetadata({
-      title: `${seller.storeName} - Fitness Seller on FitSaathi`,
+      title: `${seller.storeName} – Fitness Seller`,
       description:
         seller.bio ||
-        `Browse approved fitness products from ${seller.storeName} on FitSaathi.`,
+        `Browse approved fitness products from ${seller.storeName} on TheFitSaathi.`,
       path: `/sellers/${id}`,
       image: seller.profilePath || undefined,
     });
   } catch {
-    return generateSeoMetadata({
-      title: "Fitness Seller - FitSaathi",
-      path: `/sellers/${id}`,
-      noIndex: true,
-    });
+    notFound();
   }
 }
 
-export default function SellerLayout({ children }: { children: ReactNode }) {
-  return children;
+export default async function SellerLayout({ children, params }: { children: ReactNode; params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  let seller;
+  try {
+    seller = await getPublicSeller(id);
+  } catch {
+    notFound();
+  }
+  if (!seller) notFound();
+
+  return (
+    <>
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Fitness Shop", path: "/shop" },
+        { name: seller.storeName, path: `/sellers/${id}` },
+      ])} />
+      {children}
+    </>
+  );
 }

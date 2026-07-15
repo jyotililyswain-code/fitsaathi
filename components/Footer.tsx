@@ -7,7 +7,8 @@ import { CustomerCareButton } from "@/components/CustomerCareModal";
 import { ReportProblemButton } from "@/components/ReportProblem";
 
 const footerLinks = [
-  ["Home", "/home"],
+  ["Home", "/"],
+  ["About", "/about"],
   ["Find Coach", "/find-coach"],
   ["Become a Coach", "/become-a-coach"],
   ["Register Seller", "/register-seller"],
@@ -18,6 +19,7 @@ const footerLinks = [
   ["FAQ", "/faq"],
   ["Privacy", "/privacy"],
   ["Terms", "/terms"],
+  ["Refund Policy", "/policies/refunds"],
 ] as const;
 
 export function Footer() {
@@ -28,8 +30,8 @@ export function Footer() {
     <footer className="border-t border-white/10 bg-black/20">
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_1.5fr_1fr] lg:px-8">
         <div>
-          <Link href="/home" className="text-lg font-bold text-white">
-            Fit<span className="text-acid">Saathi</span>
+          <Link href="/" className="text-lg font-bold text-white">
+            TheFit<span className="text-acid">Saathi</span>
           </Link>
           <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-500">
             Fitness support, safety, and trusted connections.
@@ -54,7 +56,7 @@ export function Footer() {
         </nav>
 
         <address className="not-italic">
-          <p className="text-sm font-semibold text-white">FitSaathi support</p>
+          <p className="text-sm font-semibold text-white">TheFitSaathi support</p>
           <a
             href="mailto:priyanshuswain2000@gmail.com"
             className="mt-3 flex items-start gap-2 break-all text-sm text-zinc-400 transition hover:text-acid"

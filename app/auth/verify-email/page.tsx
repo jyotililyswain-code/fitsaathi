@@ -51,7 +51,7 @@ export default function VerifyEmailPage() {
       sessionStorage.removeItem("fitsaathi_pending_email");
       sessionStorage.removeItem("fitsaathi_registration_intent");
       setSuccess(true);
-      setMessage("Email verified. Opening your FitSaathi account…");
+      setMessage("Email verified. Opening your TheFitSaathi account…");
       notifyAuthChanged();
       window.setTimeout(() => {
         router.replace(result.redirectTo || "/dashboard");
@@ -112,7 +112,7 @@ export default function VerifyEmailPage() {
         <Logo />
         <p className="mt-7 text-xs font-bold uppercase tracking-[.22em] text-acid">Account security</p>
         <h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">Verify your email</h1>
-        <p className="mx-auto mt-3 max-w-md leading-7 text-zinc-400">We sent a six-digit verification code to <strong className="text-zinc-200">{maskEmail(email)}</strong>. Enter the code below to activate your FitSaathi account.</p>
+        <p className="mx-auto mt-3 max-w-md leading-7 text-zinc-400">We sent a six-digit verification code to <strong className="text-zinc-200">{maskEmail(email)}</strong>. Enter the code below to activate your TheFitSaathi account.</p>
         <div className="mt-7"><OtpInput value={otp} onChange={setOtp} disabled={loading || success} /></div>
         <button type="button" onClick={verify} disabled={loading || success || otp.length !== 6} className="mt-7 w-full rounded-xl bg-acid px-5 py-3.5 font-bold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
           {loading ? "Verifying…" : success ? "Email verified" : "Verify email"}
@@ -132,5 +132,5 @@ export default function VerifyEmailPage() {
 }
 
 function Logo() {
-  return <Link href="/home" aria-label="FitSaathi home" className="inline-flex text-2xl font-black tracking-tight text-white">Fit<span className="text-acid">Saathi</span></Link>;
+  return <Link href="/home" aria-label="TheFitSaathi home" className="inline-flex text-2xl font-black tracking-tight text-white">TheFit<span className="text-acid">Saathi</span></Link>;
 }

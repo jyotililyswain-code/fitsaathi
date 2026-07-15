@@ -20,13 +20,13 @@ export const policies: Policy[] = [
   {
     slug: "terms",
     title: "Terms & Conditions",
-    summary: "The core rules for using FitSaathi, including free registrations, identity verification, and coach or dojo bookings.",
+    summary: "The core rules for using TheFitSaathi, including free registrations, identity verification, and coach or dojo bookings.",
     lastUpdated: "July 12, 2026",
     sections: [
       {
         id: "platform-overview",
         title: "Platform Overview",
-        body: ["FitSaathi acts as a platform connecting customers with fitness professionals, martial arts coaches, trainers, and dojos. Coaches and dojos are independent service providers, not employees of FitSaathi."]
+        body: ["TheFitSaathi acts as a platform connecting customers with fitness professionals, martial arts coaches, trainers, and dojos. Coaches and dojos are independent service providers, not employees of TheFitSaathi."]
       },
       {
         id: "user-responsibilities",
@@ -41,7 +41,7 @@ export const policies: Policy[] = [
       {
         id: "booking-rules",
         title: "Booking Rules",
-        body: ["Creating and confirming a coach or dojo booking request on FitSaathi is free. FitSaathi does not add a booking fee, platform commission, checkout charge, or hidden charge to these bookings. Scheduling, cancellations, replacements, and attendance records must still follow the applicable platform rules."]
+        body: ["Creating and confirming a coach or dojo booking request on TheFitSaathi is free. TheFitSaathi does not add a booking fee, platform commission, checkout charge, or hidden charge to these bookings. Scheduling, cancellations, replacements, and attendance records must still follow the applicable platform rules."]
       },
       {
         id: "free-platform-services",
@@ -51,46 +51,46 @@ export const policies: Policy[] = [
       {
         id: "prohibited-activities",
         title: "Prohibited Activities",
-        body: ["Harassment, fraud, unsafe training, spam, abusive messages, marketplace order manipulation, fake complaints, fake reviews, and attempts to misuse FitSaathi systems are not allowed."]
+        body: ["Harassment, fraud, unsafe training, spam, abusive messages, marketplace order manipulation, fake complaints, fake reviews, and attempts to misuse TheFitSaathi systems are not allowed."]
       },
       {
         id: "account-suspension",
         title: "Account Suspension",
-        body: ["FitSaathi may restrict, suspend, or remove accounts that violate platform rules, create safety risks, manipulate reliability systems, or harm the trust of the marketplace."]
+        body: ["TheFitSaathi may restrict, suspend, or remove accounts that violate platform rules, create safety risks, manipulate reliability systems, or harm the trust of the marketplace."]
       },
       {
         id: "intellectual-property",
         title: "Intellectual Property",
-        body: ["FitSaathi branding, interface design, content, data presentation, and platform materials belong to FitSaathi or its licensors. Users may not copy or misuse them without written permission."]
+        body: ["TheFitSaathi branding, interface design, content, data presentation, and platform materials belong to TheFitSaathi or its licensors. Users may not copy or misuse them without written permission."]
       },
       {
         id: "liability-limitations",
         title: "Liability Limitations",
-        body: ["Fitness activity carries risk. FitSaathi is not responsible for injuries, losses, service disputes, or outcomes arising from independent coach or dojo sessions except where required by applicable law."],
+        body: ["Fitness activity carries risk. TheFitSaathi is not responsible for injuries, losses, service disputes, or outcomes arising from independent coach or dojo sessions except where required by applicable law."],
         variant: "warning"
       },
       {
         id: "dispute-handling",
         title: "Dispute Handling",
-        body: ["Users should report disputes through official support channels. FitSaathi may review attendance logs, booking details, marketplace order records, messages, and provider records before taking action."]
+        body: ["Users should report disputes through official support channels. TheFitSaathi may review attendance logs, booking details, marketplace order records, messages, and provider records before taking action."]
       },
       {
         id: "modification-rights",
         title: "Modification Rights",
-        body: ["FitSaathi may update these terms and require users to accept a new policy version before continuing to use protected services."]
+        body: ["TheFitSaathi may update these terms and require users to accept a new policy version before continuing to use protected services."]
       }
     ]
   },
   {
     slug: "privacy",
     title: "Privacy Policy",
-    summary: "How FitSaathi collects, uses, protects, and processes personal data.",
+    summary: "How TheFitSaathi collects, uses, protects, and processes personal data.",
     lastUpdated: "July 12, 2026",
     sections: [
       {
         id: "data-collection",
         title: "Data Collection",
-        body: ["FitSaathi collects information needed to create accounts, review identities, operate bookings, process marketplace orders, improve safety, prevent abuse, and provide customer support."]
+        body: ["TheFitSaathi collects information needed to create accounts, review identities, operate bookings, process marketplace orders, improve safety, prevent abuse, and provide customer support."]
       },
       {
         id: "account-information",
@@ -100,7 +100,7 @@ export const policies: Policy[] = [
       {
         id: "marketplace-purchase-information",
         title: "Marketplace Purchase Information",
-        body: ["FitSaathi does not collect payment details or payment evidence for account or provider registration, identity verification, or coach and dojo booking because those services are free. For shop purchases, FitSaathi may store the clearly shown product total, delivery total, order status, receipt details, and any refund status needed to fulfil the order and handle disputes."]
+        body: ["TheFitSaathi does not collect payment details or payment evidence for account or provider registration, identity verification, or coach and dojo booking because those services are free. For shop purchases, TheFitSaathi may store the clearly shown product total, delivery total, order status, receipt details, and any refund status needed to fulfil the order and handle disputes."]
       },
       {
         id: "contact-visibility",
@@ -110,7 +110,7 @@ export const policies: Policy[] = [
       {
         id: "cookies-analytics",
         title: "Cookies & Analytics",
-        body: ["FitSaathi may use cookies, device data, and analytics tools to keep users signed in, understand product usage, detect abuse, and improve marketplace performance."]
+        body: ["TheFitSaathi may use cookies, device data, and analytics tools to keep users signed in, understand product usage, detect abuse, and improve marketplace performance."]
       },
       {
         id: "data-protection",
@@ -120,7 +120,7 @@ export const policies: Policy[] = [
       {
         id: "third-party-services",
         title: "Third-Party Services",
-        body: ["FitSaathi uses PostgreSQL for application and account data and configured storage services for uploaded files. Account registration, provider registration, identity verification, and coach or dojo booking are never activated or delayed based on payment."]
+        body: ["TheFitSaathi uses PostgreSQL for application and account data and configured storage services for uploaded files. Account registration, provider registration, identity verification, and coach or dojo booking are never activated or delayed based on payment."]
       },
       {
         id: "user-rights",
@@ -137,13 +137,13 @@ export const policies: Policy[] = [
   {
     slug: "refunds",
     title: "Refund Policy",
-    summary: "Free FitSaathi services need no refund; this policy covers marketplace product purchase refunds and disputes.",
+    summary: "Free TheFitSaathi services need no refund; this policy covers marketplace product purchase refunds and disputes.",
     lastUpdated: "July 12, 2026",
     sections: [
       {
         id: "free-platform-services",
         title: "Free Platform Services",
-        body: ["FitSaathi does not collect payment for account or provider registration, identity verification, or coach and dojo booking. There is no platform fee to refund and no non-refundable charge for these services."],
+        body: ["TheFitSaathi does not collect payment for account or provider registration, identity verification, or coach and dojo booking. There is no platform fee to refund and no non-refundable charge for these services."],
         variant: "success"
       },
       {
@@ -160,7 +160,7 @@ export const policies: Policy[] = [
       {
         id: "request-process",
         title: "Refund Request Process",
-        body: ["Marketplace refund requests must be submitted through official support with the order ID, reason, and any relevant product photos or seller communication. FitSaathi may ask for more details before deciding."]
+        body: ["Marketplace refund requests must be submitted through official support with the order ID, reason, and any relevant product photos or seller communication. TheFitSaathi may ask for more details before deciding."]
       },
       {
         id: "review-timeline",
@@ -177,7 +177,7 @@ export const policies: Policy[] = [
   {
     slug: "coach-conduct",
     title: "Coach Conduct Policy",
-    summary: "Professional behavior, attendance, verification, and safety standards for FitSaathi coaches.",
+    summary: "Professional behavior, attendance, verification, and safety standards for TheFitSaathi coaches.",
     lastUpdated: "July 12, 2026",
     sections: [
       {
@@ -205,7 +205,7 @@ export const policies: Policy[] = [
   {
     slug: "customer-conduct",
     title: "Customer Conduct Policy",
-    summary: "The conduct standards customers must follow while using FitSaathi.",
+    summary: "The conduct standards customers must follow while using TheFitSaathi.",
     lastUpdated: "June 29, 2026",
     sections: [
       {
@@ -267,22 +267,22 @@ export const policies: Policy[] = [
       {
         id: "free-services",
         title: "Registration, Verification & Booking Are Free",
-        body: ["FitSaathi charges nothing for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. No payment, paid membership, wallet recharge, transaction ID, or payment screenshot is required for these services."]
+        body: ["TheFitSaathi charges nothing for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. No payment, paid membership, wallet recharge, transaction ID, or payment screenshot is required for these services."]
       },
       {
         id: "no-hidden-charges",
         title: "No Platform or Hidden Charges",
-        body: ["FitSaathi does not add a platform fee, booking fee, registration fee, verification fee, commission, or hidden charge to its free service flows. A user must not be sent to checkout or asked for payment evidence to complete them."]
+        body: ["TheFitSaathi does not add a platform fee, booking fee, registration fee, verification fee, commission, or hidden charge to its free service flows. A user must not be sent to checkout or asked for payment evidence to complete them."]
       },
       {
         id: "marketplace-product-totals",
         title: "Marketplace Product Totals",
-        body: ["Shop product purchases are separate from FitSaathi's free services. Before an order is placed, the customer must see the product total, delivery total, and any other mandatory order amount. A shop charge must never be presented as a registration, verification, or booking fee."]
+        body: ["Shop product purchases are separate from TheFitSaathi's free services. Before an order is placed, the customer must see the product total, delivery total, and any other mandatory order amount. A shop charge must never be presented as a registration, verification, or booking fee."]
       },
       {
         id: "marketplace-receipts",
         title: "Marketplace Receipts",
-        body: ["Receipts or invoices for marketplace product orders may be generated from the clearly shown order total and FitSaathi records. Customers should contact support if shop order details need correction."]
+        body: ["Receipts or invoices for marketplace product orders may be generated from the clearly shown order total and TheFitSaathi records. Customers should contact support if shop order details need correction."]
       },
       {
         id: "marketplace-payment-problems",
@@ -321,7 +321,7 @@ export const policies: Policy[] = [
       {
         id: "independent-professionals",
         title: "Independent Professionals",
-        body: ["Coaches and dojos are independent professionals. FitSaathi is not liable for injuries, outcomes, or conduct beyond the responsibilities required by law."],
+        body: ["Coaches and dojos are independent professionals. TheFitSaathi is not liable for injuries, outcomes, or conduct beyond the responsibilities required by law."],
         variant: "danger"
       }
     ]
@@ -376,7 +376,7 @@ export const policies: Policy[] = [
       {
         id: "verified",
         title: "Verified Coach",
-        body: ["A light blue Verified Coach badge may be assigned after FitSaathi reviews identity, profile quality, skill evidence, and platform requirements."],
+        body: ["A light blue Verified Coach badge may be assigned after TheFitSaathi reviews identity, profile quality, skill evidence, and platform requirements."],
         variant: "verified"
       },
       {
@@ -406,13 +406,13 @@ export const policies: Policy[] = [
   {
     slug: "community-guidelines",
     title: "Community Guidelines",
-    summary: "Rules for a respectful, safe, and healthy FitSaathi community.",
+    summary: "Rules for a respectful, safe, and healthy TheFitSaathi community.",
     lastUpdated: "June 29, 2026",
     sections: [
       {
         id: "respect",
         title: "Respectful Environment",
-        body: ["FitSaathi expects respectful communication between customers, coaches, dojo owners, staff, and support. Hate speech, harassment, threats, or targeted abuse are prohibited."]
+        body: ["TheFitSaathi expects respectful communication between customers, coaches, dojo owners, staff, and support. Hate speech, harassment, threats, or targeted abuse are prohibited."]
       },
       {
         id: "healthy-behavior",
@@ -455,7 +455,7 @@ export const policies: Policy[] = [
       {
         id: "not-medical-care",
         title: "Not Medical Care",
-        body: ["FitSaathi, coaches, and dojos do not replace medical diagnosis or treatment. Users should rely on qualified medical professionals for health decisions."]
+        body: ["TheFitSaathi, coaches, and dojos do not replace medical diagnosis or treatment. Users should rely on qualified medical professionals for health decisions."]
       }
     ]
   }

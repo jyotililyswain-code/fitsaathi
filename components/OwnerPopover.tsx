@@ -66,7 +66,7 @@ export function OwnerPopover() {
             <UserRound className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="min-w-0">
-            <p id="owner-popover-title" className="text-xs font-semibold uppercase tracking-[0.18em] text-acid">FitSaathi Owner</p>
+            <p id="owner-popover-title" className="text-xs font-semibold uppercase tracking-[0.18em] text-acid">TheFitSaathi Owner</p>
             <p className="mt-1 text-sm text-zinc-400">Owner Name:</p>
             <p className="text-base font-semibold text-white">Priyanshu Swain</p>
           </div>

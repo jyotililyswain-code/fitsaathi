@@ -2,6 +2,29 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
+  const productionHost = "thefitsaathi.com";
+  const hostname = request.nextUrl.hostname.toLowerCase();
+  const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0];
+  const isProductionDeployment = process.env.VERCEL_ENV === "production";
+  const isLegacyOrAliasHost =
+    hostname === "www.thefitsaathi.com" ||
+    hostname === "fitsaathi.com" ||
+    hostname === "www.fitsaathi.com" ||
+    hostname.endsWith(".vercel.app");
+
+  if (
+    isProductionDeployment &&
+    (isLegacyOrAliasHost ||
+      hostname !== productionHost ||
+      forwardedProtocol === "http")
+  ) {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.protocol = "https:";
+    canonicalUrl.hostname = productionHost;
+    canonicalUrl.port = "";
+    return NextResponse.redirect(canonicalUrl, 308);
+  }
+
   const protectedPrefixes = [
     "/admin",
     "/owner",
@@ -28,6 +51,12 @@ export function middleware(request: NextRequest) {
     "/register-seller",
     "/seller/register",
     "/setup",
+    "/account",
+    "/payment",
+    "/test",
+    "/tests",
+    "/dev",
+    "/preview",
   ];
   const isProtectedPage = protectedPrefixes.some(
     (prefix) =>
@@ -63,31 +92,12 @@ export function middleware(request: NextRequest) {
   }
 
   const privatePrefixes = [
-    "/admin",
-    "/owner",
-    "/super-admin-dashboard",
-    "/dashboard",
-    "/seller-dashboard",
-    "/coach-dashboard",
-    "/dojo-dashboard",
-    "/profile",
-    "/settings",
+    ...protectedPrefixes,
     "/api",
-    "/chat",
-    "/orders",
-    "/wallet",
-    "/checkout",
-    "/cart",
-    "/invites",
-    "/attendance",
-    "/verification",
-    "/complete-profile",
-    "/life",
     "/login",
     "/signup",
     "/forgot-password",
     "/auth",
-    "/setup",
   ];
   if (
     privatePrefixes.some(
@@ -96,6 +106,10 @@ export function middleware(request: NextRequest) {
         request.nextUrl.pathname.startsWith(`${prefix}/`),
     )
   ) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  }
+
+  if (process.env.VERCEL_ENV === "preview") {
     response.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   }
 

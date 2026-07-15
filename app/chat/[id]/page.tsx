@@ -118,7 +118,7 @@ export default function ChatThreadPage() {
           <div className="flex items-center gap-3">
             <Link href="/chat" className="rounded-xl border border-white/10 p-2 text-zinc-300"><ArrowLeft className="h-5 w-5" /></Link>
             <div>
-              <h1 className="font-bold text-white">{partner?.name || "FitSaathi chat"}</h1>
+              <h1 className="font-bold text-white">{partner?.name || "TheFitSaathi chat"}</h1>
               <p className="text-xs text-zinc-400">{typing ? "Typing..." : "Mutual connection chat"}</p>
             </div>
           </div>

@@ -1,6 +1,6 @@
--- FitSaathi registrations and coach/dojo bookings are permanently free.
+-- TheFitSaathi registrations and coach/dojo bookings are permanently free.
 -- Keep historical payment/order records and provider-listed monthly fees
--- intact, but remove every FitSaathi fee/payment-review prerequisite from
+-- intact, but remove every TheFitSaathi fee/payment-review prerequisite from
 -- service bookings and provider registration.
 
 UPDATE public.bookings

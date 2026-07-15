@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Resolve metadata before streaming so dynamic notFound() decisions produce
+  // a real HTTP 404 for browsers and crawlers alike.
+  htmlLimitedBots: /.*/,
   distDir: process.env.NEXT_BUILD_DIR || ".next",
   async rewrites() {
     return [
