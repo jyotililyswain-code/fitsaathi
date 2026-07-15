@@ -121,6 +121,7 @@ model User {
   emailNormalized                 String                    @unique
   emailVerified                   Boolean                   @default(true)
   emailVerifiedAt                 DateTime?                 @db.Timestamptz(3)
+  avatarUrl                       String?
   phone                           String?
   role                            Role                      @default(customer)
   registrationIntent              String                    @default("customer")

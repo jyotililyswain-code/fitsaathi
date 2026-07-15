@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { FormEvent, ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { safeAuthRedirect } from "@/lib/auth-redirect";
 import { POLICY_VERSION, requiredAgreementPolicies } from "@/lib/policies";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
@@ -11,6 +11,8 @@ import { dashboardPathForRole } from "@/lib/roles";
 import { AuthModeTabs } from "@/components/AuthModeTabs";
 import { supabase } from "@/lib/supabase";
 import { normalizeEmail } from "@/lib/auth/email";
+import { GoogleOAuthButton } from "@/components/auth/GoogleOAuthButton";
+import { googleOAuthErrorMessage } from "@/lib/google-oauth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +20,11 @@ export default function LoginPage() {
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const oauthMessage = googleOAuthErrorMessage(new URLSearchParams(window.location.search).get("error"));
+    if (oauthMessage) setMessage(oauthMessage);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,7 +93,15 @@ function AuthShell({
       <form onSubmit={onSubmit} className="w-full rounded-2xl border border-white/10 bg-white/[0.05] p-6 backdrop-blur-xl">
         <AuthModeTabs current="login" />
         <h1 className="mt-6 text-3xl font-bold text-white">{title}</h1>
-        <input name="email" type="email" required placeholder="Email" className="focus-ring mt-6 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-white" />
+        <div className="mt-6">
+          <GoogleOAuthButton />
+        </div>
+        <div className="my-5 flex items-center gap-3 text-xs uppercase text-zinc-500" aria-hidden="true">
+          <span className="h-px flex-1 bg-white/10" />
+          <span>or use email</span>
+          <span className="h-px flex-1 bg-white/10" />
+        </div>
+        <input name="email" type="email" required placeholder="Email" className="focus-ring w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-white" />
         <div className="relative mt-3">
           <input name="password" type={showPassword ? "text" : "password"} minLength={8} maxLength={100} required autoComplete="current-password" placeholder="Password" className="focus-ring w-full rounded-xl border border-white/10 bg-ink px-4 py-3 pr-24 text-white" />
           <button type="button" onClick={() => onShowPasswordChange(!showPassword)} className="absolute inset-y-0 right-3 text-xs font-semibold text-acid" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>

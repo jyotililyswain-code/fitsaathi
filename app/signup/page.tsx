@@ -10,6 +10,7 @@ import { normalizeEmail } from "@/lib/auth/email";
 import { SOCIAL_INTERESTS } from "@/lib/social";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 import { AuthModeTabs } from "@/components/AuthModeTabs";
+import { GoogleOAuthButton } from "@/components/auth/GoogleOAuthButton";
 
 const maxInterestLength = 50;
 
@@ -110,6 +111,14 @@ export default function SignupPage() {
         <p className="mt-6 text-sm font-semibold uppercase tracking-[.22em] text-acid">Create your TheFitSaathi identity</p>
         <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">Tell us how you move.</h1>
         <p className="mt-3 text-zinc-400">Your public profile is separate from private verification documents. Registration and verification are free, with no charges or hidden fees.</p>
+        <div className="mt-6 max-w-md">
+          <GoogleOAuthButton />
+          <div className="mt-4 flex items-center gap-3 text-xs uppercase text-zinc-500" aria-hidden="true">
+            <span className="h-px flex-1 bg-white/10" />
+            <span>or create with email</span>
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+        </div>
         <div className="mt-6 grid gap-2 sm:grid-cols-4">
           {["Account", "Interests", "Complete"].map((step, index) => (
             <div key={step} className={`rounded-2xl border px-4 py-3 text-sm ${index === 0 ? "border-acid bg-acid/10 text-acid" : "border-white/10 text-zinc-400"}`}>
