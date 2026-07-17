@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { JsonLd } from "@/components/JsonLd";
 import { useSessionUser } from "@/lib/auth-client";
 import { usePlatformStats } from "@/lib/hooks";
@@ -38,7 +38,7 @@ const features = [
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, checking } = useSessionUser();
+  const { user } = useSessionUser();
   const stats = usePlatformStats();
   const [screen, setScreen] = useState(0);
   const [interests, setInterests] = useState<string[]>([]);
@@ -52,18 +52,6 @@ export default function OnboardingPage() {
     router.push(
       `/signup${interests.length ? `?interests=${encodeURIComponent(interests.join(","))}` : ""}`,
     );
-
-  useEffect(() => {
-    if (!checking && user) router.replace(dashboardPathForRole(user.role));
-  }, [checking, router, user]);
-
-  if (user) {
-    return (
-      <main className="grid min-h-[calc(100vh-73px)] place-items-center bg-[#08090d] px-4 text-sm text-zinc-400">
-        Opening your account...
-      </main>
-    );
-  }
 
   return (
     <main className="relative min-h-[calc(100vh-73px)] overflow-hidden bg-[#08090d] px-4 py-8 sm:px-6">
@@ -148,10 +136,10 @@ export default function OnboardingPage() {
                     Get Started <ArrowRight className="h-5 w-5" />
                   </button>
                   <Link
-                    href="/login"
+                    href={user ? dashboardPathForRole(user.role) : "/login"}
                     className="rounded-full border border-white/15 px-7 py-4 font-semibold text-white"
                   >
-                    Sign In
+                    {user ? "My Account" : "Sign In"}
                   </Link>
                 </div>
               </div>

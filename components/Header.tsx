@@ -50,7 +50,9 @@ export function Header() {
       <nav className="mx-auto flex max-w-screen-2xl items-center justify-between gap-1 px-2 py-3 min-[360px]:px-3 sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
         <Link
           href="/"
-          className="text-xl font-bold tracking-tight text-white"
+          aria-label="Go to TheFitSaathi homepage"
+          onClick={() => setOpen(false)}
+          className="pointer-events-auto relative z-10 shrink-0 cursor-pointer text-xl font-bold tracking-tight text-white"
         >
           TheFit<span className="text-acid">Saathi</span>
         </Link>
