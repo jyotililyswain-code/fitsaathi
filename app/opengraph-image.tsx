@@ -1,11 +1,21 @@
+/* eslint-disable @next/next/no-img-element -- ImageResponse renders standard HTML image elements. */
+
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export const alt =
   "TheFitSaathi – Find Fitness Coaches, Gyms and Sports Academies";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const logoData = await readFile(
+    join(process.cwd(), "public", "favicon-512x512.png"),
+    "base64",
+  );
+  const logoSource = `data:image/png;base64,${logoData}`;
+
   return new ImageResponse(
     (
       <div
@@ -21,22 +31,16 @@ export default function OpenGraphImage() {
       >
         <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
           <div style={{ alignItems: "center", display: "flex", gap: "24px" }}>
-            <div
+            <img
+              alt=""
+              src={logoSource}
               style={{
-                alignItems: "center",
-                background: "#c8ff00",
                 borderRadius: "28px",
-                color: "#09090b",
-                display: "flex",
-                fontSize: "48px",
-                fontWeight: 900,
                 height: "112px",
-                justifyContent: "center",
+                objectFit: "cover",
                 width: "112px",
               }}
-            >
-              TFS
-            </div>
+            />
             <div style={{ color: "#c8ff00", display: "flex", fontSize: "62px", fontWeight: 900 }}>
               TheFitSaathi
             </div>

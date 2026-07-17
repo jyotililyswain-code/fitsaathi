@@ -25,7 +25,7 @@ export const seoConfig = {
     "personal training India",
   ],
   defaultOpenGraphImage: "/opengraph-image",
-  logo: "/thefitsaathi-logo.svg",
+  logo: "/favicon-512x512.png",
 } as const;
 
 type SeoMetadataInput = {
