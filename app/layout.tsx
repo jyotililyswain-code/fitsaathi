@@ -14,6 +14,7 @@ import {
 } from "@/lib/seo";
 import "./globals.css";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
   ...generateSeoMetadata(),
@@ -52,8 +53,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   colorScheme: "dark",
-  themeColor: "#c8ff00",
+  themeColor: "#00ff88",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -62,6 +64,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="bg-ink font-sans antialiased">
+        <a
+          href="#main-content"
+          className="focus-ring fixed left-3 top-3 z-[200] -translate-y-24 rounded-lg bg-acid px-4 py-3 font-semibold text-ink transition focus:translate-y-0"
+        >
+          Skip to main content
+        </a>
         <JsonLd
           data={{
             "@context": "https://schema.org",
@@ -81,8 +89,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         ) : null}
         <AuthSessionProvider>
           <NotificationProvider>
+            <ServiceWorkerRegistration />
             <Header />
-            {children}
+            <div id="main-content" tabIndex={-1} className="min-w-0">
+              {children}
+            </div>
             <Footer />
           </NotificationProvider>
         </AuthSessionProvider>

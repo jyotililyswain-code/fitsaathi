@@ -113,7 +113,7 @@ export default function ChatThreadPage() {
 
   return (
     <AuthGuard>
-      <main className="mx-auto flex h-[calc(100vh-84px)] max-w-5xl flex-col px-4 py-6 sm:px-6">
+      <main className="mx-auto flex h-[calc(100dvh-84px)] min-h-[28rem] max-w-5xl flex-col px-4 py-6 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-white/10 bg-white/[.04] p-4">
           <div className="flex items-center gap-3">
             <Link href="/chat" className="rounded-xl border border-white/10 p-2 text-zinc-300"><ArrowLeft className="h-5 w-5" /></Link>

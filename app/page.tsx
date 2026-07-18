@@ -54,7 +54,7 @@ export default function OnboardingPage() {
     );
 
   return (
-    <main className="relative min-h-[calc(100vh-73px)] overflow-hidden bg-[#08090d] px-4 py-8 sm:px-6">
+    <main className="relative min-h-[calc(100dvh-73px)] overflow-hidden bg-[#08090d] px-4 py-8 sm:px-6">
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -83,7 +83,7 @@ export default function OnboardingPage() {
           </motion.div>
         ))}
       </div>
-      <div className="relative mx-auto flex min-h-[calc(100vh-140px)] max-w-6xl flex-col">
+      <div className="relative mx-auto flex min-h-[calc(100dvh-140px)] max-w-6xl flex-col">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
             {[0, 1, 2].map((item) => (

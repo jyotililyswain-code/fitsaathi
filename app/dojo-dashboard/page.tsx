@@ -7,6 +7,7 @@ import { useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { EmptyState } from "@/components/EmptyState";
 import { useSessionUser } from "@/lib/auth-client";
+import { todayInIndia } from "@/lib/date";
 import { readJsonResponse } from "@/lib/http";
 import { useCollectionCount, useMyDojoStatus, useProviderBookings } from "@/lib/hooks";
 import type { Booking } from "@/lib/types";
@@ -110,7 +111,7 @@ function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: s
           Reject
         </button>
       </div> : null}
-      {["confirmed", "accepted"].includes(booking.status || "") ? <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 sm:grid-cols-[1fr_1fr_auto]"><input type="date" min={new Date().toISOString().slice(0, 10)} value={date} onChange={event => setDate(event.target.value)} className="field" aria-label="New booking date" /><input type="time" value={time} onChange={event => setTime(event.target.value)} className="field" aria-label="New booking time" /><button type="button" disabled={!date || !time || (date === booking.preferredDate && time === booking.preferredTime)} onClick={() => onStatus(booking.id, "rescheduled", { preferredDate: date, preferredTime: time })} className="rounded-xl border border-acid/40 px-4 py-2 text-xs font-semibold text-acid disabled:opacity-40">Reschedule</button></div> : null}
+      {["confirmed", "accepted"].includes(booking.status || "") ? <div className="mt-4 grid gap-2 border-t border-white/10 pt-4 sm:grid-cols-[1fr_1fr_auto]"><input type="date" min={todayInIndia()} value={date} onChange={event => setDate(event.target.value)} className="field" aria-label="New booking date" /><input type="time" value={time} onChange={event => setTime(event.target.value)} className="field" aria-label="New booking time" /><button type="button" disabled={!date || !time || (date === booking.preferredDate && time === booking.preferredTime)} onClick={() => onStatus(booking.id, "rescheduled", { preferredDate: date, preferredTime: time })} className="min-h-11 rounded-xl border border-acid/40 px-4 py-2 text-xs font-semibold text-acid disabled:opacity-40">Reschedule</button></div> : null}
       {booking.status === "accepted" ? <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => onStatus(booking.id, "completed")} className="rounded-full bg-acid px-4 py-2 text-xs font-semibold text-ink">Mark completed</button><button type="button" onClick={() => onStatus(booking.id, "cancelled")} className="rounded-full border border-red-400/30 px-4 py-2 text-xs text-red-300">Cancel booking</button></div> : null}
     </article>
   );

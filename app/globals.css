@@ -13,12 +13,66 @@
 html {
   position: relative;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #0b0b0f;
   color: white;
+  overflow-wrap: anywhere;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+[id] {
+  scroll-margin-top: 6rem;
+}
+
+.safe-area-x {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+.safe-area-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .focus-ring {

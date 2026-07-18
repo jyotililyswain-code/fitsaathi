@@ -12,10 +12,10 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
         <p className="mt-3 leading-7 text-zinc-300">TheFitSaathi could not finish loading this view. You can retry or contact support if it keeps happening.</p>
         {error.digest ? <p className="mt-3 text-xs text-zinc-500">Error reference: {error.digest}</p> : null}
         <div className="mt-6 flex flex-wrap gap-3">
-          <button onClick={reset} className="rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white">
+          <button onClick={reset} className="min-h-11 rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white">
             Retry
           </button>
-          <Link href="/contact" className="rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:border-acid/40 hover:text-acid">
+          <Link href="/contact" className="inline-flex min-h-11 items-center rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:border-acid/40 hover:text-acid">
             Contact support
           </Link>
         </div>

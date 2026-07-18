@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useSessionUser } from "@/lib/auth-client";
 import { getCoach, getDojo } from "@/lib/data";
+import { todayInIndia } from "@/lib/date";
 import { readJsonResponse } from "@/lib/http";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
@@ -90,26 +91,26 @@ export default function BookingPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
       <p className="text-sm font-semibold text-acid">Free booking</p>
-      <h1 className="mt-2 text-4xl font-bold text-white">Book {providerName || "your fitness session"}</h1>
+      <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">Book {providerName || "your fitness session"}</h1>
       <p className="mt-3 text-zinc-400">Submit your preferred session details. TheFitSaathi charges nothing for this booking—no payment step, platform fee, or hidden charge.</p>
-      <form onSubmit={submitBooking} className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-6">
+      <form onSubmit={submitBooking} className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-5 sm:p-6">
         <div className="rounded-xl border border-acid/30 bg-acid/10 p-4">
           <p className="text-sm font-semibold text-white">Total booking charge</p>
           <p className="mt-1 text-3xl font-bold text-acid">Free</p>
           <p className="mt-1 text-sm text-zinc-300">₹0 today and no hidden platform charges later.</p>
         </div>
-        <input name="name" required placeholder="Your name" className="field mt-4" />
-        <input name="phone" type="tel" required placeholder="Phone number" className="field mt-3" />
-        <input name="city" required placeholder="City" className="field mt-3" />
+        <label className="mt-4 block text-sm text-zinc-300">Your name<input name="name" required autoComplete="name" placeholder="Enter your name" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-300">Phone number<input name="phone" type="tel" required autoComplete="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" placeholder="10 digit mobile number" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-300">City<input name="city" required autoComplete="address-level2" placeholder="Your city" className="field mt-1" /></label>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <select name="classType" required className="field"><option value="">Training type</option><option value="home">Home class</option><option value="dojo">Dojo / academy / gym</option><option value="online">Online consultation</option></select>
-          <select name="packageType" required className="field"><option value="">Session plan</option><option value="trial">Trial session</option><option value="monthly">Monthly plan</option><option value="quarterly">Quarterly plan</option><option value="custom">Custom plan</option></select>
+          <label className="block text-sm text-zinc-300">Training type<select name="classType" required className="field mt-1"><option value="">Choose training type</option><option value="home">Home class</option><option value="dojo">Dojo / academy / gym</option><option value="online">Online consultation</option></select></label>
+          <label className="block text-sm text-zinc-300">Session plan<select name="packageType" required className="field mt-1"><option value="">Choose session plan</option><option value="trial">Trial session</option><option value="monthly">Monthly plan</option><option value="quarterly">Quarterly plan</option><option value="custom">Custom plan</option></select></label>
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <input name="preferredDate" type="date" min={new Date().toISOString().slice(0, 10)} required className="field" aria-label="Preferred date" />
-          <input name="preferredTime" type="time" required className="field" aria-label="Preferred time" />
+          <label className="block text-sm text-zinc-300">Preferred date<input name="preferredDate" type="date" min={todayInIndia()} required className="field mt-1" /></label>
+          <label className="block text-sm text-zinc-300">Preferred time<input name="preferredTime" type="time" required className="field mt-1" /></label>
         </div>
-        <textarea name="notes" rows={4} placeholder="Goals, injuries, or preferred schedule" className="field mt-3" />
+        <label className="mt-3 block text-sm text-zinc-300">Notes (optional)<textarea name="notes" rows={4} placeholder="Goals, injuries, or preferred schedule" className="field mt-1" /></label>
         <div className="mt-4 grid gap-3 text-sm text-zinc-300">
           <PolicyCheck checked={acceptedTerms} onChange={setAcceptedTerms} href="/terms" label="I accept the Terms & Conditions and attendance rules." />
           <PolicyCheck checked={acceptedPrivacy} onChange={setAcceptedPrivacy} href="/privacy" label="I accept the Privacy Policy for booking and contact processing." />

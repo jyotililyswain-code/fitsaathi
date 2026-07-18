@@ -131,43 +131,43 @@ export default function SignupPage() {
       <form onSubmit={submit} className="rounded-[2rem] border border-white/10 bg-white/[.04] p-5 sm:p-8">
         <Section title="Account">
           <div className="grid gap-3 sm:grid-cols-2">
-            <select name="accountType" required defaultValue="customer" className="field sm:col-span-2" aria-label="Account type">
+            <label className="block text-sm text-zinc-400 sm:col-span-2">Account type<select name="accountType" required defaultValue="customer" className="field mt-1">
               <option value="customer">Customer</option>
               <option value="coach">Coach</option>
               <option value="dojo">Dojo owner</option>
               <option value="gym">Gym owner</option>
               <option value="seller">Seller</option>
-            </select>
-            <Field name="name" placeholder="Full name" />
-            <Field name="email" type="email" placeholder="Email" />
-            <Field name="phone" type="tel" placeholder="Phone number" />
-            <select name="gender" required className="field">
-              <option value="">Gender</option>
+            </select></label>
+            <Field name="name" autoComplete="name" placeholder="Full name" />
+            <Field name="email" type="email" autoComplete="email" inputMode="email" placeholder="Email address" />
+            <Field name="phone" type="tel" autoComplete="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" placeholder="Phone number" />
+            <label className="block text-sm text-zinc-400">Gender<select name="gender" required className="field mt-1">
+              <option value="">Choose gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
               <option value="other">Other</option>
-            </select>
+            </select></label>
             <label className="text-sm text-zinc-400">Birth date<input name="birthDate" type="date" required value={birthDate} onChange={(event) => setBirthDate(event.target.value)} className="field mt-1" /></label>
             <label className="text-sm text-zinc-400">Age<input readOnly value={age ?? ""} placeholder="Calculated automatically" className="field mt-1 opacity-70" /></label>
-            <div className="relative"><Field name="password" type={showPassword ? "text" : "password"} placeholder="Password" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-4 top-3 text-xs font-bold text-acid">{showPassword ? "Hide" : "Show"}</button></div>
-            <Field name="passwordConfirmation" type={showPassword ? "text" : "password"} placeholder="Confirm password" />
+            <div className="relative"><Field name="password" type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Password" /><button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute bottom-0 right-1 min-h-12 px-3 text-xs font-bold text-acid">{showPassword ? "Hide" : "Show"}</button></div>
+            <Field name="passwordConfirmation" type={showPassword ? "text" : "password"} autoComplete="new-password" placeholder="Confirm password" />
           </div>
         </Section>
 
         <Section title="Location & body">
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field name="city" placeholder="City" />
-            <Field name="state" placeholder="State" />
-            <Field name="country" defaultValue="India" placeholder="Country" />
-            <Field name="heightCm" type="number" min="100" max="250" placeholder="Height (cm)" />
-            <Field name="weightKg" type="number" min="25" max="350" step="0.1" placeholder="Weight (kg)" />
-            <select name="fitnessLevel" required className="field">
-              <option value="">Fitness level</option>
+            <Field name="city" autoComplete="address-level2" placeholder="City" />
+            <Field name="state" autoComplete="address-level1" placeholder="State" />
+            <Field name="country" autoComplete="country-name" defaultValue="India" placeholder="Country" />
+            <Field name="heightCm" type="number" inputMode="decimal" min="100" max="250" placeholder="Height (cm)" />
+            <Field name="weightKg" type="number" inputMode="decimal" min="25" max="350" step="0.1" placeholder="Weight (kg)" />
+            <label className="block text-sm text-zinc-400">Fitness level<select name="fitnessLevel" required className="field mt-1">
+              <option value="">Choose fitness level</option>
               <option value="beginner">Beginner</option>
               <option value="intermediate">Intermediate</option>
               <option value="advanced">Advanced</option>
               <option value="athlete">Athlete</option>
-            </select>
+            </select></label>
           </div>
         </Section>
 
@@ -175,7 +175,7 @@ export default function SignupPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Field name="fitnessGoal" placeholder="Fitness goal" />
             <Field name="relationshipPreference" required={false} placeholder="Relationship preference (optional)" />
-            <textarea name="profileBio" required minLength={20} maxLength={1200} rows={4} placeholder="Profile bio - your training style, experience and what you are looking for" className="field sm:col-span-2" />
+            <label className="block text-sm text-zinc-400 sm:col-span-2">Profile bio<textarea name="profileBio" required minLength={20} maxLength={1200} rows={4} placeholder="Your training style, experience and what you are looking for" className="field mt-1" /></label>
           </div>
         </Section>
 
@@ -213,7 +213,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Field({ required = true, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { required?: boolean }) {
-  return <input required={required} className="field" {...props} />;
+  const label = typeof props["aria-label"] === "string"
+    ? props["aria-label"]
+    : typeof props.placeholder === "string"
+      ? props.placeholder
+      : props.name;
+  return <label className="block text-sm text-zinc-400">{label}<input required={required} className="field mt-1" {...props} /></label>;
 }
 
 function InterestChip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {

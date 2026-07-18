@@ -46,7 +46,7 @@ export function Footer() {
             <Link
               key={href}
               href={href}
-              className="text-sm text-zinc-400 transition hover:text-acid"
+              className="inline-flex min-h-11 items-center text-sm text-zinc-400 transition hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
             >
               {label}
             </Link>
@@ -59,14 +59,14 @@ export function Footer() {
           <p className="text-sm font-semibold text-white">TheFitSaathi support</p>
           <a
             href="mailto:priyanshuswain2000@gmail.com"
-            className="mt-3 flex items-start gap-2 break-all text-sm text-zinc-400 transition hover:text-acid"
+            className="mt-2 flex min-h-11 items-center gap-2 break-all text-sm text-zinc-400 transition hover:text-acid"
           >
             <Mail className="mt-0.5 h-4 w-4 shrink-0" />
             priyanshuswain2000@gmail.com
           </a>
           <a
             href="tel:8447640449"
-            className="mt-3 flex items-center gap-2 text-sm text-zinc-400 transition hover:text-acid"
+            className="mt-2 flex min-h-11 items-center gap-2 text-sm text-zinc-400 transition hover:text-acid"
           >
             <Phone className="h-4 w-4" />
             8447640449

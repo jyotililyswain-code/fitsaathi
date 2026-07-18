@@ -101,10 +101,12 @@ function AuthShell({
           <span>or use email</span>
           <span className="h-px flex-1 bg-white/10" />
         </div>
-        <input name="email" type="email" required placeholder="Email" className="focus-ring w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-white" />
+        <label htmlFor="login-email" className="block text-sm text-zinc-300">Email address</label>
+        <input id="login-email" name="email" type="email" required autoComplete="email" inputMode="email" enterKeyHint="next" placeholder="you@example.com" className="focus-ring mt-1 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 text-white" />
         <div className="relative mt-3">
-          <input name="password" type={showPassword ? "text" : "password"} minLength={8} maxLength={100} required autoComplete="current-password" placeholder="Password" className="focus-ring w-full rounded-xl border border-white/10 bg-ink px-4 py-3 pr-24 text-white" />
-          <button type="button" onClick={() => onShowPasswordChange(!showPassword)} className="absolute inset-y-0 right-3 text-xs font-semibold text-acid" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
+          <label htmlFor="login-password" className="block text-sm text-zinc-300">Password</label>
+          <input id="login-password" name="password" type={showPassword ? "text" : "password"} minLength={8} maxLength={100} required autoComplete="current-password" enterKeyHint="go" placeholder="Enter your password" className="focus-ring mt-1 w-full rounded-xl border border-white/10 bg-ink px-4 py-3 pr-24 text-white" />
+          <button type="button" onClick={() => onShowPasswordChange(!showPassword)} className="absolute bottom-0 right-1 min-h-12 px-3 text-xs font-semibold text-acid" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? "Hide" : "Show"}</button>
         </div>
         <label className="mt-5 flex cursor-pointer gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-6 text-zinc-300 transition hover:border-acid/30">
           <input

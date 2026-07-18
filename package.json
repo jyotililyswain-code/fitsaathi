@@ -10,6 +10,7 @@
     "start": "next start",
     "lint": "eslint app components lib pages server tests middleware.ts --ext .js,.cjs,.ts,.tsx --max-warnings=0",
     "test": "tsx --test tests/*.test.ts",
+    "test:responsive": "playwright test",
     "test:payments": "tsx --test tests/manual-upi.test.ts",
     "test:coach-registration-e2e": "tsx scripts/test-coach-registration-e2e.ts",
     "test:dojo-registration-e2e": "tsx scripts/test-dojo-registration-e2e.ts",
@@ -48,6 +49,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",

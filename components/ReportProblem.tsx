@@ -1,7 +1,8 @@
 "use client";
 
 import { Mail, MessageCircleWarning, Phone, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useAccessibleDialog } from "@/components/useAccessibleDialog";
 
 const supportEmail = "priyanshuswain2000@gmail.com";
 const supportPhone = "8447640449";
@@ -16,7 +17,6 @@ export function ReportProblemButton({ variant = "footer" }: ReportProblemButtonP
 
   function close() {
     setOpen(false);
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
 
   return (
@@ -27,7 +27,7 @@ export function ReportProblemButton({ variant = "footer" }: ReportProblemButtonP
         onClick={() => setOpen(true)}
         className={variant === "dashboard"
           ? "min-h-32 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left text-white transition hover:border-acid/40 hover:bg-white/[0.06]"
-          : "inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"}
+          : "inline-flex min-h-11 items-center gap-2 text-sm text-zinc-400 transition hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"}
         aria-haspopup="dialog"
       >
         <MessageCircleWarning className={variant === "dashboard" ? "h-6 w-6 text-acid" : "h-4 w-4"} aria-hidden="true" />
@@ -44,28 +44,13 @@ export function ReportProblemButton({ variant = "footer" }: ReportProblemButtonP
 }
 
 export function ReportProblemModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open, onClose]);
+  const dialogRef = useAccessibleDialog(open, onClose);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] grid place-items-center bg-black/75 p-4 backdrop-blur-sm"
+      className="safe-area-x fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 py-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -74,13 +59,15 @@ export function ReportProblemModal({ open, onClose }: { open: boolean; onClose: 
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-problem-title"
-        className="relative w-full max-w-lg rounded-lg border border-white/10 bg-zinc-950 p-6 shadow-2xl shadow-black/60 sm:p-7"
+        aria-describedby="report-problem-description"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-lg border border-white/10 bg-zinc-950 p-6 shadow-2xl shadow-black/60 sm:p-7"
       >
         <button
-          ref={closeRef}
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:border-acid/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
+          className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:border-acid/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
           aria-label="Close support dialog"
           title="Close"
         >
@@ -91,7 +78,7 @@ export function ReportProblemModal({ open, onClose }: { open: boolean; onClose: 
           <MessageCircleWarning className="h-6 w-6" aria-hidden="true" />
         </span>
         <h2 id="report-problem-title" className="mt-5 pr-12 text-2xl font-bold text-white">Report a Problem</h2>
-        <p className="mt-3 leading-7 text-zinc-300">
+        <p id="report-problem-description" className="mt-3 leading-7 text-zinc-300">
           Facing any issue with a free booking, registration, coach, dojo, shop order, or account? Contact TheFitSaathi support using the details below.
         </p>
 

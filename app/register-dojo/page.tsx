@@ -135,7 +135,7 @@ export default function RegisterDojoPage() {
     <main className="mx-auto grid w-full max-w-5xl gap-8 px-4 py-10 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-3xl text-center">
         <p className="text-sm text-acid">Dojo / Gym registration</p>
-        <h1 className="mt-2 text-4xl font-bold text-white">Register Your Dojo or Gym</h1>
+        <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">Register Your Dojo or Gym</h1>
         <p className="mt-4 leading-7 text-zinc-400">Registration is completely free. There is no payment step, registration fee, platform charge, or hidden charge. Valid registrations go live immediately while document verification remains under review.</p>
       </section>
       <form onSubmit={submit} className="mx-auto w-full max-w-3xl rounded-2xl border border-acid/25 bg-white/[0.05] p-5 sm:p-6">
@@ -145,21 +145,21 @@ export default function RegisterDojoPage() {
             {establishmentTypeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </label>
-        {establishmentType === "OTHER" ? <input name="customEstablishmentType" required placeholder="Enter establishment type" className="field mt-3" /> : null}
-        <input name="name" required placeholder="Dojo / Gym name" className="field mt-3" />
-        <input name="ownerName" required placeholder="Business owner" className="field mt-3" />
-        <input name="email" type="email" required placeholder="Owner email" className="field mt-3" />
-        <input name="phoneNumber" type="tel" required pattern="[6-9][0-9]{9}" placeholder="Phone number" className="field mt-3" />
+        {establishmentType === "OTHER" ? <label className="mt-3 block text-sm text-zinc-400">Custom establishment type<input name="customEstablishmentType" required placeholder="Enter establishment type" className="field mt-1" /></label> : null}
+        <label className="mt-3 block text-sm text-zinc-400">Dojo or gym name<input name="name" required autoComplete="organization" placeholder="Public business name" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">Business owner<input name="ownerName" required autoComplete="name" placeholder="Owner name" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">Owner email<input name="email" type="email" required autoComplete="email" inputMode="email" placeholder="you@example.com" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">Phone number<input name="phoneNumber" type="tel" required autoComplete="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" placeholder="10 digit mobile number" className="field mt-1" /></label>
         <CategorySelect className="mt-3" />
-        <input name="address" required placeholder="Business address" className="field mt-3" />
-        <input name="city" required placeholder="City" className="field mt-3" />
+        <label className="mt-3 block text-sm text-zinc-400">Business address<input name="address" required autoComplete="street-address" placeholder="Street address" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">City<input name="city" required autoComplete="address-level2" placeholder="City" className="field mt-1" /></label>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <input name="state" required placeholder="State" className="field" />
-          <input name="pincode" required pattern="[0-9]{6}" placeholder="Pincode" className="field" />
+          <label className="block text-sm text-zinc-400">State<input name="state" required autoComplete="address-level1" placeholder="State" className="field mt-1" /></label>
+          <label className="block text-sm text-zinc-400">Pincode<input name="pincode" required autoComplete="postal-code" inputMode="numeric" pattern="[0-9]{6}" placeholder="6 digit pincode" className="field mt-1" /></label>
         </div>
-        <input name="experience" required placeholder="Experience, e.g. 8 years" className="field mt-3" />
-        <input name="gstNumber" placeholder="GST number (optional)" className="field mt-3" />
-        <textarea name="description" rows={5} placeholder="Business description" className="field mt-3" />
+        <label className="mt-3 block text-sm text-zinc-400">Experience<input name="experience" required placeholder="For example: 8 years" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">GST number (optional)<input name="gstNumber" placeholder="GST number" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">Business description (optional)<textarea name="description" rows={5} placeholder="Describe your facilities and training" className="field mt-1" /></label>
         <div className="mt-4 rounded-xl border border-acid/30 bg-acid/10 p-4">
           <p className="text-sm font-semibold text-white">Registration total</p>
           <p className="mt-1 text-2xl font-bold text-acid">Free</p>
@@ -179,7 +179,7 @@ export default function RegisterDojoPage() {
             and <Link href="/privacy" className="text-acid underline">Privacy Policy</Link>.
           </span>
         </label>
-        <button disabled={loading} className="mt-5 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
+        <button disabled={loading} className="mt-5 min-h-12 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
           {loading ? "Submitting registration..." : "Register Dojo / Gym"}
         </button>
         {status ? <p className="mt-3 text-sm text-acid">{status}{loading && uploadProgress ? ` ${uploadProgress}%` : ""}</p> : null}
@@ -193,7 +193,7 @@ function FileField({ name, label, accept, required = false }: { name: string; la
   return (
     <label className="mt-3 block rounded-xl border border-white/10 bg-ink px-4 py-3 text-sm text-zinc-300">
       <span className="block font-medium text-white">{label}{required ? " *" : ""}</span>
-      <input name={name} type="file" accept={accept} required={required} className="mt-2 block w-full text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-acid file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink" />
+      <input name={name} type="file" accept={accept} required={required} className="mt-2 block max-w-full text-sm text-zinc-400 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-acid file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink" />
     </label>
   );
 }

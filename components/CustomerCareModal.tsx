@@ -1,7 +1,8 @@
 "use client";
 
 import { Headphones, Mail, Phone, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useAccessibleDialog } from "@/components/useAccessibleDialog";
 
 const SUPPORT_EMAIL = "priyanshuswain2000@gmail.com";
 const SUPPORT_PHONE = "8447640449";
@@ -16,14 +17,13 @@ export function CustomerCareButton({ variant = "footer" }: CustomerCareButtonPro
 
   function close() {
     setOpen(false);
-    window.setTimeout(() => triggerRef.current?.focus(), 0);
   }
 
   const className = variant === "header"
     ? "inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-acid/30 bg-acid/[0.06] px-3 text-acid transition hover:border-acid/60 hover:bg-acid/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid sm:px-3"
     : variant === "menu"
       ? "inline-flex w-full items-center justify-center gap-2 rounded-xl border border-acid/30 px-4 py-3 font-semibold text-acid transition hover:bg-acid/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
-      : "inline-flex items-center gap-2 text-sm text-zinc-400 transition hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid";
+      : "inline-flex min-h-11 items-center gap-2 text-sm text-zinc-400 transition hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid";
 
   return (
     <>
@@ -45,31 +45,13 @@ export function CustomerCareButton({ variant = "footer" }: CustomerCareButtonPro
 }
 
 export function CustomerCareModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    closeRef.current?.focus();
-
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [open, onClose]);
+  const dialogRef = useAccessibleDialog(open, onClose);
 
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-[100] grid place-items-center bg-black/75 p-4 backdrop-blur-sm"
+      className="safe-area-x fixed inset-0 z-[100] grid place-items-center overflow-y-auto bg-black/75 py-4 backdrop-blur-sm"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -78,13 +60,15 @@ export function CustomerCareModal({ open, onClose }: { open: boolean; onClose: (
         role="dialog"
         aria-modal="true"
         aria-labelledby="customer-care-title"
-        className="relative w-full max-w-md rounded-lg border border-acid/30 bg-zinc-950 p-6 shadow-2xl shadow-black/60 sm:p-7"
+        aria-describedby="customer-care-description"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-lg border border-acid/30 bg-zinc-950 p-6 shadow-2xl shadow-black/60 sm:p-7"
       >
         <button
-          ref={closeRef}
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:border-acid/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
+          className="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:border-acid/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
           aria-label="Close Customer Care"
           title="Close"
         >
@@ -95,7 +79,7 @@ export function CustomerCareModal({ open, onClose }: { open: boolean; onClose: (
           <Headphones className="h-6 w-6" aria-hidden="true" />
         </span>
         <h2 id="customer-care-title" className="mt-5 pr-12 text-2xl font-bold text-white">Customer Care</h2>
-        <p className="mt-3 text-zinc-300">Need help? Contact TheFitSaathi support.</p>
+        <p id="customer-care-description" className="mt-3 text-zinc-300">Need help? Contact TheFitSaathi support.</p>
 
         <div className="mt-6 divide-y divide-white/10 rounded-lg border border-white/10 bg-white/[0.03] px-4">
           <div className="flex items-start gap-3 py-4">

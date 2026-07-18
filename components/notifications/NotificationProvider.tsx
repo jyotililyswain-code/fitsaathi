@@ -92,12 +92,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     <NotificationContext.Provider value={{ items, unreadCount, loading, reload, markRead, markAllRead }}>
       {children}
       {toast ? (
-        <aside role="status" aria-live="polite" className="fixed bottom-5 right-4 z-[80] w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-acid/30 bg-zinc-950 p-4 shadow-2xl">
+        <aside role="status" aria-live="polite" className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[80] w-[calc(100%-2rem)] max-w-sm rounded-2xl border border-acid/30 bg-zinc-950 p-4 shadow-2xl">
           <p className="font-bold text-white">New booking received</p>
           <p className="mt-1 text-sm text-zinc-400">Open bookings to review the customer request.</p>
           <div className="mt-4 flex gap-2">
-            <Link href={safeNotificationAction(toast.actionUrl)} onClick={() => setToast(null)} className="rounded-full bg-acid px-4 py-2 text-xs font-bold text-ink">View booking</Link>
-            <button type="button" onClick={() => setToast(null)} className="rounded-full border border-white/15 px-4 py-2 text-xs text-zinc-300">Close</button>
+            <Link href={safeNotificationAction(toast.actionUrl)} onClick={() => setToast(null)} className="inline-flex min-h-11 items-center rounded-full bg-acid px-4 py-2 text-xs font-bold text-ink">View booking</Link>
+            <button type="button" onClick={() => setToast(null)} className="min-h-11 rounded-full border border-white/15 px-4 py-2 text-xs text-zinc-300">Close</button>
           </div>
         </aside>
       ) : null}

@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { logoutSession, useSessionUser } from "@/lib/auth-client";
 import { mapProduct } from "@/lib/data";
+import { todayInIndia } from "@/lib/date";
 import { formatMoney } from "@/lib/format";
 import { readJsonResponse } from "@/lib/http";
 import { localApi } from "@/lib/local-api";
@@ -47,6 +48,19 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => { setSearch(""); setFilter("all"); }, [section]);
   useEffect(() => {
+    if (!sidebar) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setSidebar(false);
+    }
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [sidebar]);
+  useEffect(() => {
     if (!userId) return;
     setLoading(true);
     localApi<any>("/admin/snapshot").then(data => {
@@ -62,7 +76,7 @@ export default function SuperAdminDashboard() {
   const platformRevenue = orders.reduce((sum, order) => sum + Number(order.platformRevenue || 0), 0);
   const sellerPayouts = orders.reduce((sum, order) => sum + Number(order.sellerPayout || 0), 0);
   const pendingVerifications = sellers.filter((seller) => seller.status === "pending").length;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayInIndia();
   const signupsToday = users.filter((user) => String(user.createdAt?.toDate?.()?.toISOString?.() || user.createdAt || "").startsWith(today)).length;
   const notifications = useMemo(() => [
     ...sellers.filter((seller) => seller.status === "pending").map((seller) => ({ id: `seller-${seller.id}`, type: "Verification", text: `${seller.storeName} needs verification`, tone: "acid" })),
@@ -104,10 +118,10 @@ export default function SuperAdminDashboard() {
     setLight((value) => !value);
   }
 
-  return <AuthGuard role="admin"><main className={`admin-shell ${light ? "admin-light" : ""} min-h-screen bg-[var(--admin-bg)] text-[var(--admin-text)]`}>
+  return <AuthGuard role="admin"><main className={`admin-shell ${light ? "admin-light" : ""} min-h-dvh bg-[var(--admin-bg)] text-[var(--admin-text)]`}>
     <div className="mx-auto flex max-w-[1600px]">
       {sidebar ? <button aria-label="Close navigation" onClick={() => setSidebar(false)} className="fixed inset-0 z-50 bg-black/60 lg:hidden"/> : null}
-      <aside className={`${sidebar ? "fixed inset-y-0 left-0 z-[60] flex" : "hidden"} w-72 shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar)] p-4 lg:sticky lg:top-0 lg:flex lg:h-screen`}>
+      <aside id="admin-navigation" className={`${sidebar ? "fixed inset-y-0 left-0 z-[60] flex" : "hidden"} h-dvh w-72 max-w-[calc(100vw-3rem)] shrink-0 flex-col border-r border-[var(--admin-border)] bg-[var(--admin-sidebar)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:sticky lg:top-0 lg:flex`}>
         <div className="flex items-center justify-between px-2 py-3"><Link href="/" aria-label="Go to TheFitSaathi homepage" className="pointer-events-auto relative z-10 flex cursor-pointer items-center gap-3"><img src="/favicon-192x192.png" alt="" className="h-10 w-10 rounded-xl object-cover"/><div><p className="text-[10px] font-semibold uppercase tracking-[.22em] text-acid">Private operations</p><p className="mt-0.5 text-lg font-bold text-[var(--admin-text)]">TheFitSaathi</p></div></Link><button onClick={() => setSidebar(false)} className="p-2 text-[var(--admin-text)] lg:hidden"><X/></button></div>
         <nav className="mt-5 flex-1 space-y-1 overflow-y-auto">{sections.map(([id,label,icon]) => <button key={id} onClick={() => { setSection(id); setSidebar(false); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm ${section === id ? "bg-acid text-ink" : "text-zinc-400 hover:bg-white/[.06] hover:text-white"}`}><span className="[&>svg]:h-4 [&>svg]:w-4">{icon}</span>{label}{id === "notifications" && notifications.length ? <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] text-white">{notifications.length}</span> : null}</button>)}</nav>
         <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-card)] p-3"><div className="flex items-center gap-2 text-xs font-medium text-emerald-400"><ShieldCheck className="h-4 w-4"/>Secure session</div><p className="mt-2 truncate text-xs text-[var(--admin-muted)]">{adminProfile?.email || user?.email || "Administrator"}</p><p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--admin-muted)]">{adminProfile?.role || "admin"} · audited</p></div>

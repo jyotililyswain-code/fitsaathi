@@ -6,10 +6,14 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "TheFitSaathi",
     description:
       "Find fitness coaches, martial arts trainers, gyms, dojos and sports academies with TheFitSaathi.",
+    id: "/",
     start_url: "/",
+    scope: "/",
+    lang: "en-IN",
+    categories: ["fitness", "health", "lifestyle"],
     display: "standalone",
     background_color: "#09090b",
-    theme_color: "#c8ff00",
+    theme_color: "#00ff88",
     icons: [
       {
         src: "/favicon-192x192.png",
@@ -21,7 +25,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/favicon-512x512.png",
         sizes: "512x512",
         type: "image/png",
-        purpose: "any",
+        purpose: "maskable",
       },
     ],
   };

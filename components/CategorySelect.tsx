@@ -36,22 +36,22 @@ export function CategorySelect({
 
   return (
     <div className={className}>
-      <select name={selectName} value={value} onChange={(event) => updateValue(event.target.value)} className="field">
+      <label className="block text-sm text-zinc-400">{includeAll ? "Filter by category" : "Training category"}<select name={selectName} value={value} onChange={(event) => updateValue(event.target.value)} className="field mt-1">
         {includeAll ? <option value="">All categories</option> : null}
         {categories.map((category) => (
           <option key={category}>{category}</option>
         ))}
         <option>Other</option>
-      </select>
+      </select></label>
       {isOther ? (
-        <input
-          name={customName}
-          value={customValue}
-          onChange={(event) => updateCustom(event.target.value)}
-          placeholder="Type your category"
-          className="field mt-3"
-          required
-        />
+        <label className="mt-3 block text-sm text-zinc-400">Custom category<input
+            name={customName}
+            value={customValue}
+            onChange={(event) => updateCustom(event.target.value)}
+            placeholder="Type your category"
+            className="field mt-1"
+            required
+          /></label>
       ) : null}
     </div>
   );

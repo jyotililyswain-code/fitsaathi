@@ -118,14 +118,14 @@ export default function BecomeCoachPage() {
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
       <section>
         <p className="text-sm text-acid">Become a coach</p>
-        <h1 className="mt-2 text-4xl font-bold text-white">Register with real profile details</h1>
+        <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">Register with real profile details</h1>
         <p className="mt-4 leading-7 text-zinc-400">Coach registration and customer bookings are completely free. TheFitSaathi adds no registration fee, booking fee, platform charge, or hidden charge.</p>
       </section>
-      <form onSubmit={submit} className="rounded-2xl border border-white/10 bg-white/[0.05] p-6">
-        <input name="name" required placeholder="Coach name" className="field" />
-        <input name="phoneNumber" type="tel" required pattern="[6-9][0-9]{9}" placeholder="Phone number" className="field mt-3" />
+      <form onSubmit={submit} className="rounded-2xl border border-white/10 bg-white/[0.05] p-5 sm:p-6">
+        <label className="block text-sm text-zinc-400">Coach name<input name="name" required autoComplete="name" placeholder="Your public coach name" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">Phone number<input name="phoneNumber" type="tel" required autoComplete="tel" inputMode="numeric" pattern="[6-9][0-9]{9}" placeholder="10 digit mobile number" className="field mt-1" /></label>
         <CategorySelect className="mt-3" />
-        <input name="city" required placeholder="City" className="field mt-3" />
+        <label className="mt-3 block text-sm text-zinc-400">City<input name="city" required autoComplete="address-level2" placeholder="Your city" className="field mt-1" /></label>
         <div className="mt-3 rounded-xl border border-acid/30 bg-acid/10 p-4 text-sm leading-6 text-zinc-200">
           <strong className="text-acid">Free registration.</strong> Your profile and bookings have a ₹0 TheFitSaathi charge with no hidden fees.
         </div>
@@ -137,8 +137,8 @@ export default function BecomeCoachPage() {
             ))}
           </div>
         </fieldset>
-        <input name="availableTimings" required placeholder="Available timings, e.g. 6:00 AM, 7:00 PM" className="field mt-3" />
-        <textarea name="bio" rows={5} placeholder="Bio" className="field mt-3" />
+        <label className="mt-3 block text-sm text-zinc-400">Available timings<input name="availableTimings" required placeholder="For example: 6:00 AM, 7:00 PM" className="field mt-1" /></label>
+        <label className="mt-3 block text-sm text-zinc-400">Coach bio (optional)<textarea name="bio" rows={5} placeholder="Describe your experience and training style" className="field mt-1" /></label>
         <FileField name="photo" label="Profile photo for bio" accept="image/png,image/jpeg,image/webp" />
         <FileField name="certificate" label="Certificate or achievement proof" accept="image/png,image/jpeg,image/webp,application/pdf" />
         <FileField name="aadharFront" label="Aadhaar front image for coach verification" accept="image/png,image/jpeg,image/webp" required />
@@ -151,7 +151,7 @@ export default function BecomeCoachPage() {
             and <Link href="/privacy" className="text-acid underline">Privacy Policy</Link>.
           </span>
         </label>
-        <button disabled={loading} className="mt-5 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
+        <button disabled={loading} className="mt-5 min-h-12 rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400">
           {loading ? "Submitting profile..." : "Submit profile"}
         </button>
         {status ? <p className="mt-3 text-sm text-acid">{status}{loading && uploadProgress ? ` ${uploadProgress}%` : ""}</p> : null}
@@ -165,7 +165,7 @@ function FileField({ name, label, accept, required = false }: { name: string; la
   return (
     <label className="mt-3 block rounded-xl border border-white/10 bg-ink px-4 py-3 text-sm text-zinc-300">
       <span className="block font-medium text-white">{label}{required ? " *" : ""}</span>
-      <input name={name} type="file" accept={accept} required={required} className="mt-2 block w-full text-sm text-zinc-400 file:mr-4 file:rounded-full file:border-0 file:bg-acid file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink" />
+      <input name={name} type="file" accept={accept} required={required} className="mt-2 block max-w-full text-sm text-zinc-400 file:mr-3 file:min-h-11 file:rounded-full file:border-0 file:bg-acid file:px-4 file:py-2 file:text-sm file:font-semibold file:text-ink" />
     </label>
   );
 }

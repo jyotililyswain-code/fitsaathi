@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createBookingEventNotification, customerBookingAction } from "@/lib/notifications/booking-events";
 import { createNotification } from "@/lib/notifications/create-notification";
 import { deliverNotifications } from "@/lib/notifications/send-push";
+import { monthInIndia, todayInIndia } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { assertSameOrigin, getClientIp, isRateLimited, RequestSecurityError } from "@/lib/security";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
       return bookingResponse(existing);
     }
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayInIndia();
     if (input.preferredDate < today) return NextResponse.json({ error: "Choose a future booking date." }, { status: 400 });
     const [coach, dojo, customer] = await Promise.all([
       input.targetType === "coach" ? prisma.coach.findUnique({ where: { id: input.targetId }, include: { owner: { select: { emailVerified: true, accountStatus: true } } } }) : Promise.resolve(null),
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
             contactVisible: false,
             customerPhone: input.phone,
             providerPhone: null,
-            payoutMonth: new Date().toISOString().slice(0, 7),
+            payoutMonth: monthInIndia(),
           },
         });
         const providerNotification = await createBookingEventNotification(tx, { event: "created", booking, recipientUserId: provider.ownerId, actorUserId: user.id, audience: "provider" });

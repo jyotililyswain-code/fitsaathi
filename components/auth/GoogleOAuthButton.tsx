@@ -2,6 +2,7 @@
 
 import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
+import { safeOAuthRedirect } from "@/lib/google-oauth";
 import { supabase } from "@/lib/supabase";
 
 export function GoogleOAuthButton() {
@@ -20,10 +21,13 @@ export function GoogleOAuthButton() {
     }
 
     try {
+      const next = safeOAuthRedirect(new URLSearchParams(window.location.search).get("next"));
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      callbackUrl.searchParams.set("next", next);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+          redirectTo: callbackUrl.toString(),
           queryParams: {
             prompt: "select_account"
           }

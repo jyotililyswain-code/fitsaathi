@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, UserRound, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CustomerCareButton } from "@/components/CustomerCareModal";
 import { logoutSession, useSessionUser } from "@/lib/auth-client";
 import { dashboardPathForRole } from "@/lib/roles";
@@ -28,8 +28,38 @@ export function Header() {
   const router = useRouter();
   const pathname = usePathname() || "/";
   const [open, setOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const previousPathnameRef = useRef(pathname);
   const { user, checking: checkingAuth } = useSessionUser();
   const role = user?.role || "customer";
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (previousPathnameRef.current !== pathname) setOpen(false);
+    previousPathnameRef.current = pathname;
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      menuButtonRef.current?.focus();
+    }
+
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
 
   async function logout() {
     await logoutSession();
@@ -45,7 +75,7 @@ export function Header() {
   if (pathname.startsWith("/super-admin-dashboard")) return null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-ink/75 backdrop-blur-xl">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-ink/90 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-screen-2xl items-center justify-between gap-1 px-2 py-3 min-[360px]:px-3 sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
         <Link
           href="/"
@@ -91,24 +121,31 @@ export function Header() {
             </Link>
           )}
           <button
+            ref={menuButtonRef}
             type="button"
+            disabled={!hydrated}
             onClick={() => setOpen((value) => !value)}
-            className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-white transition hover:border-acid/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid 2xl:hidden"
-            aria-label="Toggle menu"
+            className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-white transition hover:border-acid/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid disabled:cursor-wait disabled:opacity-60 2xl:hidden"
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            aria-controls="mobile-primary-navigation"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </nav>
       {open ? (
-        <div className="border-t border-white/10 bg-ink px-4 py-4 2xl:hidden">
+        <div
+          id="mobile-primary-navigation"
+          className="safe-area-bottom absolute inset-x-0 top-full max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-ink px-4 py-4 shadow-2xl 2xl:hidden"
+        >
           <div className="mx-auto grid max-w-7xl gap-3 text-sm text-zinc-300">
             {nav.map(([label, href]) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="rounded-xl border border-white/10 px-4 py-3"
+                className="inline-flex min-h-11 items-center rounded-xl border border-white/10 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
               >
                 {label}
               </Link>
@@ -133,7 +170,7 @@ export function Header() {
                 <button
                   type="button"
                   onClick={logout}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-center"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout

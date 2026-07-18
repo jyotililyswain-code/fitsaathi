@@ -23,7 +23,10 @@ test("the Google starter uses the real callback and locks duplicate submissions"
   assert.match(source, /if \(loading\) return/);
   assert.match(source, /disabled=\{loading\}/);
   assert.match(source, /aria-busy=\{loading\}/);
-  assert.match(source, /redirectTo: `\$\{window\.location\.origin\}\/auth\/callback\?next=\/dashboard`/);
+  assert.match(source, /safeOAuthRedirect\(new URLSearchParams\(window\.location\.search\)\.get\("next"\)\)/);
+  assert.match(source, /new URL\("\/auth\/callback", window\.location\.origin\)/);
+  assert.match(source, /callbackUrl\.searchParams\.set\("next", next\)/);
+  assert.match(source, /redirectTo: callbackUrl\.toString\(\)/);
   assert.match(source, /prompt: "select_account"/);
 });
 
