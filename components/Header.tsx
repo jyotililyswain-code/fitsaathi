@@ -7,7 +7,6 @@ import { useState } from "react";
 import { CustomerCareButton } from "@/components/CustomerCareModal";
 import { logoutSession, useSessionUser } from "@/lib/auth-client";
 import { dashboardPathForRole } from "@/lib/roles";
-import { OwnerPopover } from "@/components/OwnerPopover";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 const nav = [
@@ -91,7 +90,6 @@ export function Header() {
               </span>
             </Link>
           )}
-          <OwnerPopover />
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
