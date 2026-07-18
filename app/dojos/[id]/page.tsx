@@ -22,6 +22,7 @@ export default function DojoProfilePage() {
     return <main className="mx-auto max-w-4xl px-4 py-16"><EmptyState title="Dojo not found" body="This profile does not exist in PostgreSQL." /></main>;
   }
   const data = dojo.data;
+  const location = formatLocation(data?.address, data?.city, data?.state, data?.pincode);
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.05] p-4 sm:p-6 lg:p-8">
@@ -52,7 +53,7 @@ export default function DojoProfilePage() {
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <Info label="TheFitSaathi booking charge" value="Free — no hidden fees" />
           <Info label="Rating" value={data?.rating ? String(data.rating) : "No reviews yet"} />
-          <Info label="City" value={data?.city || "Not set"} />
+          <Info label="Location" value={location} />
         </div>
         <p className="mt-8 leading-7 text-zinc-300">{data?.description || "This dojo has not added a description yet."}</p>
         <div className="mt-8 flex flex-wrap gap-3">
@@ -72,4 +73,12 @@ export default function DojoProfilePage() {
 
 function Info({ label, value }: { label: string; value: string }) {
   return <div className="rounded-2xl border border-white/10 bg-ink/40 p-4"><p className="text-sm text-zinc-500">{label}</p><p className="mt-1 font-semibold text-white">{value}</p></div>;
+}
+
+function formatLocation(...parts: Array<string | undefined>) {
+  const uniqueParts = parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .filter((part, index, values) => values.findIndex((value) => value.toLowerCase() === part.toLowerCase()) === index);
+  return uniqueParts.length ? uniqueParts.join(", ") : "Not set";
 }

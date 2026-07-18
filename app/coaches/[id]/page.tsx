@@ -60,7 +60,7 @@ export default function CoachProfilePage() {
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <Info label="TheFitSaathi booking charge" value="Free — no hidden fees" />
           <Info label="Rating" value={data?.rating ? String(data.rating) : "No reviews yet"} />
-          <Info label="City" value={data?.city || "Not set"} />
+          <Info label="Location" value={data?.city || "Not set"} />
         </div>
         <div className="mt-6">
           <AttendancePill percent={data?.attendancePercent} cancellations={data?.cancellations} />

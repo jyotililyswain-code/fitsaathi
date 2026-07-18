@@ -33,6 +33,8 @@ test("public dojo projection excludes ownership and contact data", () => {
     category: "Karate",
     address: "Public business address",
     city: "Pune",
+    state: "Maharashtra",
+    pincode: "411001",
     experience: "8 years",
     originalPrice: 1000,
     finalPrice: 1000,
@@ -48,6 +50,10 @@ test("public dojo projection excludes ownership and contact data", () => {
   assert.equal(output.imageFit, "contain");
   assert.equal(output.imagePosition, "center");
   assert.equal(output.verified, false);
+  assert.equal(output.address, "Public business address");
+  assert.equal(output.city, "Pune");
+  assert.equal(output.state, "Maharashtra");
+  assert.equal(output.pincode, "411001");
   assert.ok(!("ownerId" in output));
   assert.ok(!("phoneNumber" in output));
   assert.ok(!("certificatePath" in output));
@@ -62,6 +68,8 @@ test("legacy full dojo image URLs remain usable without duplicate URL prefixes",
     category: "Karate",
     address: null,
     city: "Delhi",
+    state: null,
+    pincode: null,
     experience: null,
     originalPrice: 0,
     finalPrice: 0,
