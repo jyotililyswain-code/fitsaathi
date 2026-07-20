@@ -108,7 +108,7 @@ export default function SignupPage() {
     <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <div className="mb-8">
         <AuthModeTabs current="signup" />
-        <p className="mt-6 text-sm font-semibold uppercase tracking-[.22em] text-acid">Create your TheFitSaathi identity</p>
+        <p className="mt-6 text-sm font-semibold uppercase tracking-[.22em] text-acid">Create your FitSaathi identity</p>
         <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">Tell us how you move.</h1>
         <p className="mt-3 text-zinc-400">Your public profile is separate from private verification documents. Registration and verification are free, with no charges or hidden fees.</p>
         <div className="mt-6 max-w-md">

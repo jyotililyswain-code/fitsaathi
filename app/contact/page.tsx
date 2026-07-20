@@ -44,7 +44,7 @@ export default function ContactPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-bold text-white">Contact TheFitSaathi</h1>
+      <h1 className="text-4xl font-bold text-white">Contact FitSaathi</h1>
       <p className="mt-3 text-zinc-400">Send an inquiry for coach onboarding, dojo approval, or customer support.</p>
 
       <form onSubmit={submit} className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-6" noValidate>

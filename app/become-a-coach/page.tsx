@@ -119,7 +119,7 @@ export default function BecomeCoachPage() {
       <section>
         <p className="text-sm text-acid">Become a coach</p>
         <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">Register with real profile details</h1>
-        <p className="mt-4 leading-7 text-zinc-400">Coach registration and customer bookings are completely free. TheFitSaathi adds no registration fee, booking fee, platform charge, or hidden charge.</p>
+        <p className="mt-4 leading-7 text-zinc-400">Coach registration and customer bookings are completely free. FitSaathi adds no registration fee, booking fee, platform charge, or hidden charge.</p>
       </section>
       <form onSubmit={submit} className="rounded-2xl border border-white/10 bg-white/[0.05] p-5 sm:p-6">
         <label className="block text-sm text-zinc-400">Coach name<input name="name" required autoComplete="name" placeholder="Your public coach name" className="field mt-1" /></label>
@@ -127,7 +127,7 @@ export default function BecomeCoachPage() {
         <CategorySelect className="mt-3" />
         <label className="mt-3 block text-sm text-zinc-400">City<input name="city" required autoComplete="address-level2" placeholder="Your city" className="field mt-1" /></label>
         <div className="mt-3 rounded-xl border border-acid/30 bg-acid/10 p-4 text-sm leading-6 text-zinc-200">
-          <strong className="text-acid">Free registration.</strong> Your profile and bookings have a ₹0 TheFitSaathi charge with no hidden fees.
+          <strong className="text-acid">Free registration.</strong> Your profile and bookings have a ₹0 FitSaathi charge with no hidden fees.
         </div>
         <fieldset className="mt-3 rounded-xl border border-white/10 bg-ink p-4">
           <legend className="px-1 text-sm font-medium text-white">Available teaching days</legend>

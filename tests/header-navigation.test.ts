@@ -12,7 +12,7 @@ test("shared and super-admin brand marks use direct homepage links", () => {
   for (const source of [sharedHeader, superAdmin]) {
     assert.match(
       source,
-      /<Link\s+href="\/"\s+aria-label="Go to TheFitSaathi homepage"/,
+      /<Link\s+href="\/"\s+aria-label="Go to FitSaathi homepage"/,
     );
   }
 
@@ -26,11 +26,14 @@ test("shared and super-admin brand marks use direct homepage links", () => {
 
 test("authenticated visitors render the public homepage with an account link", () => {
   const homepage = fs.readFileSync("app/page.tsx", "utf8");
+  const sharedHeader = fs.readFileSync("components/Header.tsx", "utf8");
 
   assert.doesNotMatch(
     homepage,
     /router\.replace\(dashboardPathForRole\(user\.role\)\)/,
   );
-  assert.match(homepage, /user \? "My Account" : "Sign In"/);
-  assert.match(homepage, /href=\{user \? dashboardPathForRole\(user\.role\) : "\/login"\}/);
+  assert.match(homepage, /<FitSaathiHome \/>/);
+  assert.match(sharedHeader, /const accountLabel = signedIn \? "My Account" : "Log In \/ Sign Up"/);
+  assert.match(sharedHeader, /const accountHref = signedIn \? dashboardHref\(role\) : "\/login"/);
+  assert.match(sharedHeader, /href=\{accountHref\}/);
 });

@@ -73,7 +73,7 @@ export default function CustomerDashboardPage() {
                       <p className="mt-1 text-sm text-zinc-400">
                         Owner contact: {["accepted", "completed"].includes(booking.status || "") ? booking.providerPhone || "Owner number pending" : "Visible after the provider accepts"}
                       </p>
-                      <p className="mt-1 text-xs font-semibold text-acid">Free booking · ₹0 TheFitSaathi charge</p>
+                      <p className="mt-1 text-xs font-semibold text-acid">Free booking · ₹0 FitSaathi charge</p>
                     </div>
                     <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.status || "pending"}</span>
                   </div>

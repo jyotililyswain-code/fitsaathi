@@ -15,7 +15,7 @@ export default function PoliciesPage() {
               <ShieldCheck className="h-4 w-4 text-acid" />
               Policy version {POLICY_VERSION}
             </div>
-            <h1 className="mt-5 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">TheFitSaathi Policy Center</h1>
+            <h1 className="mt-5 max-w-3xl text-4xl font-bold tracking-tight text-white sm:text-5xl">FitSaathi Policy Center</h1>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-300">
               Clear rules for free registrations, identity verification, coach and dojo bookings, transparent shop totals, safety, conduct, and community trust.
             </p>

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { cache } from "react";
 import { JsonLd } from "@/components/JsonLd";
-import { prisma } from "@/lib/prisma";
 import { resolveDojoImageUrl } from "@/lib/dojo-image";
+import { getPublicDojo } from "@/lib/public-content";
 import {
   breadcrumbJsonLd,
   generateSeoMetadata,
@@ -13,42 +12,20 @@ import {
 
 export const revalidate = 0;
 
-const getPublicDojo = cache((id: string) =>
-  prisma.dojo.findFirst({
-    where: {
-      id,
-      approved: true,
-      status: "active",
-      owner: { accountStatus: "active" },
-    },
-    select: {
-      id: true,
-      name: true,
-      category: true,
-      description: true,
-      establishmentType: true,
-      address: true,
-      city: true,
-      state: true,
-      pincode: true,
-      imagePath: true,
-    },
-  }),
-);
-
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  const publicId = encodeURIComponent(id);
   try {
     const dojo = await getPublicDojo(id);
     if (!dojo) notFound();
     return generateSeoMetadata({
       title: `${dojo.name} – ${dojo.category} Academy`,
-      description: `View ${dojo.name}'s ${dojo.category} training details${dojo.city ? ` in ${dojo.city}` : ""} and booking options on TheFitSaathi.`,
-      path: `/dojos/${id}`,
+      description: `View ${dojo.name}'s ${dojo.category} training details${dojo.city ? ` in ${dojo.city}` : ""} and booking options on FitSaathi.`,
+      path: `/dojos/${publicId}`,
       image: dojo.imagePath ? resolveDojoImageUrl(dojo.imagePath, id) : undefined,
       keywords: [
         dojo.name,
@@ -70,6 +47,7 @@ export default async function DojoProfileLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const publicId = encodeURIComponent(id);
   let dojo;
   try {
     dojo = await getPublicDojo(id);
@@ -86,7 +64,7 @@ export default async function DojoProfileLayout({
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", path: "/" },
         { name: "Dojos, Gyms and Academies", path: "/dojos" },
-        { name: dojo.name, path: `/dojos/${id}` },
+        { name: dojo.name, path: `/dojos/${publicId}` },
       ])} />
       {hasAccurateLocation ? (
         <JsonLd

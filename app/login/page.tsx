@@ -31,7 +31,7 @@ export default function LoginPage() {
     const formData = new FormData(event.currentTarget);
     const email = normalizeEmail(String(formData.get("email")));
     const password = String(formData.get("password"));
-    if (!accepted) return setMessage("Please agree to the current TheFitSaathi policies before signing in.");
+    if (!accepted) return setMessage("Please agree to the current FitSaathi policies before signing in.");
     if (!email) return setMessage("Enter a valid email address.");
     setLoading(true);
     setMessage("");
@@ -117,7 +117,7 @@ function AuthShell({
             aria-describedby="login-policy-agreement"
           />
           <span id="login-policy-agreement">
-            I agree to the current TheFitSaathi policies, including{" "}
+            I agree to the current FitSaathi policies, including{" "}
             <Link href="/terms" className="font-medium text-acid underline-offset-4 hover:underline">Terms</Link>,{" "}
             <Link href="/privacy" className="font-medium text-acid underline-offset-4 hover:underline">Privacy</Link>,{" "}
             <Link href="/policies/refunds" className="font-medium text-acid underline-offset-4 hover:underline">Refunds</Link>, and{" "}

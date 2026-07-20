@@ -1,8 +1,8 @@
-# TheFitSaathi
+# FitSaathi
 
 Production deployment instructions for mandatory email verification and booking notifications are in [PRODUCTION_AUTH_NOTIFICATIONS.md](./PRODUCTION_AUTH_NOTIFICATIONS.md).
 
-TheFitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, and Vercel Blob. Account and provider registration, identity verification, and coach or dojo booking are free, with no platform or hidden charges. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
+FitSaathi is a fitness marketplace built with Next.js, Express-compatible serverless API routes, Prisma, Supabase PostgreSQL, Tailwind CSS, and Vercel Blob. Account and provider registration, identity verification, and coach or dojo booking are free, with no platform or hidden charges. Supabase PostgreSQL is the production application database. In production, uploaded public images and private encrypted files are stored in Vercel Blob; local disk storage is only a development fallback.
 
 ## Run locally
 
@@ -36,7 +36,51 @@ Copy `.env.example` to `.env` and configure:
 Optional external services:
 
 - `NEXT_PUBLIC_SITE_URL`: set to the canonical production origin `https://thefitsaathi.com`.
-- `NEXT_PUBLIC_GA_ID`: optional Google Analytics measurement ID.
+- `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`: optional genuine HTML-tag verification value supplied by Google Search Console. Leave blank until Google provides it.
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID`: optional Google Analytics 4 measurement ID in the `G-...` format. Analytics is not loaded when this is blank or invalid.
+
+## SEO and search indexing
+
+The production domain and only canonical origin is `https://thefitsaathi.com`.
+
+Important public endpoints:
+
+- `https://thefitsaathi.com/robots.txt`
+- `https://thefitsaathi.com/sitemap.xml`
+
+Production canonicals, Open Graph URLs, JSON-LD, robots, and sitemap entries reject local, preview, and unrelated host values. Public coach, dojo, product, and seller sitemap records are limited to approved/active records; dashboards, authentication, chats, bookings, carts, orders, and account routes are excluded and receive `noindex` controls.
+
+After building and starting the production server locally, run the lightweight HTML/output check with:
+
+```powershell
+$env:SEO_BASE_URL='http://127.0.0.1:3000'
+npm run seo:check
+```
+
+Manual Google Search Console steps (these require access to Google and the domain provider):
+
+1. Open Google Search Console.
+2. Add the domain property for `thefitsaathi.com`.
+3. Complete DNS verification through the domain provider, or copy the genuine HTML-tag value into `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` and redeploy.
+4. Submit `https://thefitsaathi.com/sitemap.xml`.
+5. Inspect `https://thefitsaathi.com/`.
+6. Run the live URL test.
+7. Request indexing after the production deployment.
+8. Inspect important public coach, dojo, shop, and registration pages.
+9. Review the Pages/Indexing report.
+10. Review Core Web Vitals.
+11. Monitor searches for `FitSaathi`, `Fit Saathi`, `TheFitSaathi`, and `thefitsaathi.com`.
+
+Manual Vercel/domain checks:
+
+1. Set `thefitsaathi.com` as the primary production domain.
+2. Redirect `www.thefitsaathi.com` to `thefitsaathi.com` and confirm HTTPS is active.
+3. Set `NEXT_PUBLIC_SITE_URL=https://thefitsaathi.com` for Production.
+4. Add the genuine Search Console verification value only after obtaining it from Google.
+5. Add `NEXT_PUBLIC_GA_MEASUREMENT_ID` only when analytics and consent requirements are ready.
+6. Redeploy Production and verify the robots and sitemap endpoints above.
+
+The repository cannot invent DNS verification records, submit Search Console URLs, request indexing, or change Vercel dashboard settings without authenticated access.
 
 ## Database commands
 
@@ -64,7 +108,7 @@ The integration suites cover every Prisma model plus authentication, provider re
 
 ## Free services and marketplace purchases
 
-TheFitSaathi does not charge for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. These flows do not require a wallet recharge, UPI transfer, transaction ID, payment screenshot, platform fee, or hidden charge.
+FitSaathi does not charge for account registration, coach registration, dojo or gym registration, seller registration, identity verification, or coach and dojo booking. These flows do not require a wallet recharge, UPI transfer, transaction ID, payment screenshot, platform fee, or hidden charge.
 
 Marketplace product purchases remain separate. Before a shop order is placed, the customer must see the product total, delivery total, and any other mandatory order amount. Shop order payment, receipt, and refund records must never be used to gate or activate the free registration, verification, or booking flows.
 

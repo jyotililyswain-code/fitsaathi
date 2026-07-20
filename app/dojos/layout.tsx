@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Find Dojos, Gyms and Fitness Academies",
+  title: "Find Dojos and Martial Arts Academies",
   description:
-    "Discover karate, boxing, martial arts, yoga, gyms, and fitness studios near you or register your academy on TheFitSaathi.",
+    "Explore public dojo, gym and martial arts academy profiles for supported training options on FitSaathi.",
   path: "/dojos",
   keywords: [
     "dojo near me",

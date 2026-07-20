@@ -1,4 +1,4 @@
-# TheFitSaathi local backend
+# FitSaathi local backend
 
 Next.js runs on `http://localhost:3000` and serves the API under `/api`. The old Express app is still available as a standalone local backend on `http://localhost:5000`, but Vercel uses the same Express routes through `pages/api/[...path].ts` serverless handlers.
 

@@ -7,8 +7,8 @@ self.addEventListener("activate", event => event.waitUntil(self.clients.claim())
 self.addEventListener("push", event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch { data = {}; }
-  const title = typeof data.title === "string" && data.title.trim() ? data.title.slice(0, 100) : "TheFitSaathi update";
-  const body = typeof data.body === "string" && data.body.trim() ? data.body.slice(0, 180) : "Open TheFitSaathi to view your latest update.";
+  const title = typeof data.title === "string" && data.title.trim() ? data.title.slice(0, 100) : "FitSaathi update";
+  const body = typeof data.body === "string" && data.body.trim() ? data.body.slice(0, 180) : "Open FitSaathi to view your latest update.";
   const actionUrl = safeAction(data.actionUrl);
   event.waitUntil(self.registration.showNotification(title, {
     body,

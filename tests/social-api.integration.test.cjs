@@ -43,7 +43,7 @@ async function register(label, stamp, extra = {}) {
   return { email, id: user.id, token: jwt.sign({ id: user.id, email: user.email, role: user.role }, process.env.JWT_SECRET, { expiresIn: "15m" }) };
 }
 
-test("TheFitSaathi Life social APIs provide free verified profiles, invites, chat, safety, notifications, and admin queues", async () => {
+test("FitSaathi Life social APIs provide free verified profiles, invites, chat, safety, notifications, and admin queues", async () => {
   const stamp = Date.now();
   const userIds = [];
   let conversationId = "";

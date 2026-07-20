@@ -77,7 +77,7 @@ export default function SocialAdminPage() {
     <AuthGuard role="admin">
       <main className="mx-auto max-w-screen-2xl px-4 py-10 sm:px-6 lg:px-8">
         <p className="text-sm font-semibold uppercase tracking-[.2em] text-acid">PostgreSQL social operations</p>
-        <h1 className="mt-2 text-4xl font-black text-white">TheFitSaathi Life Admin</h1>
+        <h1 className="mt-2 text-4xl font-black text-white">FitSaathi Life Admin</h1>
         <p className="mt-3 max-w-3xl text-zinc-400">Manage identity reviews, reports, chats and safety queues. Private verification files are encrypted at rest and only available here to authorized admins.</p>
         {message ? <p className="mt-5 rounded-2xl border border-red-400/20 bg-red-950/20 p-4 text-red-300">{message}</p> : null}
 

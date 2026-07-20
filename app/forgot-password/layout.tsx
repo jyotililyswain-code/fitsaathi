@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
-  title: "Reset TheFitSaathi Password",
+  title: "Reset FitSaathi Password",
   path: "/forgot-password",
   noIndex: true,
 });

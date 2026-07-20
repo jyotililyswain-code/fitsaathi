@@ -8,11 +8,11 @@ type Status = "checking" | "unsupported" | "insecure" | "service_worker_unavaila
 
 const copy: Record<Status, string> = {
   checking: "Checking notification support…",
-  unsupported: "Browser push notifications are not supported on this device. You will still receive notifications inside your TheFitSaathi dashboard.",
+  unsupported: "Browser push notifications are not supported on this device. You will still receive notifications inside your FitSaathi dashboard.",
   insecure: "Browser notifications require HTTPS. Localhost is supported during development.",
   service_worker_unavailable: "The notification service worker is unavailable. You will still receive in-app notifications.",
-  vapid_unavailable: "Browser push is not configured on this TheFitSaathi deployment.",
-  denied: "Notifications are blocked in your browser. Open your browser’s site settings and allow notifications for TheFitSaathi.",
+  vapid_unavailable: "Browser push is not configured on this FitSaathi deployment.",
+  denied: "Notifications are blocked in your browser. Open your browser’s site settings and allow notifications for FitSaathi.",
   not_enabled: "Notifications are not enabled on this device.",
   subscription_expired: "Notification permission exists, but this device subscription is missing or expired. Enable it again.",
   enabled: "Booking notifications are enabled on this device.",

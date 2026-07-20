@@ -5,7 +5,7 @@ import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
   title: "Page Not Found",
   description:
-    "The requested TheFitSaathi page could not be found. Browse coaches, dojos, academies and fitness services instead.",
+    "The requested FitSaathi page could not be found. Browse coaches, dojos, academies and fitness services instead.",
   noIndex: true,
 });
 
@@ -22,7 +22,7 @@ export default function NotFound() {
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
-            href="/home"
+            href="/"
             className="inline-flex items-center gap-2 rounded-lg bg-acid px-5 py-3 font-semibold text-ink transition hover:bg-white"
           >
             <Home className="h-4 w-4" />

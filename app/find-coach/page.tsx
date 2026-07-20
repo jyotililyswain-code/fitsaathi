@@ -14,11 +14,12 @@ export async function generateMetadata({
 }) {
   const query = await searchParams;
   return generateSeoMetadata({
-    title: "Find Fitness Coaches, Gyms and Dojos Near You",
+    title: "Find Fitness Coaches and Personal Trainers",
     description:
-      "Search and book home fitness coaches, personal trainers, yoga trainers, martial arts teachers, and sports coaches near you with TheFitSaathi.",
+      "Discover fitness coaches, personal trainers, martial arts instructors, yoga trainers and sports coaches through FitSaathi.",
     path: "/find-coach",
     noIndex: hasSearchParameters(query),
+    noFollow: false,
     keywords: [
       "find coach",
       "fitness coach near me",
@@ -45,7 +46,7 @@ export default function FindCoachPage() {
           Find Fitness Coaches, Gyms and Dojos Near You
         </h1>
         <p className="mt-4 max-w-2xl leading-7 text-zinc-300">
-          Search TheFitSaathi for personal trainers, martial arts coaches, active gyms and approved sports academies by specialty and city.
+          Search FitSaathi for personal trainers, martial arts coaches, active gyms and approved sports academies by specialty and city.
         </p>
       </section>
       <Suspense fallback={<DirectoryLoading label="coaches, gyms and dojos" />}>

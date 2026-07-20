@@ -4,9 +4,9 @@ import { getPolicy } from "@/lib/policies";
 import { breadcrumbJsonLd, generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Privacy Policy",
+  title: "Privacy Policy | FitSaathi",
   description:
-    "Read TheFitSaathi Privacy Policy to understand how user data, coach details, seller information, and booking details are handled.",
+    "Read FitSaathi Privacy Policy to understand how user data, coach details, seller information, and booking details are handled.",
   path: "/privacy",
 });
 

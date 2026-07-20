@@ -3,7 +3,7 @@ import test from "node:test";
 import { automaticDojoActivation, canManageDojo, dojoModerationData, publicDojo, publicDojoWhere } from "../lib/dojo-visibility";
 
 test("public dojo queries require active and approved status fields", () => {
-  const where = publicDojoWhere({ search: "TheFitSaathi Test", city: "Pune", category: "Karate" });
+  const where = publicDojoWhere({ search: "FitSaathi Test", city: "Pune", category: "Karate" });
   assert.equal(where.status, "active");
   assert.equal(where.approved, true);
   assert.ok(where.OR);
@@ -28,7 +28,7 @@ test("only the owner or an authorized admin can manage a dojo", () => {
 test("public dojo projection excludes ownership and contact data", () => {
   const output = publicDojo({
     id: "dojo-id",
-    name: "TheFitSaathi Test Dojo",
+    name: "FitSaathi Test Dojo",
     description: "Test description",
     category: "Karate",
     address: "Public business address",

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
-  title: "Private Dashboard - TheFitSaathi",
+  title: "Private Dashboard - FitSaathi",
   path: "/dashboard",
   noIndex: true,
 });

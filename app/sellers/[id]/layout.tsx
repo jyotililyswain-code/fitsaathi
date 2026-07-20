@@ -1,21 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { cache } from "react";
 import { JsonLd } from "@/components/JsonLd";
-import { prisma } from "@/lib/prisma";
+import { getPublicSeller } from "@/lib/public-content";
 import { breadcrumbJsonLd, generateSeoMetadata } from "@/lib/seo";
-
-const getPublicSeller = cache((id: string) =>
-  prisma.seller.findFirst({
-    where: {
-      id,
-      status: { in: ["verified", "trusted"] },
-      owner: { accountStatus: "active" },
-    },
-    select: { storeName: true, bio: true, profilePath: true },
-  }),
-);
 
 export async function generateMetadata({
   params,
@@ -23,15 +11,14 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
+  const publicId = encodeURIComponent(id);
   try {
     const seller = await getPublicSeller(id);
     if (!seller) notFound();
     return generateSeoMetadata({
       title: `${seller.storeName} – Fitness Seller`,
-      description:
-        seller.bio ||
-        `Browse approved fitness products from ${seller.storeName} on TheFitSaathi.`,
-      path: `/sellers/${id}`,
+      description: `Browse approved fitness and sports products from ${seller.storeName} on FitSaathi.`,
+      path: `/sellers/${publicId}`,
       image: seller.profilePath || undefined,
     });
   } catch {
@@ -41,6 +28,7 @@ export async function generateMetadata({
 
 export default async function SellerLayout({ children, params }: { children: ReactNode; params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const publicId = encodeURIComponent(id);
   let seller;
   try {
     seller = await getPublicSeller(id);
@@ -54,7 +42,7 @@ export default async function SellerLayout({ children, params }: { children: Rea
       <JsonLd data={breadcrumbJsonLd([
         { name: "Home", path: "/" },
         { name: "Fitness Shop", path: "/shop" },
-        { name: seller.storeName, path: `/sellers/${id}` },
+        { name: seller.storeName, path: `/sellers/${publicId}` },
       ])} />
       {children}
     </>

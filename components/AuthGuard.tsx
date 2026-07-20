@@ -24,7 +24,7 @@ export function AuthGuard({ children, role }: { children: ReactNode; role?: "adm
     return <main className="grid min-h-[70vh] place-items-center bg-ink text-sm text-zinc-400">Redirecting to sign in...</main>;
   }
   if (!allowedRole) {
-    return <main className="mx-auto flex min-h-[70vh] max-w-xl items-center px-4 py-12"><section className="rounded-2xl border border-white/10 bg-white/[0.05] p-6"><h1 className="text-3xl font-bold text-white">Access unavailable</h1><p className="mt-3 leading-7 text-zinc-400">This page requires a different TheFitSaathi account role.</p><Link href={dashboardPathForRole(user.role)} className="mt-6 inline-flex rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink">Open my dashboard</Link></section></main>;
+    return <main className="mx-auto flex min-h-[70vh] max-w-xl items-center px-4 py-12"><section className="rounded-2xl border border-white/10 bg-white/[0.05] p-6"><h1 className="text-3xl font-bold text-white">Access unavailable</h1><p className="mt-3 leading-7 text-zinc-400">This page requires a different FitSaathi account role.</p><Link href={dashboardPathForRole(user.role)} className="mt-6 inline-flex rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink">Open my dashboard</Link></section></main>;
   }
   return <>{children}</>;
 }

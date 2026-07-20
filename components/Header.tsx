@@ -9,20 +9,24 @@ import { logoutSession, useSessionUser } from "@/lib/auth-client";
 import { dashboardPathForRole } from "@/lib/roles";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
-const nav = [
+const publicNav = [
   ["Home", "/"],
-  ["Find Fitness Partner", "/life"],
   ["Find Coach", "/find-coach"],
+  ["Dojos", "/dojos"],
+  ["Shop", "/shop"],
   ["Become a Coach", "/become-a-coach"],
   ["Register as Seller", "/register-seller"],
   ["Register Dojo / Gym", "/register-dojo"],
-  ["Dojos", "/dojos"],
+  ["About", "/about"],
+  ["FAQ", "/faq"],
+] as const;
+
+const signedInNav = [
+  ["Find Fitness Partner", "/life"],
   ["Booking", "/booking"],
-  ["Shop", "/shop"],
-  ["Pamphlet", "/pamphlet"],
   ["Chat", "/chat"],
   ["Dashboard", "/dashboard"],
-];
+] as const;
 
 export function Header() {
   const router = useRouter();
@@ -69,6 +73,7 @@ export function Header() {
   }
 
   const signedIn = Boolean(user);
+  const visibleNav = signedIn ? [...publicNav, ...signedInNav] : publicNav;
   const accountLabel = signedIn ? "My Account" : "Log In / Sign Up";
   const accountHref = signedIn ? dashboardHref(role) : "/login";
 
@@ -79,17 +84,17 @@ export function Header() {
       <nav className="mx-auto flex max-w-screen-2xl items-center justify-between gap-1 px-2 py-3 min-[360px]:px-3 sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
         <Link
           href="/"
-          aria-label="Go to TheFitSaathi homepage"
+          aria-label="Go to FitSaathi homepage"
           onClick={() => setOpen(false)}
           className="pointer-events-auto relative z-10 shrink-0 cursor-pointer text-xl font-bold tracking-tight text-white"
         >
-          TheFit<span className="text-acid">Saathi</span>
+          Fit<span className="text-acid">Saathi</span>
         </Link>
         <div
           className="hidden min-w-0 flex-1 items-center justify-center gap-3 overflow-hidden px-3 text-xs font-medium text-zinc-300 2xl:flex"
           aria-label="Primary navigation"
         >
-          {nav.map(([label, href]) => (
+          {visibleNav.map(([label, href]) => (
             <Link
               key={href}
               href={href}
@@ -140,7 +145,7 @@ export function Header() {
           className="safe-area-bottom absolute inset-x-0 top-full max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-ink px-4 py-4 shadow-2xl 2xl:hidden"
         >
           <div className="mx-auto grid max-w-7xl gap-3 text-sm text-zinc-300">
-            {nav.map(([label, href]) => (
+            {visibleNav.map(([label, href]) => (
               <Link
                 key={href}
                 href={href}

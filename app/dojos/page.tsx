@@ -8,11 +8,12 @@ export async function generateMetadata({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   return generateSeoMetadata({
-    title: "Find Dojos, Gyms and Fitness Academies",
+    title: "Find Dojos and Martial Arts Academies",
     description:
-      "Discover karate, boxing, martial arts, yoga, gyms and fitness studios near you through approved TheFitSaathi profiles.",
+      "Explore public dojo, gym and martial arts academy profiles for supported training options on FitSaathi.",
     path: "/dojos",
     noIndex: hasSearchParameters(await searchParams),
+    noFollow: false,
   });
 }
 
@@ -20,7 +21,7 @@ export default function DojosPage() {
   return (
     <>
       <section className="mx-auto max-w-7xl px-4 pt-10 sm:px-6 sm:pt-14 lg:px-8">
-        <p className="text-sm font-medium text-acid">TheFitSaathi academy directory</p>
+        <p className="text-sm font-medium text-acid">FitSaathi academy directory</p>
         <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
           Discover Dojos, Gyms and Sports Academies
         </h1>

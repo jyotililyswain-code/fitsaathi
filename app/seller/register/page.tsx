@@ -47,7 +47,7 @@ export default function SellerRegistrationPage() {
   return (
     <main className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
       <section>
-        <p className="text-sm text-acid">TheFitSaathi sellers</p>
+        <p className="text-sm text-acid">FitSaathi sellers</p>
         <h1 className="mt-2 text-4xl font-bold text-white">Open your fitness store</h1>
         <p className="mt-4 leading-7 text-zinc-400">Submit your store and identity details. Verification files remain in local private storage.</p>
       </section>

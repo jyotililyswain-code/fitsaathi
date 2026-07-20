@@ -111,7 +111,7 @@ function readGoogleIdentity(authUser: SupabaseUser) {
   return {
     id: authUser.id,
     email,
-    name: name || "TheFitSaathi member",
+    name: name || "FitSaathi member",
     avatarUrl: safeAvatarUrl(authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture),
     confirmedAt
   };

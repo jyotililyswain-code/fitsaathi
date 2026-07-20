@@ -1,26 +1,37 @@
-"use client";
-
-import Image from "next/image";
-import { useParams } from "next/navigation";
-import { BadgeCheck, MapPin, Star, Store } from "lucide-react";
-import { useEffect, useState } from "react";
-import { EmptyState } from "@/components/EmptyState";
-import { ProductCard } from "@/components/ProductCard";
-import { getSeller } from "@/lib/data";
-import { useProducts } from "@/lib/hooks";
+import { notFound } from "next/navigation";
+import SellerProfileClient from "@/components/SellerProfileClient";
 import type { Seller } from "@/lib/marketplace";
+import { getPublicSeller } from "@/lib/public-content";
 
-export default function SellerPage() {
-  const params = useParams<{ id?: string }>();
-  const id = params?.id || "";
-  const [seller, setSeller] = useState<Seller | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const products = useProducts();
-  useEffect(() => { let mounted = true; setLoading(true); getSeller(id).then((item) => { if (!mounted) return; setSeller(item); setError(item ? "" : "Seller not found."); }).catch(() => mounted && setError("Seller could not be loaded.")).finally(() => mounted && setLoading(false)); return () => { mounted = false; }; }, [id]);
-  if (loading) return <main className="mx-auto max-w-7xl px-4 py-12"><div className="h-52 animate-pulse rounded-3xl bg-white/[0.04]" /></main>;
-  if (!seller) return <main className="mx-auto max-w-5xl px-4 py-16"><EmptyState title="Seller unavailable" body={error || "This store may no longer be available."} /></main>;
-  const inventory = products.data.filter((product) => product.sellerId === id);
-  return <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"><section className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.07] to-acid/[0.05] p-8"><div className="flex flex-col gap-6 sm:flex-row sm:items-center">{seller.profileImage ? <div className="relative h-24 w-24 overflow-hidden rounded-2xl"><Image src={seller.profileImage} alt={seller.storeName} fill unoptimized sizes="96px" className="object-cover" /></div> : <div className="grid h-24 w-24 place-items-center rounded-2xl bg-white/10"><Store className="h-10 w-10 text-zinc-500" /></div>}<div><div className="flex flex-wrap gap-2">{seller.trusted ? <Badge text="Trusted Seller" /> : seller.verified ? <Badge text="Verified Seller" /> : null}</div><h1 className="mt-3 text-4xl font-bold text-white">{seller.storeName}</h1><div className="mt-2 flex flex-wrap gap-4 text-sm text-zinc-400"><span className="inline-flex gap-1"><Star className="h-4 w-4 text-legendary" />{seller.rating || "New"}</span><span>{seller.salesCount || 0} sales</span><span className="inline-flex gap-1"><MapPin className="h-4 w-4" />{seller.address || "India"}</span></div></div></div></section><section className="py-10"><h2 className="text-2xl font-bold text-white">Products from this seller</h2>{products.loading ? <div className="mt-6 h-64 animate-pulse rounded-2xl bg-white/[0.04]" /> : products.error ? <p className="mt-6 text-red-300">{products.error}</p> : inventory.length ? <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">{inventory.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <div className="mt-6"><EmptyState title="No products yet" body="This seller has no approved products available." /></div>}</section></main>;
+function publicAsset(path: string) {
+  if (/^https?:\/\//i.test(path) || path.startsWith("/")) return path;
+  return `/${path}`;
 }
-function Badge({ text }: { text: string }) { return <span className="inline-flex items-center gap-1 rounded-full border border-legendary/30 bg-legendary/10 px-3 py-1 text-xs font-semibold text-legendary"><BadgeCheck className="h-4 w-4" />{text}</span>; }
+
+export default async function SellerPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const seller = await getPublicSeller(id).catch(() => null);
+  if (!seller) notFound();
+
+  const initialSeller: Seller = {
+    id,
+    ownerId: "",
+    fullName: "",
+    storeName: seller.storeName,
+    address: seller.address,
+    profileImage: seller.profilePath
+      ? publicAsset(seller.profilePath)
+      : undefined,
+    status: seller.status === "trusted" ? "trusted" : "verified",
+    verified: seller.verified,
+    trusted: seller.trusted,
+    rating: seller.rating,
+    salesCount: seller.salesCount,
+  };
+
+  return <SellerProfileClient id={id} initialSeller={initialSeller} />;
+}

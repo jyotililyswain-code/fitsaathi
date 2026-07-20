@@ -12,7 +12,9 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      { source: "/home", destination: "/", permanent: true },
       { source: "/marketplace", destination: "/shop", permanent: true },
+      { source: "/seller/register", destination: "/register-seller", permanent: true },
       { source: "/policies/privacy", destination: "/privacy", permanent: true },
       { source: "/policies/terms", destination: "/terms", permanent: true }
     ];

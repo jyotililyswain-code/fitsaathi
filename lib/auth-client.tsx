@@ -39,6 +39,9 @@ const publicSeoRoutes = new Set([
   "/shop",
   "/products",
   "/seller",
+  "/become-a-coach",
+  "/register-dojo",
+  "/register-seller",
   "/get-started",
   "/pamphlet",
   "/policies",
@@ -51,6 +54,7 @@ const publicSeoPrefixes = [
   "/products/",
   "/sellers/",
   "/policies/",
+  "/get-started/",
 ];
 
 export function isPublicSeoRoute(pathname: string) {

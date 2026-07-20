@@ -14,7 +14,7 @@ import {
   siteUrl,
 } from "../lib/seo";
 
-test("SEO URLs are permanently pinned to the TheFitSaathi production origin", () => {
+test("SEO URLs are permanently pinned to the FitSaathi production origin", () => {
   assert.equal(siteUrl, "https://thefitsaathi.com");
   assert.equal(
     canonicalUrl("https://preview-project.vercel.app/find-coach?q=yoga"),
@@ -36,7 +36,7 @@ test("homepage metadata has the required title, description and social cards", (
   assert.equal(metadata.description, seoConfig.defaultDescription);
   assert.deepEqual(metadata.alternates, { canonical: "https://thefitsaathi.com/" });
   assert.equal(metadata.openGraph?.url, "https://thefitsaathi.com/");
-  assert.equal(metadata.openGraph?.siteName, "TheFitSaathi");
+  assert.equal(metadata.openGraph?.siteName, "FitSaathi");
   assert.equal(
     (metadata.twitter as { card?: string } | undefined)?.card,
     "summary_large_image",
@@ -105,7 +105,7 @@ test("production aliases redirect permanently and previews are noindex", () => {
 });
 
 test("public SEO pages render while private pages retain the session guard", () => {
-  for (const path of ["/", "/home", "/coaches/coach-id", "/dojos/dojo-id", "/policies/refunds"]) {
+  for (const path of ["/", "/home", "/coaches/coach-id", "/dojos/dojo-id", "/policies/refunds", "/become-a-coach", "/register-dojo", "/register-seller"]) {
     assert.equal(isPublicSeoRoute(path), true, `${path} should render publicly`);
   }
   for (const path of ["/dashboard", "/seller/register", "/auth/verify-email", "/api/stats"]) {

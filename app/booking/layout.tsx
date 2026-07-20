@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Book Fitness Coaches and Dojos - TheFitSaathi",
+  title: "Book Fitness Coaches and Dojos - FitSaathi",
   description:
-    "Book trusted fitness coaches, martial arts trainers, yoga teachers, and dojo classes through TheFitSaathi.",
+    "Book trusted fitness coaches, martial arts trainers, yoga teachers, and dojo classes through FitSaathi.",
   path: "/booking",
   keywords: [
     "book fitness coach",

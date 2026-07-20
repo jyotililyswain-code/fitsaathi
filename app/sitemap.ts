@@ -5,18 +5,18 @@ import { policies } from "@/lib/policies";
 
 const publicRoutes = [
   { path: "/", changeFrequency: "weekly" as const, priority: 1 },
-  { path: "/home", changeFrequency: "weekly" as const, priority: 0.9 },
   { path: "/find-coach", changeFrequency: "daily" as const, priority: 0.95 },
   { path: "/coaches", changeFrequency: "daily" as const, priority: 0.85 },
   { path: "/dojos", changeFrequency: "daily" as const, priority: 0.9 },
   { path: "/shop", changeFrequency: "daily" as const, priority: 0.8 },
   { path: "/products", changeFrequency: "daily" as const, priority: 0.75 },
   { path: "/seller", changeFrequency: "monthly" as const, priority: 0.6 },
-  { path: "/get-started", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/become-a-coach", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/register-dojo", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/register-seller", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/about", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/faq", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/contact", changeFrequency: "monthly" as const, priority: 0.6 },
-  { path: "/pamphlet", changeFrequency: "monthly" as const, priority: 0.4 },
   { path: "/policies", changeFrequency: "monthly" as const, priority: 0.5 },
   { path: "/privacy", changeFrequency: "yearly" as const, priority: 0.3 },
   { path: "/terms", changeFrequency: "yearly" as const, priority: 0.3 },
@@ -28,6 +28,8 @@ const publicRoutes = [
       priority: 0.3,
     })),
 ];
+
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticItems: MetadataRoute.Sitemap = publicRoutes.map((route) => ({
@@ -75,25 +77,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
       ...staticItems,
       ...coaches.map((coach) => ({
-        url: absoluteUrl(`/coaches/${coach.id}`),
+        url: absoluteUrl(`/coaches/${encodeURIComponent(coach.id)}`),
         lastModified: coach.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.7,
       })),
       ...dojos.map((dojo) => ({
-        url: absoluteUrl(`/dojos/${dojo.id}`),
+        url: absoluteUrl(`/dojos/${encodeURIComponent(dojo.id)}`),
         lastModified: dojo.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.7,
       })),
       ...products.map((product) => ({
-        url: absoluteUrl(`/products/${product.id}`),
+        url: absoluteUrl(`/products/${encodeURIComponent(product.id)}`),
         lastModified: product.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.6,
       })),
       ...sellers.map((seller) => ({
-        url: absoluteUrl(`/sellers/${seller.id}`),
+        url: absoluteUrl(`/sellers/${encodeURIComponent(seller.id)}`),
         lastModified: seller.updatedAt,
         changeFrequency: "weekly" as const,
         priority: 0.55,

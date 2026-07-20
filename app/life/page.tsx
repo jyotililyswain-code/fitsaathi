@@ -48,7 +48,7 @@ export default function LifePage() {
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[.22em] text-acid">TheFitSaathi Life</p>
+            <p className="text-sm font-semibold uppercase tracking-[.22em] text-acid">FitSaathi Life</p>
             <h1 className="mt-2 text-4xl font-black text-white sm:text-6xl">Find your people.</h1>
             <p className="mt-3 text-zinc-400">Search verified members by fitness interest for free. Phone numbers stay private until an invite is accepted.</p>
           </div>

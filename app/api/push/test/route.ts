@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const result = await sendPushToUser(user.id, {
       notificationId: `test-${Date.now()}`,
       type: "notification_test",
-      title: "TheFitSaathi notifications are working",
+      title: "FitSaathi notifications are working",
       body: "You will receive alerts here when a new booking arrives.",
       actionUrl: user.role === "coach" ? "/coach-dashboard" : user.role === "dojo" ? "/dojo-dashboard" : "/dashboard",
       tag: `notification-test-${user.id}`,

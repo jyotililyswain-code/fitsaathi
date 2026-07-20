@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Verify Your TheFitSaathi Email",
+  title: "Verify Your FitSaathi Email",
   description:
-    "Verify your email address to finish setting up your TheFitSaathi account.",
+    "Verify your email address to finish setting up your FitSaathi account.",
   path: "/auth/verify-email",
   noIndex: true,
 });

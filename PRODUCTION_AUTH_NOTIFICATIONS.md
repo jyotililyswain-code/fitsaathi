@@ -1,12 +1,12 @@
-# TheFitSaathi production setup: email verification and booking notifications
+# FitSaathi production setup: email verification and booking notifications
 
-The code is complete, but hosted email delivery, VAPID secrets, the database migration, and the production domain must be configured before release. TheFitSaathi's canonical production origin is `https://thefitsaathi.com`.
+The code is complete, but hosted email delivery, VAPID secrets, the database migration, and the production domain must be configured before release. FitSaathi's canonical production origin is `https://thefitsaathi.com`.
 
 ## Architecture audit
 
 - Next.js `15.5.18`, React `18.3.1`, TypeScript strict mode, App Router. A Pages Router catch-all mounts the existing Express API for legacy routes.
 - Supabase JavaScript `2.110.0`. Supabase Auth is the password and email-confirmation authority. Prisma/PostgreSQL stores the application profile and role state; it no longer stores password hashes.
-- New registrations create `pending_email_verification` profiles. `/auth/verify-email` calls the server, the server calls `verifyOtp({ email, token, type: "email" })`, verifies `email_confirmed_at`, updates the application profile, and only then issues the HttpOnly TheFitSaathi session.
+- New registrations create `pending_email_verification` profiles. `/auth/verify-email` calls the server, the server calls `verifyOtp({ email, token, type: "email" })`, verifies `email_confirmed_at`, updates the application profile, and only then issues the HttpOnly FitSaathi session.
 - Coach, dojo/gym, and seller registration remain their existing separate profile flows. Email verification activates the login account; professional approval/listing status remains in the provider-specific table.
 - Booking creation is the App Router handler at `/api/bookings/create`; status transitions are `/api/bookings/status`. The old Express mutation is disabled. The booking transaction writes the booking, in-app notification, and push outbox atomically.
 - There was no prior manifest, service worker, browser push, or realtime client. `public/sw.js` is the only service worker and does not cache requests or private data.
@@ -41,14 +41,14 @@ Set `NEXT_PUBLIC_SITE_URL=https://thefitsaathi.com` in Vercel Production. For lo
 
 Go to **Authentication > Email Templates > Confirm signup**.
 
-- Subject: `Your TheFitSaathi verification code`
+- Subject: `Your FitSaathi verification code`
 - Body:
 
 ```html
-<h2>Welcome to TheFitSaathi</h2>
+<h2>Welcome to FitSaathi</h2>
 <p>Your email verification code is:</p>
 <p style="font-size:32px;font-weight:700;letter-spacing:8px">{{ .Token }}</p>
-<p>Enter this six-digit code on the TheFitSaathi verification page.</p>
+<p>Enter this six-digit code on the FitSaathi verification page.</p>
 <p>If you did not request this code, you can ignore this email.</p>
 ```
 
@@ -62,7 +62,7 @@ The Supabase test mailer is not suitable for production and currently permits on
 2. Verify an authentication sending domain, preferably a dedicated subdomain such as `auth.<your-domain>`.
 3. Publish the provider's SPF and DKIM records; add a suitable DMARC policy.
 4. Enable custom SMTP and enter the provider-supplied host, port, username, and password.
-5. Sender name: `TheFitSaathi`.
+5. Sender name: `FitSaathi`.
 6. Sender email: a verified address such as `no-reply@auth.<your-domain>`.
 7. Disable click tracking for authentication mail if the provider rewrites links.
 8. Never put the SMTP password in this repository or a `NEXT_PUBLIC_*` variable. Supabase stores it in the Auth SMTP configuration.
@@ -135,7 +135,7 @@ After saving variables:
 Use inboxes you control and synthetic profile data.
 
 1. Register customer, coach, dojo owner, gym owner, and seller intents.
-2. Confirm no TheFitSaathi session cookie is issued by signup and protected pages redirect to login.
+2. Confirm no FitSaathi session cookie is issued by signup and protected pages redirect to login.
 3. Confirm the email contains a six-digit code; a wrong code and expired code fail; the correct code verifies and signs in.
 4. Confirm resend stays disabled for 60 seconds and server rate limiting rejects rapid bypass attempts.
 5. Finish each provider profile. Confirm coach approval remains pending where applicable and dojo/gym behavior follows the existing publication policy.
@@ -144,7 +144,7 @@ Use inboxes you control and synthetic profile data.
 8. Book one coach, dojo, and gym from the customer account. Confirm only the derived owner receives the in-app row, unread increment, realtime refresh, toast, and push.
 9. Retry the same booking request/idempotency key and confirm no second booking or notification is created.
 10. Accept, reject, reschedule, cancel (both actors), and complete bookings. Confirm customer/provider recipients match the event and no duplicate event key is created.
-11. Click a push while a TheFitSaathi tab is open and while closed. Confirm the safe dashboard route opens and unauthorized accounts cannot access the booking.
+11. Click a push while a FitSaathi tab is open and while closed. Confirm the safe dashboard route opens and unauthorized accounts cannot access the booking.
 12. Log out and confirm the current device subscription is removed; sign in as another user and enable notifications again.
 13. Test multiple devices, an expired subscription (HTTP 404/410), and a temporary push failure. The booking and in-app notification must survive every push outcome.
 14. Delete all temporary records and Auth users after verification.

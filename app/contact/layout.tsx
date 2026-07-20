@@ -2,13 +2,13 @@ import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Contact and Customer Care",
+  title: "Contact FitSaathi Support",
   description:
-    "Contact TheFitSaathi for fitness coach booking support, dojo registration help, seller support, and customer care.",
+    "Contact FitSaathi for account, registration, booking and platform-support questions.",
   path: "/contact",
   keywords: [
-    "TheFitSaathi contact",
-    "TheFitSaathi support",
+    "FitSaathi contact",
+    "FitSaathi support",
     "customer care",
     "fitness support India",
   ],

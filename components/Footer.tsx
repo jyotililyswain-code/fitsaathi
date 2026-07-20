@@ -11,9 +11,9 @@ const footerLinks = [
   ["About", "/about"],
   ["Find Coach", "/find-coach"],
   ["Become a Coach", "/become-a-coach"],
+  ["Register Dojo / Gym", "/register-dojo"],
   ["Register Seller", "/register-seller"],
   ["Dojos", "/dojos"],
-  ["Booking", "/booking"],
   ["Shop", "/shop"],
   ["Contact", "/contact"],
   ["FAQ", "/faq"],
@@ -31,7 +31,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_1.5fr_1fr] lg:px-8">
         <div>
           <Link href="/" className="text-lg font-bold text-white">
-            TheFit<span className="text-acid">Saathi</span>
+            Fit<span className="text-acid">Saathi</span>
           </Link>
           <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-500">
             Fitness support, safety, and trusted connections.
@@ -56,7 +56,7 @@ export function Footer() {
         </nav>
 
         <address className="not-italic">
-          <p className="text-sm font-semibold text-white">TheFitSaathi support</p>
+          <p className="text-sm font-semibold text-white">FitSaathi support</p>
           <a
             href="mailto:priyanshuswain2000@gmail.com"
             className="mt-2 flex min-h-11 items-center gap-2 break-all text-sm text-zinc-400 transition hover:text-acid"

@@ -92,7 +92,7 @@ export default function BookingPage() {
     <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
       <p className="text-sm font-semibold text-acid">Free booking</p>
       <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">Book {providerName || "your fitness session"}</h1>
-      <p className="mt-3 text-zinc-400">Submit your preferred session details. TheFitSaathi charges nothing for this booking—no payment step, platform fee, or hidden charge.</p>
+      <p className="mt-3 text-zinc-400">Submit your preferred session details. FitSaathi charges nothing for this booking—no payment step, platform fee, or hidden charge.</p>
       <form onSubmit={submitBooking} className="mt-8 rounded-2xl border border-white/10 bg-white/[0.05] p-5 sm:p-6">
         <div className="rounded-xl border border-acid/30 bg-acid/10 p-4">
           <p className="text-sm font-semibold text-white">Total booking charge</p>

@@ -1,28 +1,57 @@
 import type { Metadata } from "next";
 
-// SEO URLs must never depend on VERCEL_URL or a Preview environment variable.
-// The production origin is deliberately pinned so canonicals, structured data,
-// robots.txt and sitemap.xml always agree.
-export const siteUrl = "https://thefitsaathi.com";
+const OFFICIAL_SITE_URL = "https://thefitsaathi.com";
+
+function configuredSiteUrl() {
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
+  if (!configured) return OFFICIAL_SITE_URL;
+
+  try {
+    const parsed = new URL(configured);
+    if (
+      parsed.protocol === "https:" &&
+      parsed.hostname.toLowerCase() === "thefitsaathi.com" &&
+      !parsed.port &&
+      parsed.pathname === "/" &&
+      !parsed.search &&
+      !parsed.hash
+    ) {
+      return parsed.origin;
+    }
+  } catch {
+    // Invalid, preview, or local values must never become production canonicals.
+  }
+
+  return OFFICIAL_SITE_URL;
+}
+
+export const siteUrl = configuredSiteUrl();
+export const brandName = "FitSaathi";
+export const brandAlternateNames = [
+  "TheFitSaathi",
+  "The FitSaathi",
+  "Fit Saathi",
+] as const;
 
 export const seoConfig = {
-  siteName: "TheFitSaathi",
+  siteName: brandName,
   siteUrl,
-  defaultTitle:
-    "TheFitSaathi – Find Fitness Coaches, Gyms and Sports Academies",
+  defaultTitle: "FitSaathi – Find Fitness Coaches, Gyms and Sports Academies",
   defaultDescription:
-    "Find fitness coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services with TheFitSaathi.",
+    "Find fitness coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services across India with FitSaathi.",
   defaultKeywords: [
+    "FitSaathi",
+    "Fit Saathi",
     "TheFitSaathi",
-    "fitness coach near me",
-    "home fitness coach",
-    "personal trainer at home",
-    "yoga trainer near me",
-    "karate coach near me",
-    "martial arts classes near me",
-    "dojo near me",
-    "fitness marketplace India",
-    "personal training India",
+    "fitness coaches India",
+    "personal trainers India",
+    "gyms India",
+    "dojos India",
+    "martial arts academies India",
+    "sports academies India",
+    "yoga instructors India",
+    "fitness partner",
+    "sports training",
   ],
   defaultOpenGraphImage: "/opengraph-image",
   logo: "/favicon-512x512.png",
@@ -35,39 +64,72 @@ type SeoMetadataInput = {
   keywords?: string[];
   image?: string;
   noIndex?: boolean;
+  noFollow?: boolean;
 };
+
+const contactOrPrivatePatterns = [
+  /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+  /\b(?:\+?91[\s-]?)?[6-9]\d{9}\b/g,
+  /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
+  /\b\d{12,19}\b/g,
+] as const;
+
+/**
+ * Keeps public, user-authored labels safe for metadata and JSON-LD. It removes
+ * markup, control characters, and contact/identity-number patterns before
+ * normalizing whitespace and enforcing a search-snippet-friendly length.
+ */
+export function sanitizeSeoText(value: unknown, maxLength = 160) {
+  if (typeof value !== "string") return "";
+  let result = value
+    .normalize("NFKC")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[\u0000-\u001F\u007F]/g, " ");
+  for (const pattern of contactOrPrivatePatterns) result = result.replace(pattern, " ");
+  result = result.replace(/\s+/g, " ").trim();
+  if (result.length <= maxLength) return result;
+  return result.slice(0, maxLength - 1).replace(/\s+\S*$/, "").trimEnd() + "…";
+}
 
 export function absoluteUrl(path = "/") {
   if (/^https?:\/\//i.test(path)) return path;
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function seoImageUrl(
-  path: string = seoConfig.defaultOpenGraphImage,
-) {
+export function seoImageUrl(path: string = seoConfig.defaultOpenGraphImage) {
   const value = path.trim();
-  if (/^(?:data|blob):/i.test(value)) {
+  if (!value || /^(?:data|blob|javascript):/i.test(value)) {
     return absoluteUrl(seoConfig.defaultOpenGraphImage);
   }
+
   if (/^https?:\/\//i.test(value)) {
-    const parsed = new URL(value);
-    const hostname = parsed.hostname.toLowerCase();
-    if (
-      hostname === "fitsaathi.com" ||
-      hostname === "www.fitsaathi.com" ||
-      hostname === "www.thefitsaathi.com" ||
-      hostname.endsWith(".vercel.app")
-    ) {
-      return `${siteUrl}${parsed.pathname}${parsed.search}`;
+    try {
+      const parsed = new URL(value);
+      const hostname = parsed.hostname.toLowerCase();
+      if (
+        hostname === "fitsaathi.com" ||
+        hostname === "www.fitsaathi.com" ||
+        hostname === "www.thefitsaathi.com" ||
+        hostname.endsWith(".vercel.app")
+      ) {
+        return `${siteUrl}${parsed.pathname}${parsed.search}`;
+      }
+      return parsed.protocol === "https:"
+        ? parsed.href
+        : absoluteUrl(seoConfig.defaultOpenGraphImage);
+    } catch {
+      return absoluteUrl(seoConfig.defaultOpenGraphImage);
     }
-    return value;
   }
+
   return absoluteUrl(value);
 }
 
 export function canonicalUrl(path = "/") {
   const parsed = new URL(path, siteUrl);
-  const pathname = parsed.pathname === "/" ? "/" : parsed.pathname.replace(/\/$/, "");
+  const normalizedPath = parsed.pathname.replace(/\/{2,}/g, "/");
+  const pathname =
+    normalizedPath === "/" ? "/" : normalizedPath.replace(/\/$/, "");
   return `${siteUrl}${pathname}`;
 }
 
@@ -86,16 +148,26 @@ export function generateSeoMetadata({
   keywords = [...seoConfig.defaultKeywords],
   image = seoConfig.defaultOpenGraphImage,
   noIndex = false,
+  noFollow = noIndex,
 }: SeoMetadataInput = {}): Metadata {
   const canonical = canonicalUrl(path);
   const imageUrl = seoImageUrl(image);
-  const includesBrand = title.includes(seoConfig.siteName);
-  const documentTitle = includesBrand ? title : `${title} | ${seoConfig.siteName}`;
+  const safeTitle = sanitizeSeoText(title, 75) || seoConfig.defaultTitle;
+  const safeDescription =
+    sanitizeSeoText(description, 160) || seoConfig.defaultDescription;
+  const includesBrand = /fit\s*saathi/i.test(safeTitle);
+  const documentTitle = includesBrand
+    ? safeTitle
+    : `${safeTitle} | ${seoConfig.siteName}`;
+  const safeKeywords = keywords
+    .map((keyword) => sanitizeSeoText(keyword, 60))
+    .filter(Boolean)
+    .slice(0, 14);
 
   return {
     title: { absolute: documentTitle },
-    description,
-    keywords,
+    description: safeDescription,
+    keywords: safeKeywords,
     alternates: { canonical },
     applicationName: seoConfig.siteName,
     category: "fitness",
@@ -105,29 +177,33 @@ export function generateSeoMetadata({
       locale: "en_IN",
       url: canonical,
       title: documentTitle,
-      description,
+      description: safeDescription,
       images: [
         {
           url: imageUrl,
           ...(image === seoConfig.defaultOpenGraphImage
             ? { width: 1200, height: 630, type: "image/png" }
             : {}),
-          alt: `${documentTitle} social preview image`,
+          alt: sanitizeSeoText(`${documentTitle} social preview image`, 120),
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title: documentTitle,
-      description,
+      description: safeDescription,
       images: [imageUrl],
     },
     robots: noIndex
       ? {
           index: false,
-          follow: false,
+          follow: !noFollow,
           nocache: true,
-          googleBot: { index: false, follow: false, noimageindex: true },
+          googleBot: {
+            index: false,
+            follow: !noFollow,
+            noimageindex: true,
+          },
         }
       : {
           index: true,
@@ -147,7 +223,8 @@ export const organizationJsonLd = {
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
   name: seoConfig.siteName,
-  url: siteUrl,
+  alternateName: [...brandAlternateNames],
+  url: `${siteUrl}/`,
   logo: {
     "@type": "ImageObject",
     url: absoluteUrl(seoConfig.logo),
@@ -155,28 +232,27 @@ export const organizationJsonLd = {
     height: 512,
   },
   description:
-    "TheFitSaathi helps people find fitness coaches, martial arts trainers, gyms, dojos and sports academies across India.",
+    "An Indian fitness and sports platform for discovering coaches, trainers, gyms, dojos and sports academies.",
   areaServed: { "@type": "Country", name: "India" },
 };
 
 export const websiteJsonLd = {
   "@type": "WebSite",
   "@id": `${siteUrl}/#website`,
+  url: `${siteUrl}/`,
   name: seoConfig.siteName,
-  url: siteUrl,
+  alternateName: [...brandAlternateNames],
+  description:
+    "FitSaathi helps people discover fitness coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services across India.",
+  inLanguage: "en-IN",
   publisher: { "@id": `${siteUrl}/#organization` },
-  potentialAction: {
-    "@type": "SearchAction",
-    target: `${siteUrl}/find-coach?q={search_term_string}`,
-    "query-input": "required name=search_term_string",
-  },
 };
 
 export const coachBookingServiceJsonLd = {
   "@type": "Service",
-  name: "Home Fitness Coach Booking",
+  name: "Fitness Coach and Sports Training Discovery",
   description:
-    "Find and book home fitness coaches, personal trainers, yoga trainers, martial arts teachers, and dojos in India.",
+    "Discover fitness coaches, personal trainers, yoga instructors, martial arts teachers, gyms, dojos and sports academies in India.",
   areaServed: { "@type": "Country", name: "India" },
   provider: { "@id": `${siteUrl}/#organization` },
 };
@@ -194,28 +270,39 @@ type SportsLocationInput = {
 };
 
 export function sportsActivityLocationJsonLd(location: SportsLocationInput) {
-  const image = location.image && !/^(?:data|blob):/i.test(location.image)
-    ? seoImageUrl(location.image)
-    : undefined;
+  const image =
+    location.image && !/^(?:data|blob):/i.test(location.image)
+      ? seoImageUrl(location.image)
+      : undefined;
+  const safeName = sanitizeSeoText(location.name, 100) || "Fitness academy";
+  const safeCategory = sanitizeSeoText(location.category, 80) || "fitness";
+  const safeCity = sanitizeSeoText(location.city, 80);
   const postalAddress = {
     "@type": "PostalAddress",
-    ...(location.address ? { streetAddress: location.address } : {}),
-    ...(location.city ? { addressLocality: location.city } : {}),
-    ...(location.state ? { addressRegion: location.state } : {}),
-    ...(location.pincode ? { postalCode: location.pincode } : {}),
+    ...(location.address
+      ? { streetAddress: sanitizeSeoText(location.address, 120) }
+      : {}),
+    ...(safeCity ? { addressLocality: safeCity } : {}),
+    ...(location.state
+      ? { addressRegion: sanitizeSeoText(location.state, 80) }
+      : {}),
+    ...(location.pincode
+      ? { postalCode: sanitizeSeoText(location.pincode, 10) }
+      : {}),
     addressCountry: "IN",
   };
+  const profilePath = `/dojos/${encodeURIComponent(location.id)}`;
 
   return {
     "@context": "https://schema.org",
     "@type": "SportsActivityLocation",
-    "@id": `${canonicalUrl(`/dojos/${location.id}`)}#sports-location`,
-    name: location.name,
-    url: canonicalUrl(`/dojos/${location.id}`),
+    "@id": `${canonicalUrl(profilePath)}#sports-location`,
+    name: safeName,
+    url: canonicalUrl(profilePath),
     description:
-      location.description ||
-      `${location.name} offers ${location.category} training${location.city ? ` in ${location.city}` : ""}.`,
-    sport: location.category,
+      sanitizeSeoText(location.description, 240) ||
+      `${safeName} offers ${safeCategory} training${safeCity ? ` in ${safeCity}` : ""}.`,
+    sport: safeCategory,
     ...(image ? { image } : {}),
     address: postalAddress,
   };
@@ -230,7 +317,7 @@ export function breadcrumbJsonLd(
     itemListElement: items.map((item, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      name: item.name,
+      name: sanitizeSeoText(item.name, 100),
       item: canonicalUrl(item.path),
     })),
   };

@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { AuthSessionProvider } from "@/lib/auth-client";
 import { JsonLd } from "@/components/JsonLd";
 import {
+  brandName,
   generateSeoMetadata,
   organizationJsonLd,
   seoConfig,
@@ -24,9 +25,9 @@ export const metadata: Metadata = {
     template: `%s | ${seoConfig.siteName}`,
   },
   description: seoConfig.defaultDescription,
-  authors: [{ name: "TheFitSaathi", url: siteUrl }],
-  creator: "TheFitSaathi",
-  publisher: "TheFitSaathi",
+  authors: [{ name: brandName, url: siteUrl }],
+  creator: brandName,
+  publisher: brandName,
   referrer: "origin-when-cross-origin",
   formatDetection: {
     email: false,
@@ -59,10 +60,15 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const gaId = process.env.NEXT_PUBLIC_GA_ID;
+  const configuredGaId =
+    process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.NEXT_PUBLIC_GA_ID;
+  const gaId =
+    configuredGaId && /^G-[A-Z0-9]+$/i.test(configuredGaId)
+      ? configuredGaId
+      : undefined;
 
   return (
-    <html lang="en">
+    <html lang="en-IN">
       <body className="bg-ink font-sans antialiased">
         <a
           href="#main-content"

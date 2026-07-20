@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
-  title: "Register Your Dojo or Gym - TheFitSaathi",
+  title: "Register Your Dojo or Gym on FitSaathi",
   description:
-    "Register a dojo, gym, yoga studio, martial arts academy, or fitness studio on TheFitSaathi and connect with students in India.",
+    "Create a public profile for your dojo, gym, martial arts academy or fitness centre on FitSaathi.",
   path: "/register-dojo",
   keywords: [
     "dojo gym registration",
@@ -11,7 +11,6 @@ export const metadata = generateSeoMetadata({
     "register gym India",
     "fitness academy India",
   ],
-  noIndex: true,
 });
 export default function Layout({ children }: { children: ReactNode }) {
   return children;

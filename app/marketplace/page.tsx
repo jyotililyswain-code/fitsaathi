@@ -33,7 +33,7 @@ export default function MarketplacePage() {
       <section className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_.9fr] lg:px-8">
         <FadeUp>
           <p className="inline-flex rounded-full border border-acid/30 bg-acid/10 px-4 py-2 text-sm text-acid">
-            TheFitSaathi Marketplace
+            FitSaathi Marketplace
           </p>
           <h1 className="mt-5 text-5xl font-bold leading-tight text-white sm:text-6xl">
             Stronger gear.
@@ -140,7 +140,7 @@ export default function MarketplacePage() {
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-acid/20 bg-acid/10 p-8 sm:p-12">
           <h2 className="text-3xl font-bold text-white">
-            Sell fitness products on TheFitSaathi
+            Sell fitness products on FitSaathi
           </h2>
           <p className="mt-3 max-w-2xl text-zinc-300">
             Build your store, get verified and manage products, inventory,

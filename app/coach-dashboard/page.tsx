@@ -43,7 +43,7 @@ export default function CoachDashboardPage() {
       <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <BookingRealtimeListener onRefresh={bookings.reload} />
       <h1 className="text-4xl font-bold text-white">Coach dashboard</h1>
-      <p className="mt-3 text-zinc-400">Registration and all TheFitSaathi bookings are free, with no platform deductions or hidden charges.</p>
+      <p className="mt-3 text-zinc-400">Registration and all FitSaathi bookings are free, with no platform deductions or hidden charges.</p>
       <div className="mt-8 grid gap-4 md:grid-cols-4">
         <Tile icon={<CheckCircle2 />} label="Accepted bookings" value={String(acceptedBookings)} />
         <Tile icon={<CalendarDays />} label="Pending bookings" value={String(pendingBookings)} />

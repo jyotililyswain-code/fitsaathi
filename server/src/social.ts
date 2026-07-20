@@ -313,7 +313,7 @@ socialRouter.get("/admin/verifications", allowRoles(...admins), asyncRoute(async
 socialRouter.patch("/admin/verifications/:id", allowRoles(...admins), asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({ status: z.enum(["approved", "rejected", "needs_review"]), rejectionReason: z.string().trim().max(500).optional() }).parse(request.body);
   const verification = await prisma.socialVerification.update({ where: { id: String(request.params.id) }, data: { ...input, reviewedById: request.user!.id, reviewedAt: new Date() } });
-  await prisma.notification.create({ data: { userId: verification.userId, type: `verification_${input.status}`, title: `Verification ${input.status}`, message: input.status === "approved" ? "Your TheFitSaathi profile is now verified." : input.rejectionReason || "Your verification needs attention." } });
+  await prisma.notification.create({ data: { userId: verification.userId, type: `verification_${input.status}`, title: `Verification ${input.status}`, message: input.status === "approved" ? "Your FitSaathi profile is now verified." : input.rejectionReason || "Your verification needs attention." } });
   response.json(verification);
 }));
 

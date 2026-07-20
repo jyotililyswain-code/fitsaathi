@@ -6,7 +6,7 @@ export default function SellerPage() {
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <section className="rounded-[2rem] border border-white/10 bg-white/[.04] p-8 sm:p-10">
         <p className="text-sm font-semibold uppercase tracking-[.22em] text-acid">Seller center</p>
-        <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">Sell trusted fitness products on TheFitSaathi.</h1>
+        <h1 className="mt-3 text-4xl font-black text-white sm:text-5xl">Sell trusted fitness products on FitSaathi.</h1>
         <p className="mt-4 max-w-2xl leading-7 text-zinc-400">
           Register as a seller, submit verification details, then manage products and orders from your seller dashboard.
         </p>

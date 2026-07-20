@@ -4,9 +4,9 @@ import { getPolicy } from "@/lib/policies";
 import { breadcrumbJsonLd, generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Terms and Conditions",
+  title: "Terms and Conditions | FitSaathi",
   description:
-    "Read TheFitSaathi Terms and Conditions for free coach and dojo booking, free provider registration and identity verification, transparent shop purchases, and platform rules.",
+    "Read FitSaathi Terms and Conditions for free coach and dojo booking, free provider registration and identity verification, transparent shop purchases, and platform rules.",
   path: "/terms",
 });
 

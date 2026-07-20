@@ -79,7 +79,7 @@ export function ReportProblemModal({ open, onClose }: { open: boolean; onClose: 
         </span>
         <h2 id="report-problem-title" className="mt-5 pr-12 text-2xl font-bold text-white">Report a Problem</h2>
         <p id="report-problem-description" className="mt-3 leading-7 text-zinc-300">
-          Facing any issue with a free booking, registration, coach, dojo, shop order, or account? Contact TheFitSaathi support using the details below.
+          Facing any issue with a free booking, registration, coach, dojo, shop order, or account? Contact FitSaathi support using the details below.
         </p>
 
         <div className="mt-6 divide-y divide-white/10 rounded-lg border border-white/10 bg-white/[0.03] px-4">

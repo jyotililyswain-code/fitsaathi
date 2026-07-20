@@ -5,10 +5,10 @@ import { coachBookingServiceJsonLd, generateSeoMetadata } from "@/lib/seo";
 export const metadata = generateSeoMetadata({
   title: "Fitness Coaches, Dojos and Trainers in India",
   description:
-    "TheFitSaathi helps you find home fitness coaches, personal trainers, yoga teachers, martial arts classes, dojos, and fitness services in India.",
+    "FitSaathi helps you find home fitness coaches, personal trainers, yoga teachers, martial arts classes, dojos, and fitness services in India.",
   path: "/home",
   keywords: [
-    "TheFitSaathi",
+    "FitSaathi",
     "fitness coach near me",
     "personal trainer at home",
     "yoga trainer near me",
