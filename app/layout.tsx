@@ -4,14 +4,11 @@ import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { AuthSessionProvider } from "@/lib/auth-client";
-import { JsonLd } from "@/components/JsonLd";
 import {
   brandName,
   generateSeoMetadata,
-  organizationJsonLd,
   seoConfig,
   siteUrl,
-  websiteJsonLd,
 } from "@/lib/seo";
 import "./globals.css";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
@@ -76,12 +73,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to main content
         </a>
-        <JsonLd
-          data={{
-            "@context": "https://schema.org",
-            "@graph": [organizationJsonLd, websiteJsonLd],
-          }}
-        />
         {gaId ? (
           <>
             <Script

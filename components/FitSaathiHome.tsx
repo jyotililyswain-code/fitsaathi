@@ -181,7 +181,7 @@ type InterestMatch = {
   shortBio?: string;
 };
 
-export default function HomePage() {
+export default function HomePage({ brandSection }: { brandSection: ReactNode }) {
   const router = useRouter();
   const stats = usePlatformStats();
   const coaches = useCoaches(true);
@@ -287,18 +287,19 @@ export default function HomePage() {
             Fitness and sports discovery across India
           </p>
           <h1 className="mt-6 text-5xl font-black leading-tight text-white sm:text-7xl">
-            Find Fitness Coaches, Gyms and Sports Academies with FitSaathi
+            FitSaathi: Find Fitness Coaches, Dojos and Gyms Near You
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
-            FitSaathi is an Indian fitness and sports platform that helps people
-            discover fitness coaches, personal trainers, gyms, dojos, martial
-            arts academies, yoga instructors and sports training services.
+            FitSaathi helps people discover home fitness coaches, personal
+            trainers, yoga instructors, martial arts teachers, dojos, gyms and
+            sports training services across India.
           </p>
           <p className="mt-3 max-w-2xl leading-7 text-zinc-400">
-            FitSaathi helps people across India discover fitness coaches,
-            personal trainers, martial arts instructors, gyms, dojos, yoga
-            trainers and sports academies through clear profiles and simple
-            booking requests.
+            Visit the official FitSaathi platform at{" "}
+            <Link href="/" className="font-medium text-acid hover:underline">
+              thefitsaathi.com
+            </Link>{" "}
+            to explore public coach, dojo, gym and training profiles.
           </p>
 
           <form
@@ -370,6 +371,8 @@ export default function HomePage() {
           />
         </motion.aside>
       </section>
+
+      {brandSection}
 
       <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-[2rem] border border-acid/20 bg-gradient-to-br from-acid/10 via-white/[.04] to-royal/10 p-6 sm:p-8">
@@ -716,7 +719,7 @@ export default function HomePage() {
           </h2>
           <p className="mt-3 max-w-2xl text-zinc-300">
             Complete private verification, choose your interests and start
-            meeting India&apos;s most committed fitness community.
+            meeting people who are building consistent fitness habits.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link

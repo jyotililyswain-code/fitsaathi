@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -86,9 +87,19 @@ export function Header() {
           href="/"
           aria-label="Go to FitSaathi homepage"
           onClick={() => setOpen(false)}
-          className="pointer-events-auto relative z-10 shrink-0 cursor-pointer text-xl font-bold tracking-tight text-white"
+          className="pointer-events-auto relative z-10 flex shrink-0 cursor-pointer items-center gap-2 text-xl font-bold tracking-tight text-white"
         >
-          Fit<span className="text-acid">Saathi</span>
+          <Image
+            src="/favicon-192x192.png"
+            alt="FitSaathi logo"
+            width={32}
+            height={32}
+            priority
+            className="h-8 w-8 rounded-lg bg-white object-cover"
+          />
+          <span>
+            Fit<span className="text-acid">Saathi</span>
+          </span>
         </Link>
         <div
           className="hidden min-w-0 flex-1 items-center justify-center gap-3 overflow-hidden px-3 text-xs font-medium text-zinc-300 2xl:flex"

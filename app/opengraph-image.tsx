@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const alt =
-  "FitSaathi – Find Fitness Coaches, Gyms and Sports Academies";
+  "FitSaathi fitness, sports coaching, dojo and gym platform";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -46,10 +46,10 @@ export default async function OpenGraphImage() {
             </div>
           </div>
           <div style={{ display: "flex", fontSize: "58px", fontWeight: 800, lineHeight: 1.12, marginTop: "55px", maxWidth: "1040px" }}>
-            Find Fitness Coaches, Gyms and Sports Academies
+            Coaches, Dojos &amp; Gyms in India
           </div>
           <div style={{ color: "#d4d4d8", display: "flex", fontSize: "28px", marginTop: "38px" }}>
-            Coaches · Martial arts trainers · Gyms · Dojos · Sports academies
+            Fitness coaches · Yoga trainers · Martial arts teachers · Gyms
           </div>
           <div style={{ color: "#c8ff00", display: "flex", fontSize: "25px", fontWeight: 700, marginTop: "42px" }}>
             thefitsaathi.com

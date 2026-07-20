@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "Find Fitness Coaches and Personal Trainers",
+  title: "Browse Approved Fitness Coach Profiles",
   description:
     "Browse approved FitSaathi coach profiles by specialty and city, including personal trainers, yoga teachers, martial arts coaches and sports instructors.",
   path: "/coaches",

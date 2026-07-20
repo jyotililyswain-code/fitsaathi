@@ -32,7 +32,7 @@ test("authenticated visitors render the public homepage with an account link", (
     homepage,
     /router\.replace\(dashboardPathForRole\(user\.role\)\)/,
   );
-  assert.match(homepage, /<FitSaathiHome \/>/);
+  assert.match(homepage, /<FitSaathiHome\s+brandSection=/);
   assert.match(sharedHeader, /const accountLabel = signedIn \? "My Account" : "Log In \/ Sign Up"/);
   assert.match(sharedHeader, /const accountHref = signedIn \? dashboardHref\(role\) : "\/login"/);
   assert.match(sharedHeader, /href=\{accountHref\}/);

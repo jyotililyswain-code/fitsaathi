@@ -6,39 +6,39 @@ import { generateSeoMetadata } from "@/lib/seo";
 const faqs = [
   [
     "What is FitSaathi?",
-    "FitSaathi is a fitness marketplace where users can find coaches, dojos, trainers, fitness services, and products. Account and provider registration, identity verification, and coach or dojo booking are free.",
+    "FitSaathi is a fitness and sports discovery platform where people can explore public coach, dojo, gym, martial-arts training and fitness marketplace information across India.",
   ],
   [
-    "How can I find a fitness coach near me?",
-    "Open Find Coach, then search by training specialty or city to compare available coach profiles.",
+    "What is the official FitSaathi website?",
+    "The official FitSaathi website is https://thefitsaathi.com. FitSaathi is the preferred brand name used throughout the website.",
   ],
   [
-    "Can I book a personal trainer at home?",
-    "Yes. Choose an available coach, open their profile, and use the booking option to request home fitness training. FitSaathi does not charge a booking or platform fee.",
+    "How can I find a fitness coach on FitSaathi?",
+    "Open Find Fitness Coaches, search by training specialty or city, and compare the information shown on approved public coach profiles. A profile's booking option leads to the signed-in booking-request flow.",
   ],
   [
-    "Can martial arts coaches register?",
-    "Yes. Karate, boxing, MMA, self-defense, and other martial arts instructors can submit a coach profile for verification at no charge.",
+    "Can dojos and gyms register on FitSaathi?",
+    "Yes. Dojo, gym, martial-arts academy, yoga-centre and fitness-centre operators can create an account and submit their organisation through the dojo and gym registration flow.",
   ],
   [
-    "Can dojos and academies register?",
-    "Yes. Dojos, yoga centers, and fitness academies can register, provide their details, and connect with students after approval. Registration and identity verification are free.",
+    "Does FitSaathi include martial-arts training?",
+    "Yes. Public profiles can include martial-arts teachers, coaches, dojos and academies for activities such as karate, boxing, MMA and self-defence when those providers are available on the platform.",
   ],
   [
-    "Can sellers sell fitness products?",
-    "Yes. Fitness sellers can register for free and submit sports equipment, training essentials, and other fitness products for approval.",
+    "How can coaches join FitSaathi?",
+    "Create or sign in to a FitSaathi account, open Become a Coach, and submit the requested profile and verification information. Public visibility follows the platform's provider-status and account rules.",
   ],
   [
-    "How can I contact customer care?",
-    "Use the Customer Care option in the navigation or footer to email or call FitSaathi support.",
+    "How can I contact FitSaathi support?",
+    "Use the public Contact page or the Customer Care controls in the website navigation and footer for account, registration, booking, marketplace or safety questions.",
   ],
   [
-    "Is FitSaathi available in India?",
-    "Yes. FitSaathi is designed for customers, coaches, dojos, and fitness sellers across India.",
+    "Is a FitSaathi account required to send a booking request?",
+    "Yes. The booking flow is private, so you must sign in to a FitSaathi account before sending a coach, dojo or gym booking request.",
   ],
   [
-    "How does coach booking work?",
-    "Find a coach, review the public profile and availability, open the booking form, and submit the booking details. Creating and confirming a coach or dojo booking through FitSaathi is free, with no platform or hidden charges.",
+    "Can sellers list fitness products?",
+    "Yes. Fitness sellers can register and submit sports equipment, training essentials and other fitness products for approval. Product purchases are separate from free account and provider registration flows.",
   ],
   [
     "How can I report a problem?",

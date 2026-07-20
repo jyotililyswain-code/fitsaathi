@@ -1,14 +1,21 @@
 import { JsonLd } from "@/components/JsonLd";
 import FitSaathiHome from "@/components/FitSaathiHome";
+import { HomepageBrandSection } from "@/components/HomepageBrandSection";
 import {
   coachBookingServiceJsonLd,
   generateSeoMetadata,
+  homePageJsonLd,
+  organizationJsonLd,
+  seoConfig,
+  websiteJsonLd,
 } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "FitSaathi – Find Fitness Coaches, Gyms and Sports Academies",
-  description:
-    "Find fitness coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services across India with FitSaathi.",
+  title: seoConfig.defaultTitle,
+  description: seoConfig.defaultDescription,
+  openGraphDescription: seoConfig.defaultOpenGraphDescription,
+  twitterDescription: seoConfig.defaultTwitterDescription,
+  imageAlt: seoConfig.defaultOpenGraphImageAlt,
   path: "/",
 });
 
@@ -18,10 +25,15 @@ export default function HomePage() {
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          ...coachBookingServiceJsonLd,
+          "@graph": [
+            organizationJsonLd,
+            websiteJsonLd,
+            homePageJsonLd,
+            coachBookingServiceJsonLd,
+          ],
         }}
       />
-      <FitSaathiHome />
+      <FitSaathiHome brandSection={<HomepageBrandSection />} />
     </>
   );
 }

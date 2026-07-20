@@ -60,25 +60,30 @@ npm run seo:check
 Manual Google Search Console steps (these require access to Google and the domain provider):
 
 1. Open Google Search Console.
-2. Add the domain property for `thefitsaathi.com`.
+2. Select or add the domain property for `thefitsaathi.com`.
 3. Complete DNS verification through the domain provider, or copy the genuine HTML-tag value into `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` and redeploy.
-4. Submit `https://thefitsaathi.com/sitemap.xml`.
-5. Inspect `https://thefitsaathi.com/`.
-6. Run the live URL test.
-7. Request indexing after the production deployment.
-8. Inspect important public coach, dojo, shop, and registration pages.
-9. Review the Pages/Indexing report.
-10. Review Core Web Vitals.
-11. Monitor searches for `FitSaathi`, `Fit Saathi`, `TheFitSaathi`, and `thefitsaathi.com`.
+4. Inspect `https://thefitsaathi.com/` and run **Test Live URL**.
+5. Confirm the live page is indexable and that Google sees the intended canonical.
+6. Select **Request Indexing** once after the branded-search changes are deployed.
+7. Open **Sitemaps**, submit `sitemap.xml`, and confirm that its status becomes successful.
+8. Review the **Page Indexing** report and confirm Google selected `https://thefitsaathi.com/` as the homepage canonical.
+9. Review structured-data/Enhancements reports and Core Web Vitals.
+10. Allow time for Google to recrawl the homepage and favicon; do not submit the homepage repeatedly every day.
+11. Inspect important public coach, dojo, shop, and registration pages.
+12. Monitor `fitsaathi`, `FitSaathi`, `FitSaathi official`, and `thefitsaathi.com` after enough data is available, comparing impressions, clicks, click-through rate, and average position.
 
 Manual Vercel/domain checks:
 
 1. Set `thefitsaathi.com` as the primary production domain.
-2. Redirect `www.thefitsaathi.com` to `thefitsaathi.com` and confirm HTTPS is active.
-3. Set `NEXT_PUBLIC_SITE_URL=https://thefitsaathi.com` for Production.
-4. Add the genuine Search Console verification value only after obtaining it from Google.
-5. Add `NEXT_PUBLIC_GA_MEASUREMENT_ID` only when analytics and consent requirements are ready.
-6. Redeploy Production and verify the robots and sitemap endpoints above.
+2. Confirm DNS points the apex domain to the production deployment and HTTPS is active.
+3. Redirect `www.thefitsaathi.com` to `thefitsaathi.com` without a redirect chain.
+4. Confirm every Vercel preview URL remains non-canonical and receives `noindex` headers.
+5. Set `NEXT_PUBLIC_SITE_URL=https://thefitsaathi.com` for Production.
+6. Add the genuine Search Console verification value only after obtaining it from Google.
+7. Add `NEXT_PUBLIC_GA_MEASUREMENT_ID` only when analytics and consent requirements are ready.
+8. Redeploy Production and verify the homepage, favicon, Open Graph image, robots, and sitemap endpoints.
+
+External brand-profile checks are also manual. If FitSaathi has intentional public business profiles on Instagram, Facebook, YouTube, LinkedIn, X, GitHub, or another service, make their displayed name, logo, description, and website URL consistent with `FitSaathi` and `https://thefitsaathi.com`. Add a profile to Organization `sameAs` only after ownership and public accessibility are verified; no unverified social URLs are included in the repository.
 
 The repository cannot invent DNS verification records, submit Search Console URLs, request indexing, or change Vercel dashboard settings without authenticated access.
 

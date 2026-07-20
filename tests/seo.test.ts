@@ -9,9 +9,12 @@ import {
   canonicalUrl,
   generateSeoMetadata,
   hasSearchParameters,
+  homePageJsonLd,
+  organizationJsonLd,
   seoConfig,
   seoImageUrl,
   siteUrl,
+  websiteJsonLd,
 } from "../lib/seo";
 
 test("SEO URLs are permanently pinned to the FitSaathi production origin", () => {
@@ -41,6 +44,24 @@ test("homepage metadata has the required title, description and social cards", (
     (metadata.twitter as { card?: string } | undefined)?.card,
     "summary_large_image",
   );
+});
+
+test("homepage brand entity nodes use one connected production identity", () => {
+  assert.equal(seoConfig.defaultTitle, "FitSaathi Official – Coaches, Dojos & Gyms in India");
+  assert.equal(organizationJsonLd.name, "FitSaathi");
+  assert.equal(organizationJsonLd.url, "https://thefitsaathi.com/");
+  assert.equal(
+    organizationJsonLd.logo.contentUrl,
+    "https://thefitsaathi.com/favicon-512x512.png",
+  );
+  assert.equal(websiteJsonLd.name, "FitSaathi");
+  assert.equal(websiteJsonLd.url, "https://thefitsaathi.com/");
+  assert.deepEqual(websiteJsonLd.publisher, {
+    "@id": "https://thefitsaathi.com/#organization",
+  });
+  assert.deepEqual(homePageJsonLd.isPartOf, {
+    "@id": "https://thefitsaathi.com/#website",
+  });
 });
 
 test("filtered directory URLs are noindex and breadcrumbs use canonical URLs", () => {

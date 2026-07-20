@@ -28,17 +28,23 @@ function configuredSiteUrl() {
 export const siteUrl = configuredSiteUrl();
 export const brandName = "FitSaathi";
 export const brandAlternateNames = [
-  "TheFitSaathi",
   "The FitSaathi",
+  "TheFitSaathi",
   "Fit Saathi",
+  "thefitsaathi.com",
 ] as const;
 
 export const seoConfig = {
   siteName: brandName,
   siteUrl,
-  defaultTitle: "FitSaathi – Find Fitness Coaches, Gyms and Sports Academies",
+  domainName: "thefitsaathi.com",
+  defaultTitle: "FitSaathi Official – Coaches, Dojos & Gyms in India",
   defaultDescription:
-    "Find fitness coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services across India with FitSaathi.",
+    "FitSaathi is the official website for discovering home fitness coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services across India.",
+  defaultOpenGraphDescription:
+    "Discover home fitness coaches, yoga trainers, martial arts teachers, dojos, gyms and sports training services through FitSaathi.",
+  defaultTwitterDescription:
+    "Discover fitness coaches, yoga trainers, martial arts teachers, dojos, gyms and sports training services through FitSaathi.",
   defaultKeywords: [
     "FitSaathi",
     "Fit Saathi",
@@ -54,6 +60,8 @@ export const seoConfig = {
     "sports training",
   ],
   defaultOpenGraphImage: "/opengraph-image",
+  defaultOpenGraphImageAlt:
+    "FitSaathi fitness, sports coaching, dojo and gym platform",
   logo: "/favicon-512x512.png",
 } as const;
 
@@ -63,6 +71,9 @@ type SeoMetadataInput = {
   path?: string;
   keywords?: string[];
   image?: string;
+  imageAlt?: string;
+  openGraphDescription?: string;
+  twitterDescription?: string;
   noIndex?: boolean;
   noFollow?: boolean;
 };
@@ -147,6 +158,9 @@ export function generateSeoMetadata({
   path = "/",
   keywords = [...seoConfig.defaultKeywords],
   image = seoConfig.defaultOpenGraphImage,
+  imageAlt,
+  openGraphDescription,
+  twitterDescription,
   noIndex = false,
   noFollow = noIndex,
 }: SeoMetadataInput = {}): Metadata {
@@ -154,7 +168,11 @@ export function generateSeoMetadata({
   const imageUrl = seoImageUrl(image);
   const safeTitle = sanitizeSeoText(title, 75) || seoConfig.defaultTitle;
   const safeDescription =
-    sanitizeSeoText(description, 160) || seoConfig.defaultDescription;
+    sanitizeSeoText(description, 200) || seoConfig.defaultDescription;
+  const safeOpenGraphDescription =
+    sanitizeSeoText(openGraphDescription, 200) || safeDescription;
+  const safeTwitterDescription =
+    sanitizeSeoText(twitterDescription, 200) || safeOpenGraphDescription;
   const includesBrand = /fit\s*saathi/i.test(safeTitle);
   const documentTitle = includesBrand
     ? safeTitle
@@ -177,21 +195,23 @@ export function generateSeoMetadata({
       locale: "en_IN",
       url: canonical,
       title: documentTitle,
-      description: safeDescription,
+      description: safeOpenGraphDescription,
       images: [
         {
           url: imageUrl,
           ...(image === seoConfig.defaultOpenGraphImage
             ? { width: 1200, height: 630, type: "image/png" }
             : {}),
-          alt: sanitizeSeoText(`${documentTitle} social preview image`, 120),
+          alt:
+            sanitizeSeoText(imageAlt, 120) ||
+            sanitizeSeoText(`${documentTitle} social preview image`, 120),
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
       title: documentTitle,
-      description: safeDescription,
+      description: safeTwitterDescription,
       images: [imageUrl],
     },
     robots: noIndex
@@ -223,16 +243,19 @@ export const organizationJsonLd = {
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
   name: seoConfig.siteName,
-  alternateName: [...brandAlternateNames],
+  alternateName: "The FitSaathi",
   url: `${siteUrl}/`,
   logo: {
     "@type": "ImageObject",
+    "@id": `${siteUrl}/#logo`,
     url: absoluteUrl(seoConfig.logo),
+    contentUrl: absoluteUrl(seoConfig.logo),
     width: 512,
     height: 512,
+    caption: seoConfig.siteName,
   },
   description:
-    "An Indian fitness and sports platform for discovering coaches, trainers, gyms, dojos and sports academies.",
+    "FitSaathi helps people discover fitness coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services.",
   areaServed: { "@type": "Country", name: "India" },
 };
 
@@ -243,13 +266,29 @@ export const websiteJsonLd = {
   name: seoConfig.siteName,
   alternateName: [...brandAlternateNames],
   description:
-    "FitSaathi helps people discover fitness coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services across India.",
+    "FitSaathi is a fitness and sports platform for discovering coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services across India.",
   inLanguage: "en-IN",
   publisher: { "@id": `${siteUrl}/#organization` },
 };
 
+export const homePageJsonLd = {
+  "@type": "WebPage",
+  "@id": `${siteUrl}/#webpage`,
+  url: `${siteUrl}/`,
+  name: seoConfig.defaultTitle,
+  description: seoConfig.defaultDescription,
+  isPartOf: { "@id": `${siteUrl}/#website` },
+  about: { "@id": `${siteUrl}/#organization` },
+  primaryImageOfPage: {
+    "@type": "ImageObject",
+    url: absoluteUrl(seoConfig.defaultOpenGraphImage),
+  },
+  inLanguage: "en-IN",
+};
+
 export const coachBookingServiceJsonLd = {
   "@type": "Service",
+  "@id": `${siteUrl}/#fitness-discovery-service`,
   name: "Fitness Coach and Sports Training Discovery",
   description:
     "Discover fitness coaches, personal trainers, yoga instructors, martial arts teachers, gyms, dojos and sports academies in India.",
