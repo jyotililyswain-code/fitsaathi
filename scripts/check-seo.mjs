@@ -1,7 +1,11 @@
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
+
 const fetchBase = (
   process.env.SEO_BASE_URL || process.argv[2] || "http://127.0.0.1:3000"
 ).replace(/\/$/, "");
 const canonicalOrigin = "https://thefitsaathi.com";
+const productionAliasOrigin = "https://fitsaathi.vercel.app";
 const expectedTitle = "TheFitSaathi | Find Coaches, Gyms, Dojos and Fitness Services";
 const expectedDescription =
   "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.";
@@ -10,6 +14,35 @@ const expectedWebsiteDescription =
 const expectedAlternateNames = [
   "The FitSaathi",
   "FitSaathi",
+];
+const indexableStaticPaths = [
+  "/",
+  "/find-coach",
+  "/coaches",
+  "/dojos",
+  "/shop",
+  "/products",
+  "/seller",
+  "/become-a-coach",
+  "/register-dojo",
+  "/register-seller",
+  "/about",
+  "/fitsaathi-owner",
+  "/faq",
+  "/contact",
+  "/policies",
+  "/privacy",
+  "/terms",
+  "/policies/refunds",
+  "/policies/coach-conduct",
+  "/policies/customer-conduct",
+  "/policies/cancellations",
+  "/policies/payments",
+  "/policies/fitness-safety",
+  "/policies/attendance-reliability",
+  "/policies/coach-badges",
+  "/policies/community-guidelines",
+  "/policies/medical-consent",
 ];
 const failures = [];
 
@@ -96,6 +129,55 @@ async function get(path) {
   });
 }
 
+function getWithHost(path, host) {
+  return new Promise((resolve, reject) => {
+    const target = new URL(path, `${fetchBase}/`);
+    const request = (target.protocol === "https:" ? httpsRequest : httpRequest)(
+      target,
+      {
+        headers: {
+          host,
+          "user-agent": "FitSaathi SEO verification",
+        },
+      },
+      (response) => {
+        const headers = new Headers();
+        for (const [name, value] of Object.entries(response.headers)) {
+          if (Array.isArray(value)) {
+            for (const item of value) headers.append(name, item);
+          } else if (value !== undefined) {
+            headers.set(name, value);
+          }
+        }
+        response.resume();
+        resolve(
+          new Response(null, {
+            status: response.statusCode || 500,
+            headers,
+          }),
+        );
+      },
+    );
+    request.setTimeout(20_000, () => {
+      request.destroy(new Error("Timed out while testing host-based redirect."));
+    });
+    request.on("error", reject);
+    request.end();
+  });
+}
+
+async function getFromProductionAlias(path) {
+  if (fetchBase === canonicalOrigin) {
+    return fetch(`${productionAliasOrigin}${path}`, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(20_000),
+      headers: { "user-agent": "FitSaathi SEO verification" },
+    });
+  }
+
+  return getWithHost(path, new URL(productionAliasOrigin).host);
+}
+
 async function getResource(url) {
   const path = localResourcePath(url);
   if (!path) throw new Error(`Invalid resource URL: ${url}`);
@@ -128,6 +210,28 @@ function schemasFromHtml(html, label) {
 }
 
 try {
+  const aliasPath =
+    "/fitsaathi-owner?ref=google&utm_source=seo-redirect-check";
+  const aliasResponse = await getFromProductionAlias(aliasPath);
+  const aliasLocation = aliasResponse.headers.get("location") || "";
+  check(
+    aliasResponse.status === 308,
+    `Production Vercel alias returned ${aliasResponse.status}, expected 308.`,
+  );
+  check(
+    aliasLocation === `${canonicalOrigin}${aliasPath}`,
+    `Production Vercel alias redirects to ${aliasLocation || "nothing"}.`,
+  );
+  const canonicalHostResponse =
+    fetchBase === canonicalOrigin
+      ? await get("/about")
+      : await getWithHost("/about", new URL(canonicalOrigin).host);
+  check(
+    canonicalHostResponse.status === 200 &&
+      !canonicalHostResponse.headers.has("location"),
+    "The canonical host redirects instead of returning 200.",
+  );
+
   const homepageResponse = await get("/");
   check(
     homepageResponse.status === 200,
@@ -229,6 +333,10 @@ try {
   );
 
   const schemas = schemasFromHtml(html, "Homepage");
+  check(
+    !/localhost|127\.0\.0\.1|\.vercel\.app/i.test(JSON.stringify(schemas)),
+    "Homepage JSON-LD contains a non-production host.",
+  );
 
   const websiteNodes = schemas.filter((item) => schemaTypeIs(item, "WebSite"));
   const organizationNodes = schemas.filter((item) => schemaTypeIs(item, "Organization"));
@@ -409,7 +517,7 @@ try {
 
   const sitemapResponse = await get("/sitemap.xml");
   const sitemapText = await sitemapResponse.text();
-  for (const publicPath of ["/", "/about", "/fitsaathi-owner", "/faq", "/contact"]) {
+  for (const publicPath of indexableStaticPaths) {
     const loc = publicPath === "/" ? canonicalOrigin + "/" : canonicalOrigin + publicPath;
     check(
       sitemapText.includes("<loc>" + loc + "</loc>"),
@@ -469,22 +577,7 @@ try {
   }
 
   const publicTitles = new Map();
-  for (const publicPath of [
-    "/about",
-    "/fitsaathi-owner",
-    "/faq",
-    "/contact",
-    "/find-coach",
-    "/coaches",
-    "/dojos",
-    "/shop",
-    "/become-a-coach",
-    "/register-dojo",
-    "/register-seller",
-    "/privacy",
-    "/terms",
-    "/policies/refunds",
-  ]) {
+  for (const publicPath of indexableStaticPaths.filter((path) => path !== "/")) {
     const publicResponse = await get(publicPath);
     const publicHtml = await publicResponse.text();
     const publicRobots = metaContent(publicHtml, "name", "robots").toLowerCase();
@@ -579,6 +672,10 @@ try {
       ...pageHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi),
     ];
     const schemas = schemasFromHtml(pageHtml, page.path);
+    check(
+      !/localhost|127\.0\.0\.1|\.vercel\.app/i.test(JSON.stringify(schemas)),
+      page.path + " JSON-LD contains a non-production host.",
+    );
     const organizations = schemas.filter((item) =>
       schemaTypeIs(item, "Organization"),
     );

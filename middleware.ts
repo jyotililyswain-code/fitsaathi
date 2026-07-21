@@ -1,8 +1,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+const productionHost = "thefitsaathi.com";
+
 export function middleware(request: NextRequest) {
-  const productionHost = "thefitsaathi.com";
   const hostname = request.nextUrl.hostname.toLowerCase();
   const forwardedProtocol = request.headers.get("x-forwarded-proto")?.split(",")[0];
   const isProductionDeployment = process.env.VERCEL_ENV === "production";

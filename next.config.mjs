@@ -1,3 +1,6 @@
+const canonicalOrigin = "https://thefitsaathi.com";
+const productionVercelHost = "fitsaathi.vercel.app";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -12,6 +15,12 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: productionVercelHost }],
+        destination: `${canonicalOrigin}/:path*`,
+        permanent: true
+      },
       { source: "/home", destination: "/", permanent: true },
       { source: "/marketplace", destination: "/shop", permanent: true },
       { source: "/seller/register", destination: "/register-seller", permanent: true },

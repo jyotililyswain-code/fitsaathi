@@ -199,18 +199,42 @@ test("robots advertises the production sitemap and blocks private route groups",
   }
 });
 
-test("production aliases redirect permanently and previews are noindex", () => {
+test("production aliases redirect permanently without affecting canonical, preview or local hosts", () => {
   const previousVercelEnv = process.env.VERCEL_ENV;
   try {
     process.env.VERCEL_ENV = "production";
-    const canonicalRedirect = middleware(
+    const vercelAliasRedirect = middleware(
+      new NextRequest(
+        "https://fitsaathi.vercel.app/fitsaathi-owner?ref=google&utm_source=search",
+      ),
+    );
+    assert.equal(vercelAliasRedirect.status, 308);
+    assert.equal(
+      vercelAliasRedirect.headers.get("location"),
+      "https://thefitsaathi.com/fitsaathi-owner?ref=google&utm_source=search",
+    );
+
+    const legacyDomainRedirect = middleware(
       new NextRequest("https://fitsaathi.com/find-coach?q=yoga"),
     );
-    assert.equal(canonicalRedirect.status, 308);
+    assert.equal(legacyDomainRedirect.status, 308);
     assert.equal(
-      canonicalRedirect.headers.get("location"),
+      legacyDomainRedirect.headers.get("location"),
       "https://thefitsaathi.com/find-coach?q=yoga",
     );
+
+    const canonicalResponse = middleware(
+      new NextRequest("https://thefitsaathi.com/about?ref=google"),
+    );
+    assert.equal(canonicalResponse.status, 200);
+    assert.equal(canonicalResponse.headers.get("location"), null);
+
+    process.env.VERCEL_ENV = "development";
+    const localResponse = middleware(
+      new NextRequest("http://localhost:3000/about"),
+    );
+    assert.equal(localResponse.status, 200);
+    assert.equal(localResponse.headers.get("location"), null);
 
     process.env.VERCEL_ENV = "preview";
     const previewResponse = middleware(
