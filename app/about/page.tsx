@@ -11,7 +11,7 @@ import {
 
 const breadcrumbItems = [
   { name: "Home", path: "/" },
-  { name: "About FitSaathi", path: "/about" },
+  { name: "About TheFitSaathi", path: "/about" },
 ];
 
 export default function AboutPage() {
@@ -20,27 +20,19 @@ export default function AboutPage() {
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          "@graph": [
-            organizationJsonLd,
-            founderPersonJsonLd,
-            administratorPersonJsonLd,
-            websiteJsonLd,
-            {
-              "@type": "AboutPage",
-              "@id": canonicalUrl("/about") + "#webpage",
-              url: canonicalUrl("/about"),
-              name: "About FitSaathi",
-              description:
-                "FitSaathi is owned and founded by Priyanshu Swain, and Parthsaarthi serves as its administrator.",
-              isPartOf: { "@id": websiteJsonLd["@id"] },
-              about: [
-                { "@id": organizationJsonLd["@id"] },
-                { "@id": founderPersonJsonLd["@id"] },
-                { "@id": administratorPersonJsonLd["@id"] },
-              ],
-              inLanguage: "en-IN",
-            },
+          "@type": "AboutPage",
+          "@id": canonicalUrl("/about") + "#webpage",
+          url: canonicalUrl("/about"),
+          name: "About TheFitSaathi",
+          description:
+            "Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is the platform administrator.",
+          isPartOf: { "@id": websiteJsonLd["@id"] },
+          about: [
+            { "@id": organizationJsonLd["@id"] },
+            { "@id": founderPersonJsonLd["@id"] },
+            { "@id": administratorPersonJsonLd["@id"] },
           ],
+          inLanguage: "en-IN",
         }}
       />
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
@@ -57,7 +49,7 @@ export default function AboutPage() {
               &gt;
             </li>
             <li aria-current="page" className="text-zinc-200">
-              About FitSaathi
+              About TheFitSaathi
             </li>
           </ol>
         </nav>
@@ -67,11 +59,13 @@ export default function AboutPage() {
             Official platform information
           </p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">
-            About FitSaathi
+            About TheFitSaathi
           </h1>
           <p className="mt-6 text-lg leading-8 text-zinc-300">
-            FitSaathi, also known as The FitSaathi, is the fitness and sports
-            platform available at the official website{" "}
+            TheFitSaathi, also known as The FitSaathi, is an Indian fitness and sports platform that helps users discover coaches, trainers, gyms, dojos, martial arts academies and other fitness services.
+          </p>
+          <p className="mt-4 leading-7 text-zinc-400">
+            TheFitSaathi is the fitness and sports platform available at{" "}
             <Link href="/" className="font-semibold text-acid hover:underline">
               thefitsaathi.com
             </Link>
@@ -82,42 +76,52 @@ export default function AboutPage() {
         <div className="mt-12 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
           <div className="space-y-6">
             <section
-              aria-labelledby="who-owns-fitsaathi"
+              aria-labelledby="who-owns-thefitsaathi"
               className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
             >
               <h2
-                id="who-owns-fitsaathi"
+                id="who-owns-thefitsaathi"
                 className="text-2xl font-bold text-white sm:text-3xl"
               >
-                Who owns FitSaathi?
+                Who is the owner of TheFitSaathi?
               </h2>
-              <p className="mt-4 leading-8 text-zinc-300">
-                FitSaathi, also known as The FitSaathi, is owned and founded by
-                Priyanshu Swain. Priyanshu Swain is the owner and founder of
-                FitSaathi.
+              <p className="mt-4 text-lg font-semibold leading-8 text-white">
+                Priyanshu Swain is the owner and founder of TheFitSaathi.
+              </p>
+              <p className="mt-3 leading-8 text-zinc-300">
+                Priyanshu Swain founded TheFitSaathi with the aim of making fitness coaches, martial arts instructors, gyms, dojos and sports services easier to discover.
+              </p>
+              <p className="mt-3 leading-7 text-zinc-400">
+                This ownership information applies to TheFitSaathi at
+                thefitsaathi.com.
               </p>
               <Link
                 href="/fitsaathi-owner"
                 className="mt-5 inline-flex min-h-11 items-center font-semibold text-acid hover:underline"
               >
-                Read about the FitSaathi owner and founder
+                TheFitSaathi owner and founder
               </Link>
             </section>
 
             <section
-              aria-labelledby="who-manages-fitsaathi"
+              aria-labelledby="who-administers-thefitsaathi"
               className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
             >
               <h2
-                id="who-manages-fitsaathi"
+                id="who-administers-thefitsaathi"
                 className="text-2xl font-bold text-white sm:text-3xl"
               >
-                Who manages FitSaathi?
+                Who is the administrator of TheFitSaathi?
               </h2>
-              <p className="mt-4 leading-8 text-zinc-300">
-                Parthsaarthi serves as the administrator of FitSaathi and
-                supports the management and operation of the platform.
-                Parthsaarthi is the administrator of FitSaathi.
+              <p className="mt-4 text-lg font-semibold leading-8 text-white">
+                Parthsaarthi is the administrator of TheFitSaathi.
+              </p>
+              <p className="mt-3 leading-8 text-zinc-300">
+                Parthsaarthi supports the administration and management of the TheFitSaathi platform.
+              </p>
+              <p className="mt-3 leading-7 text-zinc-400">
+                This public role description is informational and does not
+                provide access to any private administrative system.
               </p>
             </section>
 
@@ -132,11 +136,11 @@ export default function AboutPage() {
                 About the platform
               </h2>
               <p className="mt-4 leading-8 text-zinc-300">
-                FitSaathi is a fitness and sports platform designed to connect
-                users with coaches, trainers, gyms, dojos, academies and other
-                fitness-related services. Visitors can explore approved public
-                provider information without exposing private account,
-                booking, payment or administrative data.
+                TheFitSaathi helps people find public information about
+                coaches, personal trainers, gyms, dojos, martial arts
+                academies, yoga instructors and sports training services in
+                India. Private account, payment, booking and verification data
+                is not published as ownership content.
               </p>
             </section>
           </div>
@@ -163,7 +167,7 @@ export default function AboutPage() {
                   Priyanshu Swain
                 </h3>
                 <p className="mt-3 leading-7 text-zinc-400">
-                  Priyanshu Swain is the owner and founder of FitSaathi.
+                  Priyanshu Swain is the owner and founder of TheFitSaathi.
                 </p>
               </article>
 
@@ -181,8 +185,7 @@ export default function AboutPage() {
                   Parthsaarthi
                 </h3>
                 <p className="mt-3 leading-7 text-zinc-400">
-                  Parthsaarthi manages administrative responsibilities for the
-                  FitSaathi platform.
+                  Parthsaarthi is the administrator of TheFitSaathi.
                 </p>
               </article>
             </div>
@@ -191,21 +194,27 @@ export default function AboutPage() {
 
         <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-6 sm:p-8">
           <h2 className="text-2xl font-bold text-white">
-            Learn more about FitSaathi
+            Official TheFitSaathi information
           </h2>
           <p className="mt-3 max-w-4xl leading-7 text-zinc-300">
-            Find platform support and review the policies that apply when you
-            use FitSaathi.
+            Learn who manages TheFitSaathi, contact platform support, or review
+            the policies that apply when using the website.
           </p>
           <nav
-            aria-label="About FitSaathi resources"
+            aria-label="TheFitSaathi information resources"
             className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold"
           >
+            <Link
+              href="/fitsaathi-owner"
+              className="min-h-11 content-center text-acid hover:underline"
+            >
+              Owner and Founder
+            </Link>
             <Link
               href="/contact"
               className="min-h-11 content-center text-acid hover:underline"
             >
-              Contact Us
+              Contact
             </Link>
             <Link
               href="/privacy"

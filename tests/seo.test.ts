@@ -6,6 +6,7 @@ import { isPublicSeoRoute } from "../lib/auth-client";
 import { middleware } from "../middleware";
 import {
   administratorPersonJsonLd,
+  brandIdentityJsonLd,
   breadcrumbJsonLd,
   canonicalUrl,
   founderPersonJsonLd,
@@ -43,7 +44,7 @@ test("homepage metadata has the required title, description and social cards", (
   assert.equal(metadata.description, seoConfig.defaultDescription);
   assert.deepEqual(metadata.alternates, { canonical: "https://thefitsaathi.com/" });
   assert.equal(metadata.openGraph?.url, "https://thefitsaathi.com/");
-  assert.equal(metadata.openGraph?.siteName, "FitSaathi");
+  assert.equal(metadata.openGraph?.siteName, "TheFitSaathi");
   assert.equal(
     (metadata.twitter as { card?: string } | undefined)?.card,
     "summary_large_image",
@@ -53,10 +54,14 @@ test("homepage metadata has the required title, description and social cards", (
 test("homepage brand entity nodes use one connected production identity", () => {
   assert.equal(
     seoConfig.defaultTitle,
-    "FitSaathi | Find Coaches, Gyms, Dojos and Fitness Services",
+    "TheFitSaathi | Find Coaches, Gyms, Dojos and Fitness Services",
   );
-  assert.equal(organizationJsonLd.name, "FitSaathi");
-  assert.equal(organizationJsonLd.url, "https://thefitsaathi.com/");
+  assert.equal(organizationJsonLd.name, "TheFitSaathi");
+  assert.equal(organizationJsonLd.url, "https://thefitsaathi.com");
+  assert.deepEqual(organizationJsonLd.alternateName, [
+    "The FitSaathi",
+    "FitSaathi",
+  ]);
   assert.deepEqual(organizationJsonLd.founder, {
     "@id": "https://thefitsaathi.com/#priyanshu-swain",
   });
@@ -67,21 +72,27 @@ test("homepage brand entity nodes use one connected production identity", () => 
     organizationJsonLd.logo.contentUrl,
     "https://thefitsaathi.com/favicon-512x512.png",
   );
-  assert.equal(websiteJsonLd.name, "FitSaathi");
-  assert.equal(websiteJsonLd.url, "https://thefitsaathi.com/");
+  assert.equal(websiteJsonLd.name, "TheFitSaathi");
+  assert.equal(websiteJsonLd.url, "https://thefitsaathi.com");
   assert.deepEqual(websiteJsonLd.publisher, {
     "@id": "https://thefitsaathi.com/#organization",
   });
   assert.deepEqual(homePageJsonLd.isPartOf, {
     "@id": "https://thefitsaathi.com/#website",
   });
+  assert.equal(
+    brandIdentityJsonLd["@graph"].filter(
+      (entity) => entity["@type"] === "Organization",
+    ).length,
+    1,
+  );
 });
 
 test("official people and ownership FAQ use consistent linked entities", () => {
   assert.equal(founderPersonJsonLd.name, "Priyanshu Swain");
   assert.equal(
     founderPersonJsonLd.jobTitle,
-    "Owner and Founder of FitSaathi",
+    "Owner and Founder of TheFitSaathi",
   );
   assert.deepEqual(founderPersonJsonLd.worksFor, {
     "@id": organizationJsonLd["@id"],
@@ -91,7 +102,7 @@ test("official people and ownership FAQ use consistent linked entities", () => {
   assert.equal(administratorPersonJsonLd.name, "Parthsaarthi");
   assert.equal(
     administratorPersonJsonLd.jobTitle,
-    "Administrator of FitSaathi",
+    "Administrator of TheFitSaathi",
   );
   assert.deepEqual(administratorPersonJsonLd.worksFor, {
     "@id": organizationJsonLd["@id"],
@@ -111,15 +122,21 @@ test("official people and ownership FAQ use consistent linked entities", () => {
 
 test("ownership pages receive exact canonical metadata", () => {
   const about = generateSeoMetadata({
-    title: "About FitSaathi | Owner Priyanshu Swain and Admin Parthsaarthi",
+    title: "About TheFitSaathi | Owner Priyanshu Swain",
     description:
-      "Learn about FitSaathi, also known as The FitSaathi. FitSaathi is owned and founded by Priyanshu Swain, and Parthsaarthi serves as its administrator.",
+      "Learn about TheFitSaathi. Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is the platform administrator.",
+    openGraphTitle: "About TheFitSaathi | Owner and Founder",
+    openGraphDescription:
+      "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the platform.",
     path: "/about",
   });
   const owner = generateSeoMetadata({
-    title: "FitSaathi Owner: Priyanshu Swain | The FitSaathi",
+    title: "TheFitSaathi Owner and Founder | Priyanshu Swain",
     description:
-      "Priyanshu Swain is the owner and founder of FitSaathi. Parthsaarthi is the administrator of The FitSaathi platform.",
+      "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the Indian fitness and sports platform.",
+    openGraphTitle: "Who Is the Owner of TheFitSaathi?",
+    openGraphDescription:
+      "Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is its administrator.",
     path: "/fitsaathi-owner",
   });
 
@@ -133,14 +150,16 @@ test("ownership pages receive exact canonical metadata", () => {
     about.title && typeof about.title === "object" && "absolute" in about.title
       ? about.title.absolute
       : about.title,
-    "About FitSaathi | Owner Priyanshu Swain and Admin Parthsaarthi",
+    "About TheFitSaathi | Owner Priyanshu Swain",
   );
   assert.equal(
     owner.title && typeof owner.title === "object" && "absolute" in owner.title
       ? owner.title.absolute
       : owner.title,
-    "FitSaathi Owner: Priyanshu Swain | The FitSaathi",
+    "TheFitSaathi Owner and Founder | Priyanshu Swain",
   );
+  assert.equal(about.openGraph?.title, "About TheFitSaathi | Owner and Founder");
+  assert.equal(owner.openGraph?.title, "Who Is the Owner of TheFitSaathi?");
 });
 
 test("filtered directory URLs are noindex and breadcrumbs use canonical URLs", () => {
@@ -172,7 +191,7 @@ test("robots advertises the production sitemap and blocks private route groups",
   const rule = Array.isArray(result.rules) ? result.rules[0] : result.rules;
   const blocked = Array.isArray(rule.disallow) ? rule.disallow : [rule.disallow];
   const allowed = Array.isArray(rule.allow) ? rule.allow : [rule.allow];
-  for (const path of ["/", "/about", "/fitsaathi-owner"]) {
+  for (const path of ["/", "/about", "/fitsaathi-owner", "/faq", "/contact"]) {
     assert.ok(allowed.includes(path), path + " should be explicitly allowed");
   }
   for (const path of ["/admin", "/dashboard", "/auth", "/api", "/setup"]) {

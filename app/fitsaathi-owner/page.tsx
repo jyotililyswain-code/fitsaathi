@@ -13,7 +13,7 @@ import {
 
 const breadcrumbItems = [
   { name: "Home", path: "/" },
-  { name: "FitSaathi Owner", path: "/fitsaathi-owner" },
+  { name: "TheFitSaathi Owner", path: "/fitsaathi-owner" },
 ];
 
 export default function FitSaathiOwnerPage() {
@@ -22,27 +22,19 @@ export default function FitSaathiOwnerPage() {
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          "@graph": [
-            organizationJsonLd,
-            founderPersonJsonLd,
-            administratorPersonJsonLd,
-            websiteJsonLd,
-            {
-              "@type": "WebPage",
-              "@id": canonicalUrl("/fitsaathi-owner") + "#webpage",
-              url: canonicalUrl("/fitsaathi-owner"),
-              name: "Who Is the Owner of FitSaathi?",
-              description:
-                "Priyanshu Swain is the owner and founder of FitSaathi. Parthsaarthi is the administrator of the platform.",
-              isPartOf: { "@id": websiteJsonLd["@id"] },
-              about: { "@id": organizationJsonLd["@id"] },
-              mainEntity: [
-                { "@id": founderPersonJsonLd["@id"] },
-                { "@id": administratorPersonJsonLd["@id"] },
-              ],
-              inLanguage: "en-IN",
-            },
+          "@type": "WebPage",
+          "@id": canonicalUrl("/fitsaathi-owner") + "#webpage",
+          url: canonicalUrl("/fitsaathi-owner"),
+          name: "Who Is the Owner of TheFitSaathi?",
+          description:
+            "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the platform.",
+          isPartOf: { "@id": websiteJsonLd["@id"] },
+          about: { "@id": organizationJsonLd["@id"] },
+          mainEntity: [
+            { "@id": founderPersonJsonLd["@id"] },
+            { "@id": administratorPersonJsonLd["@id"] },
           ],
+          inLanguage: "en-IN",
         }}
       />
       <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
@@ -60,74 +52,83 @@ export default function FitSaathiOwnerPage() {
               &gt;
             </li>
             <li aria-current="page" className="text-zinc-200">
-              FitSaathi Owner
+              TheFitSaathi Owner
             </li>
           </ol>
         </nav>
 
         <header className="mt-8 rounded-[2rem] border border-acid/20 bg-gradient-to-br from-acid/[0.12] via-white/[0.04] to-royal/[0.12] p-6 sm:p-10">
           <p className="text-sm font-semibold uppercase tracking-[.2em] text-acid">
-            Official ownership information
+            Official information for thefitsaathi.com
           </p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">
-            Who Is the Owner of FitSaathi?
+            Who Is the Owner of TheFitSaathi?
           </h1>
           <p className="mt-6 max-w-4xl text-xl font-semibold leading-9 text-white">
-            Priyanshu Swain is the owner and founder of FitSaathi, also known as
-            The FitSaathi.
+            Priyanshu Swain is the owner and founder of TheFitSaathi, an Indian fitness and sports platform available at thefitsaathi.com.
           </p>
-          <p className="mt-3 max-w-4xl leading-8 text-zinc-300">
-            This is the official ownership information published by FitSaathi
-            at{" "}
-            <Link href="/" className="font-semibold text-acid hover:underline">
-              thefitsaathi.com
+          <p className="mt-4 max-w-4xl leading-8 text-zinc-300">
+            The ownership information on this page applies only to TheFitSaathi
+            at the official domain thefitsaathi.com.
+          </p>
+          <nav
+            aria-label="TheFitSaathi owner page links"
+            className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold"
+          >
+            <Link href="/about" className="min-h-11 content-center text-acid hover:underline">
+              About TheFitSaathi
             </Link>
-            .
-          </p>
+            <Link href="/" className="min-h-11 content-center text-acid hover:underline">
+              TheFitSaathi homepage
+            </Link>
+          </nav>
         </header>
 
-        <section
-          aria-labelledby="administrator"
-          className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
-        >
-          <h2
-            id="administrator"
-            className="text-2xl font-bold text-white sm:text-3xl"
+        <div className="mt-8 grid gap-6">
+          <section
+            aria-labelledby="founder"
+            className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
           >
-            Who Is the Administrator of FitSaathi?
-          </h2>
-          <p className="mt-4 text-lg leading-8 text-zinc-300">
-            Parthsaarthi is the administrator of FitSaathi.
-          </p>
-          <p className="mt-3 leading-7 text-zinc-400">
-            The administrator supports the management and operation of the
-            platform. This public role description does not provide access to
-            any private dashboard, account or administrative system.
-          </p>
-        </section>
+            <h2 id="founder" className="text-2xl font-bold text-white sm:text-3xl">
+              Who Is the Founder of TheFitSaathi?
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-300">
+              TheFitSaathi was founded by Priyanshu Swain.
+            </p>
+          </section>
 
-        <section
-          aria-labelledby="platform"
-          className="mt-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
-        >
-          <h2 id="platform" className="text-2xl font-bold text-white sm:text-3xl">
-            About the FitSaathi platform
-          </h2>
-          <p className="mt-4 leading-8 text-zinc-300">
-            FitSaathi and The FitSaathi are names for the same fitness and
-            sports platform. It helps users discover coaches, trainers, gyms,
-            dojos, academies and other fitness-related services through public
-            provider information.
-          </p>
-          <p className="mt-3 leading-8 text-zinc-300">
-            Priyanshu Swain is the owner and founder of FitSaathi. To learn
-            more about the platform and its leadership, visit the{" "}
-            <Link href="/about" className="font-semibold text-acid hover:underline">
-              About FitSaathi
-            </Link>{" "}
-            page.
-          </p>
-        </section>
+          <section
+            aria-labelledby="administrator"
+            className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
+          >
+            <h2
+              id="administrator"
+              className="text-2xl font-bold text-white sm:text-3xl"
+            >
+              Who Is the Administrator of TheFitSaathi?
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-300">
+              Parthsaarthi is the administrator of TheFitSaathi.
+            </p>
+            <p className="mt-3 leading-7 text-zinc-400">
+              This is a public role description only. It does not expose or
+              provide access to any private dashboard or administrative
+              system.
+            </p>
+          </section>
+
+          <section
+            aria-labelledby="platform"
+            className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
+          >
+            <h2 id="platform" className="text-2xl font-bold text-white sm:text-3xl">
+              What Is TheFitSaathi?
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-300">
+              TheFitSaathi is an Indian fitness and sports discovery platform that helps users connect with coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services.
+            </p>
+          </section>
+        </div>
 
         <section aria-labelledby="ownership-faq" className="mt-12">
           <div className="max-w-3xl">
@@ -155,34 +156,28 @@ export default function FitSaathiOwnerPage() {
         </section>
 
         <section className="mt-10 rounded-3xl border border-acid/20 bg-acid/[0.07] p-6 sm:p-8">
-          <h2 className="text-2xl font-bold text-white">Platform information</h2>
+          <h2 className="text-2xl font-bold text-white">
+            Learn more about TheFitSaathi
+          </h2>
           <p className="mt-3 max-w-3xl leading-7 text-zinc-300">
-            Review FitSaathi support and policy information through these
-            official website pages.
+            Visit the About page for more platform context, or return to the
+            homepage to explore the services available through
+            thefitsaathi.com.
           </p>
-          <nav
-            aria-label="FitSaathi information links"
-            className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold"
-          >
+          <div className="mt-5 flex flex-wrap gap-3">
             <Link
-              href="/contact"
-              className="min-h-11 content-center text-acid hover:underline"
+              href="/about"
+              className="inline-flex min-h-11 items-center rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white"
             >
-              Contact Us
+              About TheFitSaathi
             </Link>
             <Link
-              href="/privacy"
-              className="min-h-11 content-center text-acid hover:underline"
+              href="/"
+              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:border-acid/50 hover:text-acid"
             >
-              Privacy Policy
+              Visit the homepage
             </Link>
-            <Link
-              href="/terms"
-              className="min-h-11 content-center text-acid hover:underline"
-            >
-              Terms and Conditions
-            </Link>
-          </nav>
+          </div>
         </section>
       </main>
     </>

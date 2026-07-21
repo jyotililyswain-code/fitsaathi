@@ -12,7 +12,7 @@ test("shared and super-admin brand marks use direct homepage links", () => {
   for (const source of [sharedHeader, superAdmin]) {
     assert.match(
       source,
-      /<Link\s+href="\/"\s+aria-label="Go to FitSaathi homepage"/,
+      /<Link\s+href="\/"\s+aria-label="Go to TheFitSaathi homepage"/,
     );
   }
 

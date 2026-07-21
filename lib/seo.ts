@@ -26,25 +26,23 @@ function configuredSiteUrl() {
 }
 
 export const siteUrl = configuredSiteUrl();
-export const brandName = "FitSaathi";
+export const brandName = "TheFitSaathi";
 export const brandAlternateNames = [
   "The FitSaathi",
-  "TheFitSaathi",
-  "Fit Saathi",
-  "thefitsaathi.com",
+  "FitSaathi",
 ] as const;
 
 export const seoConfig = {
   siteName: brandName,
   siteUrl,
   domainName: "thefitsaathi.com",
-  defaultTitle: "FitSaathi | Find Coaches, Gyms, Dojos and Fitness Services",
+  defaultTitle: "TheFitSaathi | Find Coaches, Gyms, Dojos and Fitness Services",
   defaultDescription:
-    "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded by Priyanshu Swain and administered by Parthsaarthi.",
+    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.",
   defaultOpenGraphDescription:
-    "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded by Priyanshu Swain and administered by Parthsaarthi.",
+    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.",
   defaultTwitterDescription:
-    "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded by Priyanshu Swain and administered by Parthsaarthi.",
+    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.",
   defaultKeywords: [
     "FitSaathi",
     "Fit Saathi",
@@ -61,7 +59,7 @@ export const seoConfig = {
   ],
   defaultOpenGraphImage: "/opengraph-image",
   defaultOpenGraphImageAlt:
-    "FitSaathi fitness, sports coaching, dojo and gym platform",
+    "TheFitSaathi fitness, sports coaching, dojo and gym platform",
   logo: "/favicon-512x512.png",
 } as const;
 
@@ -72,6 +70,7 @@ type SeoMetadataInput = {
   keywords?: string[];
   image?: string;
   imageAlt?: string;
+  openGraphTitle?: string;
   openGraphDescription?: string;
   twitterDescription?: string;
   noIndex?: boolean;
@@ -159,6 +158,7 @@ export function generateSeoMetadata({
   keywords = [...seoConfig.defaultKeywords],
   image = seoConfig.defaultOpenGraphImage,
   imageAlt,
+  openGraphTitle,
   openGraphDescription,
   twitterDescription,
   noIndex = false,
@@ -177,6 +177,8 @@ export function generateSeoMetadata({
   const documentTitle = includesBrand
     ? safeTitle
     : `${safeTitle} | ${seoConfig.siteName}`;
+  const safeOpenGraphTitle =
+    sanitizeSeoText(openGraphTitle, 75) || documentTitle;
   const safeKeywords = keywords
     .map((keyword) => sanitizeSeoText(keyword, 60))
     .filter(Boolean)
@@ -194,7 +196,7 @@ export function generateSeoMetadata({
       siteName: seoConfig.siteName,
       locale: "en_IN",
       url: canonical,
-      title: documentTitle,
+      title: safeOpenGraphTitle,
       description: safeOpenGraphDescription,
       images: [
         {
@@ -243,7 +245,7 @@ export const founderPersonJsonLd = {
   "@type": "Person",
   "@id": `${siteUrl}/#priyanshu-swain`,
   name: "Priyanshu Swain",
-  jobTitle: "Owner and Founder of FitSaathi",
+  jobTitle: "Owner and Founder of TheFitSaathi",
   worksFor: { "@id": `${siteUrl}/#organization` },
   url: canonicalUrl("/about"),
 };
@@ -252,7 +254,7 @@ export const administratorPersonJsonLd = {
   "@type": "Person",
   "@id": `${siteUrl}/#parthsaarthi`,
   name: "Parthsaarthi",
-  jobTitle: "Administrator of FitSaathi",
+  jobTitle: "Administrator of TheFitSaathi",
   worksFor: { "@id": `${siteUrl}/#organization` },
   url: canonicalUrl("/about"),
 };
@@ -261,8 +263,8 @@ export const organizationJsonLd = {
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
   name: seoConfig.siteName,
-  alternateName: "The FitSaathi",
-  url: `${siteUrl}/`,
+  alternateName: [...brandAlternateNames],
+  url: siteUrl,
   founder: { "@id": founderPersonJsonLd["@id"] },
   employee: { "@id": administratorPersonJsonLd["@id"] },
   logo: {
@@ -275,40 +277,49 @@ export const organizationJsonLd = {
     caption: seoConfig.siteName,
   },
   description:
-    "FitSaathi helps people discover fitness coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services.",
+    "TheFitSaathi is an Indian fitness and sports platform for discovering coaches, trainers, gyms, dojos, martial arts academies and other fitness services.",
   areaServed: { "@type": "Country", name: "India" },
 };
 
 export const websiteJsonLd = {
   "@type": "WebSite",
   "@id": `${siteUrl}/#website`,
-  url: `${siteUrl}/`,
+  url: siteUrl,
   name: seoConfig.siteName,
   alternateName: [...brandAlternateNames],
   description:
-    "FitSaathi is a fitness and sports platform for discovering coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services across India.",
+    "TheFitSaathi is an Indian fitness and sports platform for discovering coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services.",
   inLanguage: "en-IN",
   publisher: { "@id": `${siteUrl}/#organization` },
 };
 
+export const brandIdentityJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    organizationJsonLd,
+    founderPersonJsonLd,
+    administratorPersonJsonLd,
+    websiteJsonLd,
+  ],
+};
+
 export const ownershipFaqItems = [
   {
-    question: "Who is the owner of FitSaathi?",
+    question: "Who is the owner of TheFitSaathi?",
+    answer: "Priyanshu Swain is the owner and founder of TheFitSaathi.",
+  },
+  {
+    question: "Who founded TheFitSaathi?",
+    answer: "TheFitSaathi was founded by Priyanshu Swain.",
+  },
+  {
+    question: "Who is the administrator of TheFitSaathi?",
+    answer: "Parthsaarthi is the administrator of TheFitSaathi.",
+  },
+  {
+    question: "Are TheFitSaathi, The FitSaathi and FitSaathi the same platform?",
     answer:
-      "Priyanshu Swain is the owner and founder of FitSaathi, also known as The FitSaathi.",
-  },
-  {
-    question: "Who is the founder of The FitSaathi?",
-    answer: "The FitSaathi was founded by Priyanshu Swain.",
-  },
-  {
-    question: "Who is the administrator of FitSaathi?",
-    answer: "Parthsaarthi is the administrator of FitSaathi.",
-  },
-  {
-    question: "Is FitSaathi and The FitSaathi the same platform?",
-    answer:
-      "Yes. FitSaathi and The FitSaathi refer to the same fitness and sports platform available at thefitsaathi.com.",
+      "Yes. On thefitsaathi.com, TheFitSaathi, The FitSaathi and FitSaathi refer to the same fitness and sports platform.",
   },
 ] as const;
 

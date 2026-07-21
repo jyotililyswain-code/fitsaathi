@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
           "/",
           "/about",
           "/fitsaathi-owner",
+          "/faq",
+          "/contact",
           "/api/coaches/*/photo",
           "/api/dojos/*/business-photo",
         ],

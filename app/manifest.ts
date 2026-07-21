@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "FitSaathi",
-    short_name: "FitSaathi",
+    name: "TheFitSaathi",
+    short_name: "TheFitSaathi",
     description:
-      "Discover fitness coaches, personal trainers, gyms, dojos, martial arts academies and sports training services across India with FitSaathi.",
+      "Discover fitness coaches, personal trainers, gyms, dojos, martial arts academies and sports training services across India with TheFitSaathi.",
     id: "/",
     start_url: "/",
     scope: "/",

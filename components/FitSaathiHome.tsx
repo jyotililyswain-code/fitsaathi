@@ -287,15 +287,15 @@ export default function HomePage({ brandSection }: { brandSection: ReactNode }) 
             Fitness and sports discovery across India
           </p>
           <h1 className="mt-6 text-5xl font-black leading-tight text-white sm:text-7xl">
-            FitSaathi: Find Fitness Coaches, Dojos and Gyms Near You
+            TheFitSaathi: Find Fitness Coaches, Dojos and Gyms Near You
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300">
-            FitSaathi helps people discover home fitness coaches, personal
+            TheFitSaathi helps people discover home fitness coaches, personal
             trainers, yoga instructors, martial arts teachers, dojos, gyms and
             sports training services across India.
           </p>
           <p className="mt-3 max-w-2xl leading-7 text-zinc-400">
-            Visit the official FitSaathi platform at{" "}
+            Visit the official TheFitSaathi platform at{" "}
             <Link href="/" className="font-medium text-acid hover:underline">
               thefitsaathi.com
             </Link>{" "}

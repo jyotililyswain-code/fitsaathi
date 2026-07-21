@@ -18,7 +18,7 @@ const publicNav = [
   ["Become a Coach", "/become-a-coach"],
   ["Register as Seller", "/register-seller"],
   ["Register Dojo / Gym", "/register-dojo"],
-  ["About", "/about"],
+  ["About TheFitSaathi", "/about"],
   ["FAQ", "/faq"],
 ] as const;
 
@@ -85,20 +85,20 @@ export function Header() {
       <nav className="mx-auto flex max-w-screen-2xl items-center justify-between gap-1 px-2 py-3 min-[360px]:px-3 sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
         <Link
           href="/"
-          aria-label="Go to FitSaathi homepage"
+          aria-label="Go to TheFitSaathi homepage"
           onClick={() => setOpen(false)}
           className="pointer-events-auto relative z-10 flex shrink-0 cursor-pointer items-center gap-2 text-xl font-bold tracking-tight text-white"
         >
           <Image
             src="/favicon-192x192.png"
-            alt="FitSaathi logo"
+            alt="TheFitSaathi logo"
             width={32}
             height={32}
             priority
             className="h-8 w-8 rounded-lg bg-white object-cover"
           />
           <span>
-            Fit<span className="text-acid">Saathi</span>
+            TheFit<span className="text-acid">Saathi</span>
           </span>
         </Link>
         <div

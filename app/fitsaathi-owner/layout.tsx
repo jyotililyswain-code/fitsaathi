@@ -2,9 +2,12 @@ import type { ReactNode } from "react";
 import { generateSeoMetadata } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
-  title: "FitSaathi Owner: Priyanshu Swain | The FitSaathi",
+  title: "TheFitSaathi Owner and Founder | Priyanshu Swain",
   description:
-    "Priyanshu Swain is the owner and founder of FitSaathi. Parthsaarthi is the administrator of The FitSaathi platform.",
+    "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the Indian fitness and sports platform.",
+  openGraphTitle: "Who Is the Owner of TheFitSaathi?",
+  openGraphDescription:
+    "Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is its administrator.",
   path: "/fitsaathi-owner",
 });
 

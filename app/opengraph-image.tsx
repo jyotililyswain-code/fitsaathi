@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 export const alt =
-  "FitSaathi fitness, sports coaching, dojo and gym platform";
+  "TheFitSaathi fitness, sports coaching, dojo and gym platform";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -42,7 +42,7 @@ export default async function OpenGraphImage() {
               }}
             />
             <div style={{ color: "#c8ff00", display: "flex", fontSize: "62px", fontWeight: 900 }}>
-              FitSaathi
+              TheFitSaathi
             </div>
           </div>
           <div style={{ display: "flex", fontSize: "58px", fontWeight: 800, lineHeight: 1.12, marginTop: "55px", maxWidth: "1040px" }}>

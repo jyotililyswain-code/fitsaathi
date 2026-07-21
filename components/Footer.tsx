@@ -16,9 +16,10 @@ const exploreLinks = [
 ] as const;
 
 const companyLinks = [
-  ["About FitSaathi", "/about"],
-  ["FitSaathi Owner", "/fitsaathi-owner"],
-  ["Contact Us", "/contact"],
+  ["About TheFitSaathi", "/about"],
+  ["Owner and Founder", "/fitsaathi-owner"],
+  ["Contact", "/contact"],
+  ["FAQ", "/faq"],
   ["Privacy Policy", "/privacy"],
   ["Terms and Conditions", "/terms"],
 ] as const;
@@ -35,7 +36,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.2fr_1fr_1fr_1.15fr] lg:px-8">
         <div>
           <Link href="/" className="text-lg font-bold text-white">
-            Fit<span className="text-acid">Saathi</span>
+            TheFit<span className="text-acid">Saathi</span>
           </Link>
           <p className="mt-2 max-w-xs text-sm leading-6 text-zinc-500">
             Fitness support, safety, and trusted connections.
@@ -91,7 +92,7 @@ export function Footer() {
 
       <div className="border-t border-white/10 px-4 py-5 sm:px-6">
         <p className="mx-auto max-w-7xl text-sm leading-6 text-zinc-500">
-          FitSaathi is owned and founded by Priyanshu Swain and administered by
+          TheFitSaathi was founded by Priyanshu Swain and is administered by
           Parthsaarthi.
         </p>
       </div>

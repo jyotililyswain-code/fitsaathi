@@ -139,7 +139,7 @@ export function PolicyFooterLinks() {
           </Link>
         ))}
         <Link href="/contact" className="transition hover:text-acid">Support</Link>
-        <Link href="/about" className="transition hover:text-acid">About FitSaathi</Link>
+        <Link href="/about" className="transition hover:text-acid">About TheFitSaathi</Link>
       </div>
     </footer>
   );

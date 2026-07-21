@@ -5,12 +5,12 @@ import { generateSeoMetadata } from "@/lib/seo";
 
 const faqs = [
   [
-    "What is FitSaathi?",
-    "FitSaathi is a fitness and sports discovery platform where people can explore public coach, dojo, gym, martial-arts training and fitness marketplace information across India.",
+    "What is TheFitSaathi?",
+    "TheFitSaathi is a fitness and sports discovery platform where people can explore public coach, dojo, gym, martial-arts training and fitness marketplace information across India.",
   ],
   [
-    "What is the official FitSaathi website?",
-    "The official FitSaathi website is https://thefitsaathi.com. FitSaathi is the preferred brand name used throughout the website.",
+    "What is the official TheFitSaathi website?",
+    "The official TheFitSaathi website is https://thefitsaathi.com. The FitSaathi and FitSaathi are readable alternatives for the same platform on that domain.",
   ],
   [
     "How can I find a fitness coach on FitSaathi?",
@@ -55,9 +55,9 @@ const faqs = [
 ] as const;
 
 export const metadata = generateSeoMetadata({
-  title: "FitSaathi Frequently Asked Questions",
+  title: "TheFitSaathi Frequently Asked Questions",
   description:
-    "Find answers about FitSaathi accounts, coaches, dojos, gyms, bookings, registration and platform features.",
+    "Find answers about TheFitSaathi accounts, coaches, dojos, gyms, bookings, registration and platform features.",
   path: "/faq",
   keywords: [
     "FitSaathi FAQ",
@@ -84,7 +84,7 @@ export default function FAQPage() {
       <div className="max-w-3xl">
         <p className="inline-flex items-center gap-2 rounded-full border border-acid/30 bg-acid/10 px-4 py-2 text-sm text-acid">
           <HelpCircle className="h-4 w-4" aria-hidden="true" />
-          FitSaathi help
+          TheFitSaathi help
         </p>
         <h1 className="mt-5 text-4xl font-bold tracking-tight text-white sm:text-5xl">
           Frequently Asked Questions
