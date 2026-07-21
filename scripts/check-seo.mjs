@@ -2,9 +2,9 @@ const fetchBase = (
   process.env.SEO_BASE_URL || process.argv[2] || "http://127.0.0.1:3000"
 ).replace(/\/$/, "");
 const canonicalOrigin = "https://thefitsaathi.com";
-const expectedTitle = "FitSaathi Official – Coaches, Dojos & Gyms in India";
+const expectedTitle = "FitSaathi | Find Coaches, Gyms, Dojos and Fitness Services";
 const expectedDescription =
-  "FitSaathi is the official website for discovering home fitness coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services across India.";
+  "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded by Priyanshu Swain and administered by Parthsaarthi.";
 const expectedWebsiteDescription =
   "FitSaathi is a fitness and sports platform for discovering coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services across India.";
 const expectedAlternateNames = [
@@ -109,6 +109,26 @@ function schemaTypeIs(item, type) {
   return Array.isArray(value) ? value.includes(type) : value === type;
 }
 
+function schemasFromHtml(html, label) {
+  const blocks = [
+    ...html.matchAll(
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+    ),
+  ];
+  const schemas = [];
+  for (const block of blocks) {
+    try {
+      const parsed = JSON.parse(block[1]);
+      if (Array.isArray(parsed)) schemas.push(...parsed);
+      else if (Array.isArray(parsed?.["@graph"])) schemas.push(...parsed["@graph"]);
+      else schemas.push(parsed);
+    } catch {
+      failures.push(label + " contains invalid JSON-LD.");
+    }
+  }
+  return schemas;
+}
+
 try {
   const homepageResponse = await get("/");
   check(
@@ -180,6 +200,16 @@ try {
   );
   check(text.includes("About FitSaathi"), "Homepage About FitSaathi section is absent.");
   check(
+    text.includes(
+      "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded and owned by Priyanshu Swain. The platform is administered by Parthsaarthi.",
+    ),
+    "Homepage ownership summary is absent from initial HTML.",
+  );
+  check(
+    html.includes('href="/about"') && html.includes('href="/fitsaathi-owner"'),
+    "Homepage does not link to both ownership information pages.",
+  );
+  check(
     text.includes("thefitsaathi.com"),
     "The official domain is absent from visible homepage content.",
   );
@@ -192,28 +222,44 @@ try {
     "Homepage canonical contains a Vercel deployment host.",
   );
 
-  const jsonLdBlocks = [
-    ...html.matchAll(
-      /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
-    ),
-  ];
-  const schemas = [];
-  for (const block of jsonLdBlocks) {
-    try {
-      const parsed = JSON.parse(block[1]);
-      if (Array.isArray(parsed?.["@graph"])) schemas.push(...parsed["@graph"]);
-      else schemas.push(parsed);
-    } catch {
-      failures.push("Homepage contains invalid JSON-LD.");
-    }
-  }
+  const schemas = schemasFromHtml(html, "Homepage");
 
   const websiteNodes = schemas.filter((item) => schemaTypeIs(item, "WebSite"));
   const organizationNodes = schemas.filter((item) => schemaTypeIs(item, "Organization"));
   const webPageNodes = schemas.filter((item) => schemaTypeIs(item, "WebPage"));
+  const personNodes = schemas.filter((item) => schemaTypeIs(item, "Person"));
   const website = websiteNodes[0];
   const organization = organizationNodes[0];
   const webPage = webPageNodes[0];
+
+  check(
+    organization?.founder?.["@id"] === canonicalOrigin + "/#priyanshu-swain",
+    "Organization JSON-LD is not connected to the FitSaathi founder.",
+  );
+  check(
+    organization?.employee?.["@id"] === canonicalOrigin + "/#parthsaarthi",
+    "Organization JSON-LD is not connected to the FitSaathi administrator.",
+  );
+  check(
+    personNodes.length === 2,
+    "Found " + personNodes.length + " Person JSON-LD nodes on the homepage, expected two.",
+  );
+  check(
+    personNodes.some(
+      (person) =>
+        person.name === "Priyanshu Swain" &&
+        person.jobTitle === "Owner and Founder of FitSaathi",
+    ),
+    "Priyanshu Swain Person JSON-LD is missing or inconsistent.",
+  );
+  check(
+    personNodes.some(
+      (person) =>
+        person.name === "Parthsaarthi" &&
+        person.jobTitle === "Administrator of FitSaathi",
+    ),
+    "Parthsaarthi Person JSON-LD is missing or inconsistent.",
+  );
 
   check(websiteNodes.length === 1, `Found ${websiteNodes.length} WebSite JSON-LD nodes, expected one.`);
   check(website?.name === "FitSaathi", "WebSite JSON-LD name is not FitSaathi.");
@@ -343,9 +389,22 @@ try {
     "robots.txt does not reference the canonical sitemap.",
   );
   check(!/^Disallow:\s*\/$/im.test(robotsText), "robots.txt blocks the entire site.");
+  for (const publicPath of ["/", "/about", "/fitsaathi-owner"]) {
+    check(
+      robotsText.includes("Allow: " + publicPath),
+      "robots.txt does not explicitly allow " + publicPath + ".",
+    );
+  }
 
   const sitemapResponse = await get("/sitemap.xml");
   const sitemapText = await sitemapResponse.text();
+  for (const publicPath of ["/", "/about", "/fitsaathi-owner"]) {
+    const loc = publicPath === "/" ? canonicalOrigin + "/" : canonicalOrigin + publicPath;
+    check(
+      sitemapText.includes("<loc>" + loc + "</loc>"),
+      "Sitemap is missing " + loc + ".",
+    );
+  }
   check(sitemapResponse.status === 200, `sitemap.xml returned ${sitemapResponse.status}.`);
   check(
     sitemapText.includes(`<loc>${canonicalOrigin}/</loc>`),
@@ -401,6 +460,7 @@ try {
   const publicTitles = new Map();
   for (const publicPath of [
     "/about",
+    "/fitsaathi-owner",
     "/faq",
     "/contact",
     "/find-coach",
@@ -434,6 +494,142 @@ try {
       );
     } else {
       publicTitles.set(publicTitle, publicPath);
+    }
+  }
+
+  const ownershipPageChecks = [
+    {
+      path: "/about",
+      title:
+        "About FitSaathi | Owner Priyanshu Swain and Admin Parthsaarthi",
+      description:
+        "Learn about FitSaathi, also known as The FitSaathi. FitSaathi is owned and founded by Priyanshu Swain, and Parthsaarthi serves as its administrator.",
+      h1: "About FitSaathi",
+      breadcrumbLabel: "About FitSaathi",
+      hasFaq: false,
+    },
+    {
+      path: "/fitsaathi-owner",
+      title: "FitSaathi Owner: Priyanshu Swain | The FitSaathi",
+      description:
+        "Priyanshu Swain is the owner and founder of FitSaathi. Parthsaarthi is the administrator of The FitSaathi platform.",
+      h1: "Who Is the Owner of FitSaathi?",
+      breadcrumbLabel: "FitSaathi Owner",
+      hasFaq: true,
+    },
+  ];
+  const requiredOwnershipSentences = [
+    "Priyanshu Swain is the owner and founder of FitSaathi.",
+    "Parthsaarthi is the administrator of FitSaathi.",
+  ];
+  const expectedFaqs = [
+    {
+      question: "Who is the owner of FitSaathi?",
+      answer:
+        "Priyanshu Swain is the owner and founder of FitSaathi, also known as The FitSaathi.",
+    },
+    {
+      question: "Who is the founder of The FitSaathi?",
+      answer: "The FitSaathi was founded by Priyanshu Swain.",
+    },
+    {
+      question: "Who is the administrator of FitSaathi?",
+      answer: "Parthsaarthi is the administrator of FitSaathi.",
+    },
+    {
+      question: "Is FitSaathi and The FitSaathi the same platform?",
+      answer:
+        "Yes. FitSaathi and The FitSaathi refer to the same fitness and sports platform available at thefitsaathi.com.",
+    },
+  ];
+
+  for (const page of ownershipPageChecks) {
+    const response = await get(page.path);
+    const pageHtml = await response.text();
+    const pageText = visibleText(pageHtml);
+    const pageTitle = decodeHtml(
+      pageHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "",
+    );
+    const pageDescription = decodeHtml(
+      metaContent(pageHtml, "name", "description"),
+    );
+    const h1Matches = [
+      ...pageHtml.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi),
+    ];
+    const schemas = schemasFromHtml(pageHtml, page.path);
+    const organizations = schemas.filter((item) =>
+      schemaTypeIs(item, "Organization"),
+    );
+    const people = schemas.filter((item) => schemaTypeIs(item, "Person"));
+    const websites = schemas.filter((item) => schemaTypeIs(item, "WebSite"));
+    const breadcrumbs = schemas.filter((item) =>
+      schemaTypeIs(item, "BreadcrumbList"),
+    );
+    const faqs = schemas.filter((item) => schemaTypeIs(item, "FAQPage"));
+
+    check(response.status === 200, page.path + " did not return 200.");
+    check(pageTitle === page.title, page.path + " has an unexpected title.");
+    check(
+      pageDescription === page.description,
+      page.path + " has an unexpected meta description.",
+    );
+    check(
+      h1Matches.length === 1 && visibleText(h1Matches[0][1]) === page.h1,
+      page.path + " does not have the expected single H1.",
+    );
+    check(
+      pageText.includes("Home") && pageText.includes(page.breadcrumbLabel),
+      page.path + " does not display its breadcrumb.",
+    );
+    for (const sentence of requiredOwnershipSentences) {
+      check(
+        pageText.includes(sentence),
+        page.path + " is missing the exact sentence: " + sentence,
+      );
+    }
+    check(
+      organizations.length === 1,
+      page.path + " should contain exactly one Organization node.",
+    );
+    check(
+      people.length === 2 &&
+        people.some((person) => person.name === "Priyanshu Swain") &&
+        people.some((person) => person.name === "Parthsaarthi"),
+      page.path + " is missing one or both Person nodes.",
+    );
+    check(
+      websites.length === 1,
+      page.path + " should contain exactly one WebSite node.",
+    );
+    check(
+      breadcrumbs.length === 1,
+      page.path + " should contain exactly one BreadcrumbList node.",
+    );
+    check(
+      faqs.length === (page.hasFaq ? 1 : 0),
+      page.path + " has an unexpected FAQPage node count.",
+    );
+
+    if (page.hasFaq) {
+      const faqEntities = faqs[0]?.mainEntity || [];
+      check(
+        faqEntities.length === expectedFaqs.length,
+        page.path + " has an incomplete FAQPage schema.",
+      );
+      for (const item of expectedFaqs) {
+        check(
+          pageText.includes(item.question) && pageText.includes(item.answer),
+          page.path + " does not visibly display an FAQ schema answer.",
+        );
+        check(
+          faqEntities.some(
+            (entity) =>
+              entity.name === item.question &&
+              entity.acceptedAnswer?.text === item.answer,
+          ),
+          page.path + " has FAQ JSON-LD that differs from the visible answer.",
+        );
+      }
     }
   }
 

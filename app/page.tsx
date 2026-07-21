@@ -2,7 +2,9 @@ import { JsonLd } from "@/components/JsonLd";
 import FitSaathiHome from "@/components/FitSaathiHome";
 import { HomepageBrandSection } from "@/components/HomepageBrandSection";
 import {
+  administratorPersonJsonLd,
   coachBookingServiceJsonLd,
+  founderPersonJsonLd,
   generateSeoMetadata,
   homePageJsonLd,
   organizationJsonLd,
@@ -27,6 +29,8 @@ export default function HomePage() {
           "@context": "https://schema.org",
           "@graph": [
             organizationJsonLd,
+            founderPersonJsonLd,
+            administratorPersonJsonLd,
             websiteJsonLd,
             homePageJsonLd,
             coachBookingServiceJsonLd,

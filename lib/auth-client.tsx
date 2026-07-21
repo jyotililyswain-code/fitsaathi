@@ -31,6 +31,7 @@ const publicSeoRoutes = new Set([
   "/",
   "/home",
   "/about",
+  "/fitsaathi-owner",
   "/contact",
   "/faq",
   "/find-coach",

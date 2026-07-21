@@ -29,6 +29,7 @@ const majorTemplates = [
 
 const publicRouteSmoke = [
   "/about",
+  "/fitsaathi-owner",
   "/contact",
   "/faq",
   "/coaches",

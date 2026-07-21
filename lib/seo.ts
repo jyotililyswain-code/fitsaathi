@@ -38,13 +38,13 @@ export const seoConfig = {
   siteName: brandName,
   siteUrl,
   domainName: "thefitsaathi.com",
-  defaultTitle: "FitSaathi Official – Coaches, Dojos & Gyms in India",
+  defaultTitle: "FitSaathi | Find Coaches, Gyms, Dojos and Fitness Services",
   defaultDescription:
-    "FitSaathi is the official website for discovering home fitness coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services across India.",
+    "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded by Priyanshu Swain and administered by Parthsaarthi.",
   defaultOpenGraphDescription:
-    "Discover home fitness coaches, yoga trainers, martial arts teachers, dojos, gyms and sports training services through FitSaathi.",
+    "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded by Priyanshu Swain and administered by Parthsaarthi.",
   defaultTwitterDescription:
-    "Discover fitness coaches, yoga trainers, martial arts teachers, dojos, gyms and sports training services through FitSaathi.",
+    "FitSaathi, also known as The FitSaathi, is a fitness and sports platform founded by Priyanshu Swain and administered by Parthsaarthi.",
   defaultKeywords: [
     "FitSaathi",
     "Fit Saathi",
@@ -239,12 +239,32 @@ export function generateSeoMetadata({
   };
 }
 
+export const founderPersonJsonLd = {
+  "@type": "Person",
+  "@id": `${siteUrl}/#priyanshu-swain`,
+  name: "Priyanshu Swain",
+  jobTitle: "Owner and Founder of FitSaathi",
+  worksFor: { "@id": `${siteUrl}/#organization` },
+  url: canonicalUrl("/about"),
+};
+
+export const administratorPersonJsonLd = {
+  "@type": "Person",
+  "@id": `${siteUrl}/#parthsaarthi`,
+  name: "Parthsaarthi",
+  jobTitle: "Administrator of FitSaathi",
+  worksFor: { "@id": `${siteUrl}/#organization` },
+  url: canonicalUrl("/about"),
+};
+
 export const organizationJsonLd = {
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
   name: seoConfig.siteName,
   alternateName: "The FitSaathi",
   url: `${siteUrl}/`,
+  founder: { "@id": founderPersonJsonLd["@id"] },
+  employee: { "@id": administratorPersonJsonLd["@id"] },
   logo: {
     "@type": "ImageObject",
     "@id": `${siteUrl}/#logo`,
@@ -269,6 +289,40 @@ export const websiteJsonLd = {
     "FitSaathi is a fitness and sports platform for discovering coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services across India.",
   inLanguage: "en-IN",
   publisher: { "@id": `${siteUrl}/#organization` },
+};
+
+export const ownershipFaqItems = [
+  {
+    question: "Who is the owner of FitSaathi?",
+    answer:
+      "Priyanshu Swain is the owner and founder of FitSaathi, also known as The FitSaathi.",
+  },
+  {
+    question: "Who is the founder of The FitSaathi?",
+    answer: "The FitSaathi was founded by Priyanshu Swain.",
+  },
+  {
+    question: "Who is the administrator of FitSaathi?",
+    answer: "Parthsaarthi is the administrator of FitSaathi.",
+  },
+  {
+    question: "Is FitSaathi and The FitSaathi the same platform?",
+    answer:
+      "Yes. FitSaathi and The FitSaathi refer to the same fitness and sports platform available at thefitsaathi.com.",
+  },
+] as const;
+
+export const ownershipFaqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: ownershipFaqItems.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
 };
 
 export const homePageJsonLd = {

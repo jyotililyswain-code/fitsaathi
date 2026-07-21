@@ -15,6 +15,7 @@ const publicRoutes = [
   { path: "/register-dojo", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/register-seller", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/about", changeFrequency: "monthly" as const, priority: 0.7 },
+  { path: "/fitsaathi-owner", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/faq", changeFrequency: "monthly" as const, priority: 0.7 },
   { path: "/contact", changeFrequency: "monthly" as const, priority: 0.6 },
   { path: "/policies", changeFrequency: "monthly" as const, priority: 0.5 },

@@ -8,6 +8,8 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "*",
         allow: [
           "/",
+          "/about",
+          "/fitsaathi-owner",
           "/api/coaches/*/photo",
           "/api/dojos/*/business-photo",
         ],
