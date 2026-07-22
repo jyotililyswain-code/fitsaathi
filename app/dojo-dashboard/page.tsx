@@ -23,7 +23,7 @@ export default function DojoDashboardPage() {
   const memberships = useCollectionCount("memberships");
   const notifications = useNotifications();
   const [message, setMessage] = useState("");
-  const pendingBookings = bookings.data.filter((booking) => ["pending", "confirmed"].includes(booking.status || "pending")).length;
+  const pendingBookings = bookings.data.filter((booking) => booking.status === "pending" || (booking.status === "confirmed" && booking.packageType !== "trial")).length;
 
   async function setBookingStatus(id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) {
     if (!user) return setMessage("Please sign in again.");
@@ -45,6 +45,7 @@ export default function DojoDashboardPage() {
           <div>
             <h1 className="text-4xl font-bold text-white">{registration.data?.establishmentType === "GYM" ? "Gym owner dashboard" : "Dojo owner dashboard"}</h1>
             <p className="mt-3 text-zinc-400">Manage your academy, classes, timings, and free FitSaathi bookings. Registration and bookings have no platform or hidden charges.</p>
+            <p className="mt-2 text-xs text-zinc-500">Your registered contact number is shared only with logged-in customers after they successfully book a trial.</p>
           </div>
           {registration.data?.id ? (
             <Link href={`/owner/dojos/${registration.data.id}/edit`} className="focus-ring inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-full border border-acid/40 px-4 py-2.5 text-sm font-semibold text-acid transition hover:bg-acid hover:text-ink sm:w-auto">
@@ -90,7 +91,8 @@ export default function DojoDashboardPage() {
 
 function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) => void }) {
   const confirmed = booking.status === "accepted" || booking.status === "completed";
-  const pending = booking.status === "confirmed";
+  const contactVisible = confirmed || (booking.packageType === "trial" && booking.status === "confirmed");
+  const pending = booking.status === "confirmed" && booking.packageType !== "trial";
   const [date, setDate] = useState(booking.preferredDate || "");
   const [time, setTime] = useState(booking.preferredTime || "");
   return (
@@ -99,9 +101,9 @@ function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: s
         <div>
           <p className="font-semibold text-white">{booking.customerName || "Customer booking"}</p>
           <p className="mt-1 text-sm text-zinc-400">{booking.preferredDate || "Date pending"} {booking.preferredTime || ""}</p>
-          <p className="mt-1 text-sm text-zinc-400">Phone: {confirmed ? booking.customerPhone || "Not provided" : "Hidden until accepted"}</p>
+          <p className="mt-1 text-sm text-zinc-400">Phone: {contactVisible ? booking.customerPhone || "Not provided" : "Hidden until accepted"}</p>
         </div>
-        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.status || "pending"}</span>
+        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.packageType === "trial" && booking.status === "confirmed" ? "Confirmed automatically" : booking.status || "pending"}</span>
       </div>
       {pending ? <div className="mt-4 flex flex-wrap gap-2">
         <button onClick={() => onStatus(booking.id, "accepted")} className="rounded-full bg-acid px-4 py-2 text-xs font-semibold text-ink">

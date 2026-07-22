@@ -8,6 +8,7 @@ import { monthInIndia, todayInIndia } from "@/lib/date";
 import { prisma } from "@/lib/prisma";
 import { assertSameOrigin, getClientIp, isRateLimited, RequestSecurityError } from "@/lib/security";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
+import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
 const bookingDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -47,8 +48,8 @@ export async function POST(request: Request) {
     const today = todayInIndia();
     if (input.preferredDate < today) return NextResponse.json({ error: "Choose a future booking date." }, { status: 400 });
     const [coach, dojo, customer] = await Promise.all([
-      input.targetType === "coach" ? prisma.coach.findUnique({ where: { id: input.targetId }, include: { owner: { select: { emailVerified: true, accountStatus: true } } } }) : Promise.resolve(null),
-      input.targetType === "dojo" ? prisma.dojo.findUnique({ where: { id: input.targetId }, include: { owner: { select: { emailVerified: true, accountStatus: true } } } }) : Promise.resolve(null),
+      input.targetType === "coach" ? prisma.coach.findUnique({ where: { id: input.targetId }, include: { owner: { select: { name: true, phone: true, emailVerified: true, accountStatus: true } } } }) : Promise.resolve(null),
+      input.targetType === "dojo" ? prisma.dojo.findUnique({ where: { id: input.targetId }, include: { owner: { select: { name: true, phone: true, emailVerified: true, accountStatus: true } } } }) : Promise.resolve(null),
       prisma.user.findUnique({ where: { id: user.id } }),
     ]);
     const provider = coach || dojo;
@@ -57,6 +58,20 @@ export async function POST(request: Request) {
     if (provider.owner.accountStatus !== "active") return NextResponse.json({ error: "This provider is not available for booking." }, { status: 409 });
     if (coach && (!coach.verified || coach.status !== "approved")) return NextResponse.json({ error: "This coach is not available for booking." }, { status: 409 });
     if (dojo && (!dojo.approved || dojo.status !== "active")) return NextResponse.json({ error: "This dojo or gym is not available for booking." }, { status: 409 });
+    const providerPhone = normalizeProviderPhone(coach?.phoneNumber || dojo?.phoneNumber || provider.owner.phone);
+    if (input.packageType === "trial" && !providerPhone) return NextResponse.json({ error: "This provider has not added a contact number yet. Please choose another provider or try again later.", code: "PROVIDER_PHONE_MISSING" }, { status: 409 });
+    if (input.packageType === "trial") {
+      const duplicate = await prisma.booking.findFirst({
+        where: {
+          userId: user.id,
+          packageType: "trial",
+          status: { in: ["pending", "confirmed", "accepted", "completed"] },
+          ...(coach ? { coachId: coach.id } : { dojoId: dojo!.id }),
+        },
+        select: { id: true },
+      });
+      if (duplicate) return NextResponse.json({ error: "You have already booked a trial with this provider.", code: "TRIAL_DUPLICATE", bookingId: duplicate.id }, { status: 409 });
+    }
     const selectedDay = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(new Date(`${input.preferredDate}T00:00:00.000Z`)).toLowerCase();
     if (provider.availableDays.length && !provider.availableDays.some(day => day.trim().toLowerCase() === selectedDay)) return NextResponse.json({ error: "This provider is not available on the selected day." }, { status: 409 });
     const exactTimes = provider.availableTimings.map(normalizeAvailabilityTime);
@@ -95,8 +110,8 @@ export async function POST(request: Request) {
             payoutMonth: monthInIndia(),
           },
         });
-        const providerNotification = await createBookingEventNotification(tx, { event: "created", booking, recipientUserId: provider.ownerId, actorUserId: user.id, audience: "provider" });
-        const customerNotification = await createNotification(tx, { recipientUserId: user.id, type: "booking_confirmed", title: "Booking request sent", message: "Your booking request was sent to the provider.", bookingId: booking.id, relatedEntityType: "booking", relatedEntityId: booking.id, actionUrl: customerBookingAction(booking.id), deduplicationKey: `booking_confirmed:${booking.id}:${user.id}`, metadata: { bookingId: booking.id } });
+        const providerNotification = await createBookingEventNotification(tx, { event: input.packageType === "trial" ? "trial_created_provider" : "created", booking, recipientUserId: provider.ownerId, actorUserId: user.id, audience: "provider", messageOverride: input.packageType === "trial" ? `A new trial has been booked by ${input.name || customer.name} for ${input.preferredDate} at ${input.preferredTime}. No approval is required.` : undefined });
+        const customerNotification = await createNotification(tx, { recipientUserId: user.id, type: input.packageType === "trial" ? "trial_confirmed" : "booking_confirmed", title: input.packageType === "trial" ? "Trial confirmed" : "Booking request sent", message: input.packageType === "trial" ? `Your trial with ${provider.name} has been confirmed. You can now view their contact number.` : "Your booking request was sent to the provider.", bookingId: booking.id, relatedEntityType: "booking", relatedEntityId: booking.id, actionUrl: customerBookingAction(booking.id), deduplicationKey: `booking_confirmed:${booking.id}:${user.id}`, metadata: { bookingId: booking.id } });
         return { booking, notificationIds: [providerNotification.id, customerNotification.id] };
       });
     } catch (error) {
@@ -107,7 +122,7 @@ export async function POST(request: Request) {
       throw error;
     }
     await deliverNotifications(result.notificationIds);
-    return NextResponse.json({ bookingId: result.booking.id, status: result.booking.status, providerName: provider.name }, { status: 201 });
+    return NextResponse.json({ bookingId: result.booking.id, status: result.booking.status, packageType: result.booking.packageType, providerName: provider.name }, { status: 201 });
   } catch (error) {
     if (error instanceof ApiAuthError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof RequestSecurityError) return NextResponse.json({ error: error.message }, { status: 403 });
@@ -122,7 +137,7 @@ function findIdempotentBooking(idempotencyKey: string) {
 }
 
 function bookingResponse(booking: NonNullable<Awaited<ReturnType<typeof findIdempotentBooking>>>) {
-  return NextResponse.json({ bookingId: booking.id, status: booking.status, providerName: booking.coach?.name || booking.dojo?.name || "your provider" });
+  return NextResponse.json({ bookingId: booking.id, status: booking.status, packageType: booking.packageType, providerName: booking.coach?.name || booking.dojo?.name || "your provider" });
 }
 
 function normalizeAvailabilityTime(value: string) {
@@ -133,4 +148,9 @@ function normalizeAvailabilityTime(value: string) {
   let hour = Number(twelveHour[1]) % 12;
   if (twelveHour[3].toLowerCase() === "pm") hour += 12;
   return `${String(hour).padStart(2, "0")}:${twelveHour[2] || "00"}`;
+}
+
+function normalizeProviderPhone(value?: string | null) {
+  const normalized = normalizePhone(value || "");
+  return isValidIndianPhone(normalized) ? `+91${normalized}` : null;
 }

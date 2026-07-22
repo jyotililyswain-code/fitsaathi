@@ -592,11 +592,32 @@ app.patch("/api/seller/orders/:id/status", authenticate, allowRoles("seller", ..
 
 app.get("/api/bookings", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const where = admins.includes(request.user!.role) ? {} : ["coach", "dojo"].includes(request.user!.role) ? { providerOwnerId: request.user!.id } : { userId: request.user!.id };
-  response.json(await prisma.booking.findMany({ where, include: { coach: true, dojo: true, attendance: true }, orderBy: { createdAt: "desc" }, take: 100 }));
+  response.json(await prisma.booking.findMany({ where, select: { id: true, userId: true, providerOwnerId: true, coachId: true, dojoId: true, customerName: true, customerPhone: true, providerPhone: true, status: true, packageType: true, amount: true, originalPrice: true, platformFee: true, finalPrice: true, paymentStatus: true, payoutStatus: true, preferredDate: true, preferredTime: true, classType: true, createdAt: true, updatedAt: true, coach: { select: { id: true, name: true, category: true, city: true } }, dojo: { select: { id: true, name: true, category: true, address: true, city: true, state: true, pincode: true } }, attendance: true }, orderBy: { createdAt: "desc" }, take: 100 }));
+}));
+app.get("/api/bookings/:id/contact", authenticate, asyncRoute(async (request: AuthRequest, response) => {
+  const booking = await prisma.booking.findFirst({
+    where: { id: String(request.params.id), userId: request.user!.id, packageType: "trial", status: { in: ["confirmed", "accepted", "completed"] } },
+    select: {
+      id: true, status: true, preferredDate: true, preferredTime: true, classType: true,
+      coach: { select: { name: true, category: true, city: true, phoneNumber: true, owner: { select: { name: true, phone: true } } } },
+      dojo: { select: { name: true, category: true, address: true, city: true, state: true, pincode: true, phoneNumber: true, ownerName: true, owner: { select: { name: true, phone: true } } } },
+    },
+  });
+  if (!booking) return response.status(403).json({ success: false, message: "You are not authorised to access this contact." });
+  const provider = booking.coach || booking.dojo;
+  const phone = normalizeBookingPhone(provider?.phoneNumber || provider?.owner?.phone);
+  if (!provider || !phone) return response.status(409).json({ success: false, message: "This provider has not added a contact number yet." });
+  const name = booking.coach ? booking.coach.owner.name : booking.dojo?.ownerName || booking.dojo?.owner.name || "Provider contact";
+  return response.json({ success: true, contact: { name, phone }, booking: { id: booking.id, status: "confirmed", providerName: provider.name, service: provider.category, date: booking.preferredDate, time: booking.preferredTime, classType: booking.classType, address: booking.dojo ? [booking.dojo.address, booking.dojo.city, booking.dojo.state, booking.dojo.pincode].filter(Boolean).join(", ") : booking.coach?.city || "" } });
 }));
 app.patch("/api/bookings/:id/status", authenticate, asyncRoute(async (_request: AuthRequest, response) => {
   response.status(405).json({ error: "Use the canonical POST /api/bookings/status endpoint for booking updates.", code: "LEGACY_BOOKING_ENDPOINT_DISABLED" });
 }));
+
+function normalizeBookingPhone(value?: string | null) {
+  const normalized = String(value || "").replace(/\D/g, "").slice(-10);
+  return /^[6-9]\d{9}$/.test(normalized) ? `+91${normalized}` : null;
+}
 
 app.get("/api/dashboard/summary", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const provider = ["coach", "dojo"].includes(request.user!.role);

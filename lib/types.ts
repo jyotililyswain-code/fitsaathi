@@ -70,6 +70,7 @@ export type Booking = {
   coachOwnerId?: string;
   providerOwnerId?: string;
   status?: string;
+  packageType?: "trial" | "monthly" | "quarterly" | "custom" | string;
   amount?: number;
   originalPrice?: number;
   platformFee?: number;

@@ -1,10 +1,11 @@
 import type { Booking, Prisma } from "@prisma/client";
 import { createNotification } from "@/lib/notifications/create-notification";
 
-type BookingEvent = "created" | "accepted" | "rejected" | "cancelled" | "cancelled_by_provider" | "rescheduled" | "payment_confirmed" | "completed";
+type BookingEvent = "created" | "trial_created_provider" | "accepted" | "rejected" | "cancelled" | "cancelled_by_provider" | "rescheduled" | "payment_confirmed" | "completed";
 
 const copy: Record<BookingEvent, { type: string; title: string; message: string }> = {
   created: { type: "booking_created", title: "New booking received", message: "You received a new customer booking. Open your dashboard to review it." },
+  trial_created_provider: { type: "trial_booked", title: "Trial booked automatically", message: "A new trial has been booked. No approval is required." },
   accepted: { type: "booking_accepted", title: "Booking accepted", message: "Your booking has been accepted. Open FitSaathi to view the details." },
   rejected: { type: "booking_rejected", title: "Booking not accepted", message: "The provider could not accept this booking. Open FitSaathi for more information." },
   cancelled: { type: "booking_cancelled", title: "Booking cancelled", message: "A booking has been cancelled. Open FitSaathi to view the updated details." },
@@ -31,6 +32,7 @@ export async function createBookingEventNotification(
     actorUserId?: string | null;
     audience: "provider" | "customer";
     deduplicationSuffix?: string;
+    messageOverride?: string;
   },
 ) {
   const content = copy[input.event];
@@ -39,7 +41,7 @@ export async function createBookingEventNotification(
     actorUserId: input.actorUserId,
     type: content.type,
     title: content.title,
-    message: content.message,
+    message: input.messageOverride || content.message,
     bookingId: input.booking.id,
     relatedEntityType: "booking",
     relatedEntityId: input.booking.id,

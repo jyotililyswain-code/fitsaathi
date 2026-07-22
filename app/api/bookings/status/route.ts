@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const customerActor = booking.userId === user.id;
     const adminActor = isAdminRole(user.role);
     if (!providerActor && !customerActor && !adminActor) return NextResponse.json({ error: "You cannot manage this booking." }, { status: 403 });
+    if (booking.packageType === "trial" && ["accepted", "rejected"].includes(input.status)) return NextResponse.json({ error: "Trial bookings are confirmed automatically. No provider approval is required." }, { status: 409 });
     if (["accepted", "rejected", "completed"].includes(input.status) && !providerActor && !adminActor) return NextResponse.json({ error: "Only the provider can make this booking update." }, { status: 403 });
     const transitionError = validateTransition(booking.status, input.status);
     if (transitionError) return NextResponse.json({ error: transitionError }, { status: 409 });

@@ -12,6 +12,8 @@ import { NotificationPermissionCard } from "@/components/notifications/Notificat
 import { BookingRealtimeListener } from "@/components/notifications/BookingRealtimeListener";
 import { useNotifications } from "@/components/notifications/NotificationProvider";
 import { readJsonResponse } from "@/lib/http";
+import { localApi } from "@/lib/local-api";
+import type { Booking } from "@/lib/types";
 
 export default function CustomerDashboardPage() {
   const { user } = useSessionUser();
@@ -21,6 +23,17 @@ export default function CustomerDashboardPage() {
   const attendance = useCollectionCount("attendance");
   const notifications = useNotifications();
   const [message, setMessage] = useState("");
+  const [contacts, setContacts] = useState<Record<string, { name: string; phone: string }>>({});
+  const [contactLoading, setContactLoading] = useState<string | null>(null);
+
+  async function revealContact(booking: Booking) {
+    setContactLoading(booking.id);
+    try {
+      const result = await localApi<{ contact: { name: string; phone: string } }>(`/bookings/${encodeURIComponent(booking.id)}/contact`);
+      setContacts(current => ({ ...current, [booking.id]: result.contact }));
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Could not load the provider contact."); }
+    finally { setContactLoading(null); }
+  }
 
   async function cancelBooking(bookingId: string) {
     try {
@@ -74,9 +87,7 @@ export default function CustomerDashboardPage() {
                     <div className="min-w-0">
                       <p className="font-semibold text-white">{booking.classType || "Class booking"}</p>
                       <p className="mt-1 text-sm text-zinc-400">{booking.preferredDate || "Date pending"} {booking.preferredTime || ""}</p>
-                      <p className="mt-1 text-sm text-zinc-400">
-                        Owner contact: {["accepted", "completed"].includes(booking.status || "") ? booking.providerPhone || "Owner number pending" : "Visible after the provider accepts"}
-                      </p>
+                      {booking.packageType === "trial" ? (contacts[booking.id] ? <p className="mt-1 text-sm text-acid">Contact: <a href={`tel:${contacts[booking.id].phone}`} className="underline">{contacts[booking.id].phone}</a> · {contacts[booking.id].name}</p> : <button type="button" disabled={contactLoading === booking.id || booking.status === "cancelled"} onClick={() => void revealContact(booking)} className="mt-2 rounded-full border border-acid/40 px-3 py-1.5 text-xs font-semibold text-acid disabled:opacity-50">{contactLoading === booking.id ? "Loading contact…" : "View Contact Number"}</button>) : <p className="mt-1 text-sm text-zinc-400">Owner contact: {["accepted", "completed"].includes(booking.status || "") ? booking.providerPhone || "Owner number pending" : "Visible after the provider accepts"}</p>}
                       <p className="mt-1 text-xs font-semibold text-acid">Free booking · ₹0 FitSaathi charge</p>
                     </div>
                     <span className="shrink-0 self-start rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.status || "pending"}</span>
