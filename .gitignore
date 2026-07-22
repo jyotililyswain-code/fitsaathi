@@ -1,6 +1,5 @@
 .next
 node_modules
-.env*.local
 dist
 coverage
 test-results/
@@ -11,8 +10,18 @@ playwright-report/
 server/uploads/*
 !server/uploads/.gitkeep
 server/private/*
-server/.env
-.env
 
 .vercel
-.env*
+
+# Environment files (keep sanitized examples tracked)
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+.env.*.local
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
