@@ -26,6 +26,7 @@ import {
 import { matchesRouter } from "./matches";
 import { optimizeUploads, removeUploads, upload } from "./uploads";
 import { containsInlineFileData, isOwnedProviderPath, isProviderFileKind, isProviderRegistrationType, type ProviderRegistrationType } from "../../lib/provider-upload-rules";
+import { calculateBookingPricing, resolveMonthlyFeeRupees } from "../../lib/booking-pricing";
 import { assertProviderUpload, handleProviderBlobUpload, localProviderUpload, providerStorageMode, providerUploadError, readProviderUpload, removeProviderUploads, removeUnreferencedProviderUploads, storeLocalProviderUpload } from "./provider-uploads";
 
 const app = express();
@@ -592,7 +593,30 @@ app.patch("/api/seller/orders/:id/status", authenticate, allowRoles("seller", ..
 
 app.get("/api/bookings", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const where = admins.includes(request.user!.role) ? {} : ["coach", "dojo"].includes(request.user!.role) ? { providerOwnerId: request.user!.id } : { userId: request.user!.id };
-  response.json(await prisma.booking.findMany({ where, select: { id: true, userId: true, providerOwnerId: true, coachId: true, dojoId: true, customerName: true, customerPhone: true, providerPhone: true, status: true, packageType: true, amount: true, originalPrice: true, platformFee: true, finalPrice: true, paymentStatus: true, payoutStatus: true, preferredDate: true, preferredTime: true, classType: true, createdAt: true, updatedAt: true, coach: { select: { id: true, name: true, category: true, city: true } }, dojo: { select: { id: true, name: true, category: true, address: true, city: true, state: true, pincode: true } }, attendance: true }, orderBy: { createdAt: "desc" }, take: 100 }));
+  const bookings = await prisma.booking.findMany({ where, select: {
+    id: true, userId: true, providerOwnerId: true, coachId: true, dojoId: true, customerName: true, customerPhone: true, providerPhone: true,
+    status: true, packageType: true, amount: true, originalPrice: true, platformFee: true, finalPrice: true, paymentStatus: true, payoutStatus: true,
+    monthlyFeeSnapshotPaise: true, firstMonthPaymentPaise: true, firstMonthRemainingBalancePaise: true, continuationPaymentPaise: true,
+    pricingCurrency: true, pricingPolicyVersion: true, preferredDate: true, preferredTime: true, classType: true, createdAt: true, updatedAt: true,
+    coach: { select: { id: true, name: true, category: true, city: true, baseFee: true, customerPrice: true } },
+    dojo: { select: { id: true, name: true, category: true, address: true, city: true, state: true, pincode: true, originalPrice: true, finalPrice: true } },
+    attendance: true,
+  }, orderBy: { createdAt: "desc" }, take: 100 });
+  response.json(bookings.map(booking => {
+    const hasSnapshot = booking.monthlyFeeSnapshotPaise != null && booking.firstMonthPaymentPaise != null && booking.firstMonthRemainingBalancePaise != null && booking.continuationPaymentPaise != null;
+    if (hasSnapshot) return { ...booking, pricingSnapshotAvailable: true };
+    const providerType = booking.coachId ? "coach" : booking.dojoId ? "dojo" : undefined;
+    const monthlyFeeRupees = providerType === "coach"
+      ? resolveMonthlyFeeRupees(booking.coach, "coach")
+      : providerType === "dojo"
+        ? resolveMonthlyFeeRupees(booking.dojo, "dojo")
+        : null;
+    const pricing = calculateBookingPricing(monthlyFeeRupees);
+    console.warn("booking.pricing_snapshot_missing", { bookingId: booking.id, providerType: providerType || "unknown", feeAvailable: Boolean(pricing) });
+    return pricing
+      ? { ...booking, ...pricing, pricingSnapshotAvailable: false }
+      : { ...booking, monthlyFeeSnapshotPaise: null, firstMonthPaymentPaise: null, firstMonthRemainingBalancePaise: null, continuationPaymentPaise: null, pricingSnapshotAvailable: false };
+  }));
 }));
 app.get("/api/bookings/:id/contact", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const booking = await prisma.booking.findFirst({

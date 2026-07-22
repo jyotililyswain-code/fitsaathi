@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { assertSameOrigin, getClientIp, isRateLimited, RequestSecurityError } from "@/lib/security";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
+import { calculateBookingPricing, resolveMonthlyFeeRupees } from "@/lib/booking-pricing";
 
 const bookingDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
   const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -60,6 +61,11 @@ export async function POST(request: Request) {
     if (dojo && (!dojo.approved || dojo.status !== "active")) return NextResponse.json({ error: "This dojo or gym is not available for booking." }, { status: 409 });
     const providerPhone = normalizeProviderPhone(coach?.phoneNumber || dojo?.phoneNumber || provider.owner.phone);
     if (input.packageType === "trial" && !providerPhone) return NextResponse.json({ error: "This provider has not added a contact number yet. Please choose another provider or try again later.", code: "PROVIDER_PHONE_MISSING" }, { status: 409 });
+    const monthlyFeeRupees = coach
+      ? resolveMonthlyFeeRupees(coach, "coach")
+      : resolveMonthlyFeeRupees(dojo, "dojo");
+    const pricingSnapshot = calculateBookingPricing(monthlyFeeRupees);
+    if (!pricingSnapshot) console.warn("booking.pricing_unavailable", { bookingProviderType: coach ? "coach" : "dojo", providerId: provider.id });
     if (input.packageType === "trial") {
       const duplicate = await prisma.booking.findFirst({
         where: {
@@ -111,6 +117,14 @@ export async function POST(request: Request) {
             customerPhone: input.phone,
             providerPhone: null,
             payoutMonth: monthInIndia(),
+            ...(pricingSnapshot ? {
+              monthlyFeeSnapshotPaise: pricingSnapshot.monthlyFeePaise,
+              firstMonthPaymentPaise: pricingSnapshot.firstMonthPaymentPaise,
+              firstMonthRemainingBalancePaise: pricingSnapshot.firstMonthRemainingBalancePaise,
+              continuationPaymentPaise: pricingSnapshot.continuationPaymentPaise,
+              pricingCurrency: pricingSnapshot.pricingCurrency,
+              pricingPolicyVersion: pricingSnapshot.pricingPolicyVersion,
+            } : {}),
           },
         });
         const providerNotification = await createBookingEventNotification(tx, { event: input.packageType === "trial" ? "trial_created_provider" : "created", booking, recipientUserId: provider.ownerId, actorUserId: user.id, audience: "provider", messageOverride: input.packageType === "trial" ? `A new trial has been booked by ${input.name || customer.name} for ${input.preferredDate} at ${input.preferredTime}. No approval is required.` : undefined });

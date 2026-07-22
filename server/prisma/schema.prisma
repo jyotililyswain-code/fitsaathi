@@ -758,46 +758,52 @@ model OrderItem {
 }
 
 model Booking {
-  id                String           @id @default(uuid())
-  idempotencyKey    String?          @unique
-  userId            String
-  providerOwnerId   String
-  coachId           String?
-  dojoId            String?
-  customerName      String
-  city              String?
-  classType         String?
-  packageType       String?
-  preferredDate     String
-  preferredTime     String?
-  notes             String?
-  status            BookingStatus    @default(pending)
-  amount            Int
-  originalPrice     Int
-  platformFee       Int
-  finalPrice        Int
-  coachPayout       Int
-  payoutAmount      Int
-  commissionAmount  Int
-  paymentStatus     String           @default("pending")
-  payoutStatus      String           @default("not_due")
-  payoutMonth       String?
-  acceptedPolicies  Boolean          @default(false)
-  contactVisible    Boolean          @default(false)
-  customerPhone     String?
-  providerPhone     String?
-  razorpayOrderId   String?          @unique
-  razorpayPaymentId String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  customer          User             @relation("BookingCustomer", fields: [userId], references: [id])
-  providerOwner     User             @relation("BookingProvider", fields: [providerOwnerId], references: [id])
-  coach             Coach?           @relation(fields: [coachId], references: [id])
-  dojo              Dojo?            @relation(fields: [dojoId], references: [id])
-  payments          Payment[]
-  attendance        Attendance[]
-  attendanceCodes   AttendanceCode[]
-  notifications     Notification[]
+  id                              String           @id @default(uuid())
+  idempotencyKey                  String?          @unique
+  userId                          String
+  providerOwnerId                 String
+  coachId                         String?
+  dojoId                          String?
+  customerName                    String
+  city                            String?
+  classType                       String?
+  packageType                     String?
+  preferredDate                   String
+  preferredTime                   String?
+  notes                           String?
+  status                          BookingStatus    @default(pending)
+  amount                          Int
+  originalPrice                   Int
+  platformFee                     Int
+  finalPrice                      Int
+  coachPayout                     Int
+  payoutAmount                    Int
+  commissionAmount                Int
+  paymentStatus                   String           @default("pending")
+  payoutStatus                    String           @default("not_due")
+  payoutMonth                     String?
+  acceptedPolicies                Boolean          @default(false)
+  contactVisible                  Boolean          @default(false)
+  customerPhone                   String?
+  providerPhone                   String?
+  monthlyFeeSnapshotPaise         Int?
+  firstMonthPaymentPaise          Int?
+  firstMonthRemainingBalancePaise Int?
+  continuationPaymentPaise        Int?
+  pricingCurrency                 String?
+  pricingPolicyVersion            String?
+  razorpayOrderId                 String?          @unique
+  razorpayPaymentId               String?
+  createdAt                       DateTime         @default(now())
+  updatedAt                       DateTime         @updatedAt
+  customer                        User             @relation("BookingCustomer", fields: [userId], references: [id])
+  providerOwner                   User             @relation("BookingProvider", fields: [providerOwnerId], references: [id])
+  coach                           Coach?           @relation(fields: [coachId], references: [id])
+  dojo                            Dojo?            @relation(fields: [dojoId], references: [id])
+  payments                        Payment[]
+  attendance                      Attendance[]
+  attendanceCodes                 AttendanceCode[]
+  notifications                   Notification[]
 
   @@index([userId, createdAt])
   @@index([providerOwnerId, status])

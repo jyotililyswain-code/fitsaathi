@@ -88,6 +88,13 @@ export type Booking = {
   customerName?: string;
   customerPhone?: string;
   providerPhone?: string;
+  monthlyFeeSnapshotPaise?: number | null;
+  firstMonthPaymentPaise?: number | null;
+  firstMonthRemainingBalancePaise?: number | null;
+  continuationPaymentPaise?: number | null;
+  pricingCurrency?: string | null;
+  pricingPolicyVersion?: string | null;
+  pricingSnapshotAvailable?: boolean;
 };
 
 export type Review = {

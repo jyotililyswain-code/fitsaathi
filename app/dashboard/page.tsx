@@ -14,6 +14,8 @@ import { useNotifications } from "@/components/notifications/NotificationProvide
 import { readJsonResponse } from "@/lib/http";
 import { localApi } from "@/lib/local-api";
 import type { Booking } from "@/lib/types";
+import { formatBookingMoney } from "@/lib/booking-pricing";
+import { isPaymentInfoEligible } from "@/lib/booking-status";
 
 export default function CustomerDashboardPage() {
   const { user } = useSessionUser();
@@ -102,10 +104,11 @@ export default function CustomerDashboardPage() {
                       <p className="font-semibold text-white">{booking.classType || "Class booking"}</p>
                       <p className="mt-1 text-sm text-zinc-400">{booking.preferredDate || "Date pending"} {booking.preferredTime || ""}</p>
                       {isFreeBooking(booking) && ["confirmed", "accepted", "completed"].includes(booking.status || "") ? (contacts[booking.id] ? <p className="mt-1 text-sm text-acid">Owner contact: <a href={`tel:${contacts[booking.id].phone}`} className="underline">{contacts[booking.id].phone}</a> · {contacts[booking.id].name}</p> : <button type="button" disabled={contactLoading === booking.id || booking.status === "cancelled"} onClick={() => void loadContact(booking.id)} className="mt-2 rounded-full border border-acid/40 px-3 py-1.5 text-xs font-semibold text-acid disabled:opacity-50">{contactLoading === booking.id ? "Loading contact…" : "View Contact Number"}</button>) : <p className="mt-1 text-sm text-zinc-400">Owner contact: {["accepted", "completed"].includes(booking.status || "") ? booking.providerPhone || "Owner number pending" : "Visible after the provider accepts"}</p>}
-                      <p className="mt-1 text-xs font-semibold text-acid">Free booking · ₹0 FitSaathi charge</p>
+                      <p className="mt-1 text-xs font-semibold text-acid">Booking charge: ₹0. Training fees are paid separately to the dojo, gym, or coach.</p>
                     </div>
                     <span className="shrink-0 self-start rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.status || "pending"}</span>
                   </div>
+                  <BookingPaymentPlan booking={booking} />
                   {["pending", "confirmed", "accepted"].includes(booking.status || "") ? <button type="button" onClick={() => void cancelBooking(booking.id)} className="mt-3 rounded-full border border-red-400/30 px-4 py-2 text-xs text-red-300">Cancel booking</button> : null}
                 </article>
               ))}
@@ -121,6 +124,34 @@ export default function CustomerDashboardPage() {
         </div>
       </main>
     </AuthGuard>
+  );
+}
+
+function BookingPaymentPlan({ booking }: { booking: Booking }) {
+  if (!isPaymentInfoEligible(booking.status)) return null;
+  const monthlyFee = formatBookingMoney(booking.monthlyFeeSnapshotPaise);
+  const firstMonthPayment = formatBookingMoney(booking.firstMonthPaymentPaise);
+  const remainingBalance = formatBookingMoney(booking.firstMonthRemainingBalancePaise);
+  const continuationPayment = formatBookingMoney(booking.continuationPaymentPaise);
+  if (!monthlyFee || !firstMonthPayment || !remainingBalance || !continuationPayment) {
+    return <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/5 p-3 text-sm text-amber-100">Training fee information is currently unavailable. Please contact the provider or TheFitSaathi support.</p>;
+  }
+  return (
+    <section className="mt-4 rounded-2xl border border-acid/25 bg-acid/5 p-4 text-sm text-zinc-200" aria-label="First-month payment information">
+      <p className="font-semibold text-acid">First-month payment information</p>
+      <p className="mt-2 leading-6">You only need to pay 50% of the monthly fee for your first month.</p>
+      <p className="mt-1 leading-6">If you continue for the next month, you will pay the remaining half of your first-month fee together with the full next-month fee. If you do not continue after the first month, the next-month fee will not be charged.</p>
+      <dl className="mt-4 grid gap-2 sm:grid-cols-2">
+        <div><dt className="text-zinc-500">Monthly training fee</dt><dd className="font-semibold text-white">{monthlyFee}</dd></div>
+        <div><dt className="text-zinc-500">First-month payment</dt><dd className="font-semibold text-white">{firstMonthPayment}</dd></div>
+        <div><dt className="text-zinc-500">Remaining first-month balance</dt><dd className="font-semibold text-white">{remainingBalance}</dd></div>
+        <div><dt className="text-zinc-500">Pay if continuing next month</dt><dd className="font-semibold text-acid">{continuationPayment}</dd></div>
+      </dl>
+      <details className="mt-4 rounded-xl border border-white/10 bg-black/10 p-3">
+        <summary className="cursor-pointer font-semibold text-white">How is {continuationPayment} calculated?</summary>
+        <p className="mt-2 leading-6 text-zinc-300">{remainingBalance} remaining first-month balance + {monthlyFee} next-month fee = {continuationPayment} total.</p>
+      </details>
+    </section>
   );
 }
 
