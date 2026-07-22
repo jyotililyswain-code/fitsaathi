@@ -45,7 +45,10 @@ export async function POST(request: Request) {
 
     const result = await prisma.$transaction(async tx => {
       const nextStatus = input.status === "rescheduled" ? booking.status : input.status;
-      const contactVisible = ["accepted", "completed"].includes(nextStatus);
+      const freeBooking = booking.packageType === "trial" || booking.amount === 0;
+      const contactVisible = freeBooking
+        ? ["confirmed", "accepted", "completed"].includes(nextStatus)
+        : ["accepted", "completed"].includes(nextStatus);
       const claim = await tx.booking.updateMany({
         where: { id: booking.id, updatedAt: booking.updatedAt },
         data: {
@@ -53,7 +56,7 @@ export async function POST(request: Request) {
           ...(input.status === "rescheduled" ? { preferredDate: input.preferredDate, preferredTime: input.preferredTime } : {}),
           contactVisible,
           customerPhone: contactVisible ? booking.customerPhone || booking.customer.phone : null,
-          providerPhone: contactVisible ? booking.providerPhone || booking.providerOwner.phone : null,
+          providerPhone: contactVisible && !freeBooking ? booking.providerPhone || booking.providerOwner.phone : booking.providerPhone,
           payoutStatus: "not_due",
         },
       });

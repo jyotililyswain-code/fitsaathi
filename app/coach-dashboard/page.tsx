@@ -24,7 +24,7 @@ export default function CoachDashboardPage() {
   const [message, setMessage] = useState("");
   const [activeTab, setActiveTab] = useState<"pending" | "confirmed" | "accepted" | "rejected" | "completed">("confirmed");
   const acceptedBookings = bookings.data.filter((booking) => ["accepted", "completed"].includes(booking.status || "")).length;
-  const pendingBookings = bookings.data.filter((booking) => booking.status === "pending" || (booking.status === "confirmed" && booking.packageType !== "trial")).length;
+  const pendingBookings = bookings.data.filter((booking) => booking.status === "pending" || (booking.status === "confirmed" && !isFreeBooking(booking))).length;
   const visibleBookings = bookings.data.filter((booking) => (booking.status || "pending") === activeTab);
 
   async function setBookingStatus(id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) {
@@ -96,8 +96,9 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) => void }) {
   const accepted = booking.status === "accepted" || booking.status === "completed";
-  const contactVisible = accepted || (booking.packageType === "trial" && booking.status === "confirmed");
-  const pending = booking.status === "confirmed" && booking.packageType !== "trial";
+  const freeConfirmed = isFreeBooking(booking) && booking.status === "confirmed";
+  const contactVisible = accepted || freeConfirmed;
+  const pending = booking.status === "confirmed" && !isFreeBooking(booking);
   const [date, setDate] = useState(booking.preferredDate || "");
   const [time, setTime] = useState(booking.preferredTime || "");
   return (
@@ -109,7 +110,7 @@ function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: s
           <p className="mt-1 text-sm text-zinc-400">Service: {booking.classType || "Home coaching"}</p>
           <p className="mt-1 text-sm text-zinc-400">Phone: {contactVisible ? booking.customerPhone || "Not provided" : "Hidden until accepted"}</p>
         </div>
-        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{booking.packageType === "trial" && booking.status === "confirmed" ? "Confirmed automatically" : booking.status || "pending"}</span>
+        <span className="rounded-full border border-white/10 px-3 py-1 text-xs text-zinc-300">{freeConfirmed ? "Confirmed automatically" : booking.status || "pending"}</span>
       </div>
       {pending ? <div className="mt-4 flex flex-wrap gap-2">
         <button onClick={() => onStatus(booking.id, "accepted")} className="rounded-full bg-acid px-4 py-2 text-xs font-semibold text-ink">
@@ -123,4 +124,8 @@ function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: s
       {booking.status === "accepted" ? <div className="mt-3 flex flex-wrap gap-2"><button type="button" onClick={() => onStatus(booking.id, "completed")} className="rounded-full bg-acid px-4 py-2 text-xs font-semibold text-ink">Mark completed</button><button type="button" onClick={() => onStatus(booking.id, "cancelled")} className="rounded-full border border-red-400/30 px-4 py-2 text-xs text-red-300">Cancel booking</button></div> : null}
     </article>
   );
+}
+
+function isFreeBooking(booking: Booking) {
+  return booking.packageType === "trial" || booking.amount === 0;
 }

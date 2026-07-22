@@ -104,7 +104,10 @@ export async function POST(request: Request) {
             commissionAmount: 0,
             acceptedPolicies: true,
             paymentStatus: "not_required",
-            contactVisible: false,
+            // This booking flow writes amount=0 and status=confirmed for every
+            // supported plan, so contact access is available immediately. The
+            // contact API still resolves the live phone from the booked row.
+            contactVisible: true,
             customerPhone: input.phone,
             providerPhone: null,
             payoutMonth: monthInIndia(),

@@ -596,9 +596,14 @@ app.get("/api/bookings", authenticate, asyncRoute(async (request: AuthRequest, r
 }));
 app.get("/api/bookings/:id/contact", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const booking = await prisma.booking.findFirst({
-    where: { id: String(request.params.id), userId: request.user!.id, packageType: "trial", status: { in: ["confirmed", "accepted", "completed"] } },
+    where: {
+      id: String(request.params.id),
+      userId: request.user!.id,
+      status: { in: ["confirmed", "accepted", "completed"] },
+      OR: [{ packageType: "trial" }, { amount: 0 }],
+    },
     select: {
-      id: true, status: true, preferredDate: true, preferredTime: true, classType: true,
+      id: true, status: true, amount: true, preferredDate: true, preferredTime: true, classType: true,
       coach: { select: { name: true, category: true, city: true, phoneNumber: true, owner: { select: { name: true, phone: true } } } },
       dojo: { select: { name: true, category: true, address: true, city: true, state: true, pincode: true, phoneNumber: true, ownerName: true, owner: { select: { name: true, phone: true } } } },
     },
@@ -608,7 +613,7 @@ app.get("/api/bookings/:id/contact", authenticate, asyncRoute(async (request: Au
   const phone = normalizeBookingPhone(provider?.phoneNumber || provider?.owner?.phone);
   if (!provider || !phone) return response.status(409).json({ success: false, message: "This provider has not added a contact number yet." });
   const name = booking.coach ? booking.coach.owner.name : booking.dojo?.ownerName || booking.dojo?.owner.name || "Provider contact";
-  return response.json({ success: true, contact: { name, phone }, booking: { id: booking.id, status: "confirmed", providerName: provider.name, service: provider.category, date: booking.preferredDate, time: booking.preferredTime, classType: booking.classType, address: booking.dojo ? [booking.dojo.address, booking.dojo.city, booking.dojo.state, booking.dojo.pincode].filter(Boolean).join(", ") : booking.coach?.city || "" } });
+  return response.json({ success: true, contact: { name, phone }, booking: { id: booking.id, status: booking.status, providerName: provider.name, service: provider.category, date: booking.preferredDate, time: booking.preferredTime, classType: booking.classType, address: booking.dojo ? [booking.dojo.address, booking.dojo.city, booking.dojo.state, booking.dojo.pincode].filter(Boolean).join(", ") : booking.coach?.city || "" } });
 }));
 app.patch("/api/bookings/:id/status", authenticate, asyncRoute(async (_request: AuthRequest, response) => {
   response.status(405).json({ error: "Use the canonical POST /api/bookings/status endpoint for booking updates.", code: "LEGACY_BOOKING_ENDPOINT_DISABLED" });
