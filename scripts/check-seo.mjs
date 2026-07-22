@@ -13,7 +13,7 @@ const expectedWebsiteDescription =
   "TheFitSaathi is an Indian fitness and sports platform for discovering coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services.";
 const expectedAlternateNames = [
   "The FitSaathi",
-  "FitSaathi",
+  "TheFitSaathi Fitness and Sports Platform",
 ];
 const indexableStaticPaths = [
   "/",
@@ -303,16 +303,15 @@ try {
   check(text.includes("About TheFitSaathi"), "Homepage About TheFitSaathi section is absent.");
   check(
     text.includes(
-      "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain. Parthsaarthi serves as the administrator of the platform.",
+      "TheFitSaathi is an Indian fitness, sports and coaching platform available at thefitsaathi.com. The platform helps users discover coaches, gyms, dojos, academies and sports-related services. Priyanshu Swain is the founder and owner of TheFitSaathi. Parthsaarthi is the administrator of the platform.",
     ),
-    "Homepage ownership summary is absent from initial HTML.",
+    "Homepage entity summary is absent from initial HTML.",
   );
   check(
-    text.includes("Priyanshu Swain is the owner and founder of TheFitSaathi.") &&
-      text.includes("Parthsaarthi is the administrator of TheFitSaathi.") &&
-      html.includes("Priyanshu Swain is the owner and founder of TheFitSaathi.") &&
-      html.includes("Parthsaarthi is the administrator of TheFitSaathi."),
-    "Homepage does not contain both exact ownership sentences.",
+    text.includes(
+      "TheFitSaathi is an independent fitness and sports platform and is not affiliated with other nutrition, healthcare or wellness applications using similar names.",
+    ),
+    "Homepage independence clarification is absent from initial HTML.",
   );
   check(!text.includes("Loading page..."), "Homepage exposes loading-only text.");
   check(
@@ -341,38 +340,31 @@ try {
   const websiteNodes = schemas.filter((item) => schemaTypeIs(item, "WebSite"));
   const organizationNodes = schemas.filter((item) => schemaTypeIs(item, "Organization"));
   const webPageNodes = schemas.filter((item) => schemaTypeIs(item, "WebPage"));
-  const personNodes = schemas.filter((item) => schemaTypeIs(item, "Person"));
   const website = websiteNodes[0];
   const organization = organizationNodes[0];
   const webPage = webPageNodes[0];
 
   check(
-    organization?.founder?.["@id"] === canonicalOrigin + "/#priyanshu-swain",
-    "Organization JSON-LD is not connected to the FitSaathi founder.",
+    organization?.founder?.["@id"] ===
+      canonicalOrigin + "/fitsaathi-owner#person" &&
+      organization?.founder?.name === "Priyanshu Swain" &&
+      organization?.founder?.jobTitle ===
+        "Founder and Owner of TheFitSaathi",
+    "Organization JSON-LD is not connected to the TheFitSaathi founder.",
   );
   check(
-    organization?.employee?.["@id"] === canonicalOrigin + "/#parthsaarthi",
-    "Organization JSON-LD is not connected to the FitSaathi administrator.",
+    organization?.member?.name === "Parthsaarthi" &&
+      organization?.member?.jobTitle === "Administrator of TheFitSaathi",
+    "Organization JSON-LD is not connected to the TheFitSaathi administrator.",
   );
   check(
-    personNodes.length === 2,
-    "Found " + personNodes.length + " Person JSON-LD nodes on the homepage, expected two.",
+    !("sameAs" in (organization || {})),
+    "Organization JSON-LD contains unverified social-profile URLs.",
   );
   check(
-    personNodes.some(
-      (person) =>
-        person.name === "Priyanshu Swain" &&
-        person.jobTitle === "Owner and Founder of TheFitSaathi",
-    ),
-    "Priyanshu Swain Person JSON-LD is missing or inconsistent.",
-  );
-  check(
-    personNodes.some(
-      (person) =>
-        person.name === "Parthsaarthi" &&
-        person.jobTitle === "Administrator of TheFitSaathi",
-    ),
-    "Parthsaarthi Person JSON-LD is missing or inconsistent.",
+    organization?.description ===
+      "TheFitSaathi is an Indian fitness, sports and coaching platform founded and owned by Priyanshu Swain.",
+    "Organization JSON-LD description is missing or inconsistent.",
   );
 
   check(websiteNodes.length === 1, `Found ${websiteNodes.length} WebSite JSON-LD nodes, expected one.`);
@@ -426,15 +418,6 @@ try {
     !/localhost|127\.0\.0\.1|\.vercel\.app/i.test(logoUrl),
     "Organization logo URL is not a production URL.",
   );
-  check(
-    organization?.logo?.width === 512 && organization?.logo?.height === 512,
-    "Organization JSON-LD logo is not declared as 512 by 512 pixels.",
-  );
-  check(
-    organization?.logo?.caption === "TheFitSaathi",
-    "Organization JSON-LD logo caption is not TheFitSaathi.",
-  );
-
   if (faviconLinks[0]) {
     const faviconResponse = await getResource(faviconLinks[0]);
     check(faviconResponse.status === 200, `Favicon returned ${faviconResponse.status}.`);
@@ -577,6 +560,7 @@ try {
   }
 
   const publicTitles = new Map();
+  const publicDescriptions = new Map();
   for (const publicPath of indexableStaticPaths.filter((path) => path !== "/")) {
     const publicResponse = await get(publicPath);
     const publicHtml = await publicResponse.text();
@@ -585,13 +569,25 @@ try {
     const publicTitle = decodeHtml(
       publicHtml.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || "",
     );
+    const publicDescription = decodeHtml(
+      metaContent(publicHtml, "name", "description"),
+    );
     check(publicResponse.status === 200, `${publicPath} returned ${publicResponse.status}.`);
     check(!publicRobots.includes("noindex"), `${publicPath} has an unexpected noindex directive.`);
     check(
       normalizedUrl(publicCanonical) === `${canonicalOrigin}${publicPath}`,
       `${publicPath} has an unexpected canonical: ${publicCanonical || "missing"}.`,
     );
+    check(
+      linkHrefs(publicHtml, "canonical").length === 1,
+      `${publicPath} should contain exactly one canonical link.`,
+    );
     check(Boolean(publicTitle), `${publicPath} is missing a title.`);
+    check(Boolean(publicDescription), `${publicPath} is missing a meta description.`);
+    check(
+      !/\bFitSaathi\b/.test(publicTitle + " " + publicDescription),
+      `${publicPath} metadata uses an inconsistent brand spelling.`,
+    );
     if (publicTitles.has(publicTitle)) {
       failures.push(
         `${publicPath} duplicates the title used by ${publicTitles.get(publicTitle)}: ${publicTitle}`,
@@ -599,38 +595,57 @@ try {
     } else {
       publicTitles.set(publicTitle, publicPath);
     }
+    if (publicDescriptions.has(publicDescription)) {
+      failures.push(
+        `${publicPath} duplicates the description used by ${publicDescriptions.get(publicDescription)}: ${publicDescription}`,
+      );
+    } else {
+      publicDescriptions.set(publicDescription, publicPath);
+    }
   }
 
   const ownershipPageChecks = [
     {
       path: "/about",
       title:
-        "About TheFitSaathi | Owner Priyanshu Swain",
+        "About TheFitSaathi | Indian Fitness and Sports Platform",
       description:
-        "Learn about TheFitSaathi. Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is the platform administrator.",
-      openGraphTitle: "About TheFitSaathi | Owner and Founder",
+        "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsaarthi.",
+      openGraphTitle:
+        "About TheFitSaathi | Indian Fitness and Sports Platform",
       openGraphDescription:
-        "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the platform.",
+        "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsaarthi.",
       h1: "About TheFitSaathi",
       breadcrumbLabel: "About TheFitSaathi",
       hasFaq: false,
+      people: 0,
+      requiredSentences: [
+        "Priyanshu Swain founded TheFitSaathi.",
+        "Priyanshu Swain is the owner of TheFitSaathi.",
+        "Parthsaarthi is the administrator of TheFitSaathi.",
+        "The official website of TheFitSaathi is https://thefitsaathi.com.",
+      ],
     },
     {
       path: "/fitsaathi-owner",
-      title: "TheFitSaathi Owner and Founder | Priyanshu Swain",
+      title: "Who Is the Owner of TheFitSaathi? | Priyanshu Swain",
       description:
-        "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the Indian fitness and sports platform.",
-      openGraphTitle: "Who Is the Owner of TheFitSaathi?",
+        "Priyanshu Swain is the founder and owner of TheFitSaathi, the Indian fitness, sports and coaching platform available at thefitsaathi.com.",
+      openGraphTitle:
+        "Who Is the Owner of TheFitSaathi? | Priyanshu Swain",
       openGraphDescription:
-        "Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is its administrator.",
-      h1: "Who Is the Owner of TheFitSaathi?",
-      breadcrumbLabel: "TheFitSaathi Owner",
+        "Priyanshu Swain is the founder and owner of TheFitSaathi, the Indian fitness, sports and coaching platform available at thefitsaathi.com.",
+      h1: "Priyanshu Swain — Founder and Owner of TheFitSaathi",
+      breadcrumbLabel: "Priyanshu Swain",
       hasFaq: true,
+      people: 1,
+      requiredSentences: [
+        "Priyanshu Swain is the founder and owner of TheFitSaathi.",
+        "TheFitSaathi is an Indian fitness, sports and coaching platform operating through the official domain thefitsaathi.com.",
+        "Parthsaarthi is the administrator of TheFitSaathi.",
+        "The official website of TheFitSaathi is https://thefitsaathi.com.",
+      ],
     },
-  ];
-  const requiredOwnershipSentences = [
-    "Priyanshu Swain is the owner and founder of TheFitSaathi.",
-    "Parthsaarthi is the administrator of TheFitSaathi.",
   ];
   const expectedFaqs = [
     {
@@ -646,9 +661,8 @@ try {
       answer: "Parthsaarthi is the administrator of TheFitSaathi.",
     },
     {
-      question: "Are TheFitSaathi, The FitSaathi and FitSaathi the same platform?",
-      answer:
-        "Yes. On thefitsaathi.com, TheFitSaathi, The FitSaathi and FitSaathi refer to the same fitness and sports platform.",
+      question: "What is the official website of TheFitSaathi?",
+      answer: "The official website is https://thefitsaathi.com.",
     },
   ];
 
@@ -676,11 +690,7 @@ try {
       !/localhost|127\.0\.0\.1|\.vercel\.app/i.test(JSON.stringify(schemas)),
       page.path + " JSON-LD contains a non-production host.",
     );
-    const organizations = schemas.filter((item) =>
-      schemaTypeIs(item, "Organization"),
-    );
     const people = schemas.filter((item) => schemaTypeIs(item, "Person"));
-    const websites = schemas.filter((item) => schemaTypeIs(item, "WebSite"));
     const breadcrumbs = schemas.filter((item) =>
       schemaTypeIs(item, "BreadcrumbList"),
     );
@@ -712,10 +722,10 @@ try {
       pageText.includes("Home") && pageText.includes(page.breadcrumbLabel),
       page.path + " does not display its breadcrumb.",
     );
-    for (const sentence of requiredOwnershipSentences) {
+    for (const sentence of page.requiredSentences) {
       check(
-        pageText.includes(sentence) && pageHtml.includes(sentence),
-        page.path + " raw HTML is missing the exact sentence: " + sentence,
+        pageText.includes(sentence),
+        page.path + " initial HTML is missing the exact sentence: " + sentence,
       );
     }
     check(
@@ -723,18 +733,8 @@ try {
       page.path + " exposes loading-only text.",
     );
     check(
-      organizations.length === 1,
-      page.path + " should contain exactly one Organization node.",
-    );
-    check(
-      people.length === 2 &&
-        people.some((person) => person.name === "Priyanshu Swain") &&
-        people.some((person) => person.name === "Parthsaarthi"),
-      page.path + " is missing one or both Person nodes.",
-    );
-    check(
-      websites.length === 1,
-      page.path + " should contain exactly one WebSite node.",
+      people.length === page.people,
+      page.path + " has an unexpected Person node count.",
     );
     check(
       breadcrumbs.length === 1,
@@ -746,6 +746,17 @@ try {
     );
 
     if (page.hasFaq) {
+      const founder = people.find(
+        (person) => person["@id"] === canonicalOrigin + "/fitsaathi-owner#person",
+      );
+      check(
+        founder?.name === "Priyanshu Swain" &&
+          founder?.jobTitle === "Founder and Owner of TheFitSaathi" &&
+          founder?.url === canonicalOrigin + "/fitsaathi-owner" &&
+          founder?.worksFor?.["@id"] === canonicalOrigin + "/#organization" &&
+          !("sameAs" in (founder || {})),
+        page.path + " has missing or inconsistent Person JSON-LD.",
+      );
       const faqEntities = faqs[0]?.mainEntity || [];
       check(
         faqEntities.length === expectedFaqs.length,

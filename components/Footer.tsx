@@ -17,7 +17,7 @@ const exploreLinks = [
 
 const companyLinks = [
   ["About TheFitSaathi", "/about"],
-  ["Owner and Founder", "/fitsaathi-owner"],
+  ["Founder and owner of TheFitSaathi", "/fitsaathi-owner"],
   ["Contact", "/contact"],
   ["FAQ", "/faq"],
   ["Privacy Policy", "/privacy"],
@@ -43,7 +43,7 @@ export function Footer() {
           </p>
         </div>
 
-        <nav aria-label="Explore FitSaathi">
+        <nav aria-label="Explore TheFitSaathi">
           <p className="text-sm font-semibold text-white">Explore</p>
           <div className="mt-2 grid content-start">
             {exploreLinks.map(([label, href]) => (
@@ -54,7 +54,7 @@ export function Footer() {
           </div>
         </nav>
 
-        <nav aria-label="FitSaathi company information">
+        <nav aria-label="TheFitSaathi company information">
           <p className="text-sm font-semibold text-white">Company</p>
           <div className="mt-2 grid content-start">
             {companyLinks.map(([label, href]) => (
@@ -67,7 +67,7 @@ export function Footer() {
 
         <div>
           <address className="not-italic">
-            <p className="text-sm font-semibold text-white">FitSaathi support</p>
+            <p className="text-sm font-semibold text-white">TheFitSaathi support</p>
             <a
               href="mailto:priyanshuswain2000@gmail.com"
               className="mt-2 flex min-h-11 items-center gap-2 break-all text-sm text-zinc-400 transition hover:text-acid"

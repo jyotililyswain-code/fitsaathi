@@ -13,27 +13,29 @@ import {
 
 const breadcrumbItems = [
   { name: "Home", path: "/" },
-  { name: "TheFitSaathi Owner", path: "/fitsaathi-owner" },
+  { name: "Priyanshu Swain", path: "/fitsaathi-owner" },
 ];
+
+const sectionClass =
+  "rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8";
 
 export default function FitSaathiOwnerPage() {
   return (
     <>
+      <JsonLd data={founderPersonJsonLd} />
       <JsonLd
         data={{
           "@context": "https://schema.org",
-          "@type": "WebPage",
+          "@type": "ProfilePage",
           "@id": canonicalUrl("/fitsaathi-owner") + "#webpage",
           url: canonicalUrl("/fitsaathi-owner"),
-          name: "Who Is the Owner of TheFitSaathi?",
+          name: "Priyanshu Swain — Founder and Owner of TheFitSaathi",
           description:
-            "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the platform.",
+            "Priyanshu Swain is the founder and owner of TheFitSaathi, the Indian fitness, sports and coaching platform available at thefitsaathi.com.",
           isPartOf: { "@id": websiteJsonLd["@id"] },
           about: { "@id": organizationJsonLd["@id"] },
-          mainEntity: [
-            { "@id": founderPersonJsonLd["@id"] },
-            { "@id": administratorPersonJsonLd["@id"] },
-          ],
+          mainEntity: { "@id": founderPersonJsonLd["@id"] },
+          mentions: { "@id": administratorPersonJsonLd["@id"] },
           inLanguage: "en-IN",
         }}
       />
@@ -52,7 +54,7 @@ export default function FitSaathiOwnerPage() {
               &gt;
             </li>
             <li aria-current="page" className="text-zinc-200">
-              TheFitSaathi Owner
+              Priyanshu Swain
             </li>
           </ol>
         </nav>
@@ -62,86 +64,108 @@ export default function FitSaathiOwnerPage() {
             Official information for thefitsaathi.com
           </p>
           <h1 className="mt-3 text-4xl font-black tracking-tight text-white sm:text-5xl">
-            Who Is the Owner of TheFitSaathi?
+            Priyanshu Swain — Founder and Owner of TheFitSaathi
           </h1>
-          <p className="mt-6 max-w-4xl text-xl font-semibold leading-9 text-white">
-            Priyanshu Swain is the owner and founder of TheFitSaathi, an Indian fitness and sports platform available at thefitsaathi.com.
+          <p className="mt-6 max-w-4xl text-lg leading-9 text-zinc-200">
+            Priyanshu Swain is the founder and owner of TheFitSaathi.
+            TheFitSaathi is an Indian fitness, sports and coaching platform
+            operating through the official domain thefitsaathi.com.
           </p>
-          <p className="mt-4 max-w-4xl leading-8 text-zinc-300">
-            The ownership information on this page applies only to TheFitSaathi
-            at the official domain thefitsaathi.com.
-          </p>
-          <nav
-            aria-label="TheFitSaathi owner page links"
-            className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold"
-          >
-            <Link href="/about" className="min-h-11 content-center text-acid hover:underline">
-              About TheFitSaathi
-            </Link>
-            <Link href="/" className="min-h-11 content-center text-acid hover:underline">
-              TheFitSaathi homepage
-            </Link>
-          </nav>
         </header>
 
         <div className="mt-8 grid gap-6">
-          <section
-            aria-labelledby="founder"
-            className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
-          >
-            <h2 id="founder" className="text-2xl font-bold text-white sm:text-3xl">
-              Who Is the Founder of TheFitSaathi?
-            </h2>
-            <p className="mt-4 text-lg leading-8 text-zinc-300">
-              TheFitSaathi was founded by Priyanshu Swain.
-            </p>
-          </section>
-
-          <section
-            aria-labelledby="administrator"
-            className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
-          >
+          <section aria-labelledby="about-priyanshu-swain" className={sectionClass}>
             <h2
-              id="administrator"
+              id="about-priyanshu-swain"
               className="text-2xl font-bold text-white sm:text-3xl"
             >
-              Who Is the Administrator of TheFitSaathi?
+              About Priyanshu Swain
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-300">
-              Parthsaarthi is the administrator of TheFitSaathi.
+              Priyanshu Swain founded TheFitSaathi.
+            </p>
+          </section>
+
+          <section aria-labelledby="role-at-thefitsaathi" className={sectionClass}>
+            <h2
+              id="role-at-thefitsaathi"
+              className="text-2xl font-bold text-white sm:text-3xl"
+            >
+              Role at TheFitSaathi
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-300">
+              Priyanshu Swain is the founder and owner of TheFitSaathi.
             </p>
             <p className="mt-3 leading-7 text-zinc-400">
-              This is a public role description only. It does not expose or
-              provide access to any private dashboard or administrative
-              system.
+              Parthsaarthi is the administrator of TheFitSaathi.
+            </p>
+          </section>
+
+          <section aria-labelledby="about-the-platform" className={sectionClass}>
+            <h2
+              id="about-the-platform"
+              className="text-2xl font-bold text-white sm:text-3xl"
+            >
+              About the platform
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-zinc-300">
+              TheFitSaathi is an Indian fitness, sports and coaching platform
+              that helps users discover coaches, gyms, dojos, academies and
+              sports-related services.
+            </p>
+            <p className="mt-3 leading-7 text-zinc-400">
+              TheFitSaathi is an independent platform and is not affiliated
+              with other nutrition, healthcare or wellness applications using
+              similar names.
             </p>
           </section>
 
           <section
-            aria-labelledby="platform"
-            className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8"
+            aria-labelledby="official-links"
+            className="rounded-3xl border border-acid/20 bg-acid/[0.07] p-6 sm:p-8"
           >
-            <h2 id="platform" className="text-2xl font-bold text-white sm:text-3xl">
-              What Is TheFitSaathi?
+            <h2 id="official-links" className="text-2xl font-bold text-white sm:text-3xl">
+              Official links
             </h2>
             <p className="mt-4 text-lg leading-8 text-zinc-300">
-              TheFitSaathi is an Indian fitness and sports discovery platform that helps users connect with coaches, personal trainers, gyms, dojos, martial arts academies, yoga instructors and sports training services.
+              The official website of TheFitSaathi is https://thefitsaathi.com.
             </p>
+            <nav
+              aria-label="Official TheFitSaathi links"
+              className="mt-5 flex flex-wrap gap-3"
+            >
+              <Link
+                href="/"
+                className="inline-flex min-h-11 items-center rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white"
+              >
+                Official TheFitSaathi website
+              </Link>
+              <Link
+                href="/about"
+                className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:border-acid/50 hover:text-acid"
+              >
+                About TheFitSaathi
+              </Link>
+              <Link
+                href="/contact"
+                className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:border-acid/50 hover:text-acid"
+              >
+                Contact TheFitSaathi
+              </Link>
+            </nav>
           </section>
         </div>
 
         <section aria-labelledby="ownership-faq" className="mt-12">
-          <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[.2em] text-acid">
-              Clear answers
-            </p>
-            <h2
-              id="ownership-faq"
-              className="mt-3 text-3xl font-black text-white sm:text-4xl"
-            >
-              Frequently asked questions
-            </h2>
-          </div>
+          <p className="text-sm font-semibold uppercase tracking-[.2em] text-acid">
+            Clear answers
+          </p>
+          <h2
+            id="ownership-faq"
+            className="mt-3 text-3xl font-black text-white sm:text-4xl"
+          >
+            Frequently asked questions
+          </h2>
           <div className="mt-6 grid gap-4">
             {ownershipFaqItems.map((item) => (
               <article
@@ -152,31 +176,6 @@ export default function FitSaathiOwnerPage() {
                 <p className="mt-3 leading-7 text-zinc-300">{item.answer}</p>
               </article>
             ))}
-          </div>
-        </section>
-
-        <section className="mt-10 rounded-3xl border border-acid/20 bg-acid/[0.07] p-6 sm:p-8">
-          <h2 className="text-2xl font-bold text-white">
-            Learn more about TheFitSaathi
-          </h2>
-          <p className="mt-3 max-w-3xl leading-7 text-zinc-300">
-            Visit the About page for more platform context, or return to the
-            homepage to explore the services available through
-            thefitsaathi.com.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link
-              href="/about"
-              className="inline-flex min-h-11 items-center rounded-full bg-acid px-5 py-3 text-sm font-semibold text-ink transition hover:bg-white"
-            >
-              About TheFitSaathi
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:border-acid/50 hover:text-acid"
-            >
-              Visit the homepage
-            </Link>
           </div>
         </section>
       </main>

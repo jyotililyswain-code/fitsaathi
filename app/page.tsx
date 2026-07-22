@@ -5,7 +5,9 @@ import {
   coachBookingServiceJsonLd,
   generateSeoMetadata,
   homePageJsonLd,
+  organizationJsonLd,
   seoConfig,
+  websiteJsonLd,
 } from "@/lib/seo";
 
 export const metadata = generateSeoMetadata({
@@ -20,10 +22,12 @@ export const metadata = generateSeoMetadata({
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={organizationJsonLd} />
       <JsonLd
         data={{
           "@context": "https://schema.org",
           "@graph": [
+            websiteJsonLd,
             homePageJsonLd,
             coachBookingServiceJsonLd,
           ],

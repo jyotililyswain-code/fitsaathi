@@ -68,7 +68,7 @@ test("mobile navigation and support dialog remain keyboard and landscape safe", 
   await page.setViewportSize({ width: 844, height: 390 });
   await page.goto("/home", { waitUntil: "domcontentloaded" });
 
-  const menuButton = page.getByRole("button", { name: "Open menu" });
+  const menuButton = page.getByRole("button", { name: "Open navigation menu" });
   await expect(menuButton).toBeVisible();
   await menuButton.click();
   const menu = page.locator("#mobile-primary-navigation");

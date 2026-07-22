@@ -22,7 +22,7 @@ import {
   websiteJsonLd,
 } from "../lib/seo";
 
-test("SEO URLs are permanently pinned to the FitSaathi production origin", () => {
+test("SEO URLs are permanently pinned to the TheFitSaathi production origin", () => {
   assert.equal(siteUrl, "https://thefitsaathi.com");
   assert.equal(
     canonicalUrl("https://preview-project.vercel.app/find-coach?q=yoga"),
@@ -51,6 +51,23 @@ test("homepage metadata has the required title, description and social cards", (
   );
 });
 
+test("page metadata normalizes the official brand spelling", () => {
+  const metadata = generateSeoMetadata({
+    title: "Contact FitSaathi Support",
+    description: "Contact FitSaathi for account support.",
+    path: "/contact",
+  });
+  assert.deepEqual(metadata.title, {
+    absolute: "Contact TheFitSaathi Support",
+  });
+  assert.equal(
+    metadata.description,
+    "Contact TheFitSaathi for account support.",
+  );
+  assert.equal(metadata.applicationName, "TheFitSaathi");
+  assert.equal(metadata.openGraph?.siteName, "TheFitSaathi");
+});
+
 test("homepage brand entity nodes use one connected production identity", () => {
   assert.equal(
     seoConfig.defaultTitle,
@@ -60,18 +77,25 @@ test("homepage brand entity nodes use one connected production identity", () => 
   assert.equal(organizationJsonLd.url, "https://thefitsaathi.com");
   assert.deepEqual(organizationJsonLd.alternateName, [
     "The FitSaathi",
-    "FitSaathi",
+    "TheFitSaathi Fitness and Sports Platform",
   ]);
   assert.deepEqual(organizationJsonLd.founder, {
-    "@id": "https://thefitsaathi.com/#priyanshu-swain",
+    "@type": "Person",
+    "@id": "https://thefitsaathi.com/fitsaathi-owner#person",
+    name: "Priyanshu Swain",
+    url: "https://thefitsaathi.com/fitsaathi-owner",
+    jobTitle: "Founder and Owner of TheFitSaathi",
   });
-  assert.deepEqual(organizationJsonLd.employee, {
-    "@id": "https://thefitsaathi.com/#parthsaarthi",
+  assert.deepEqual(organizationJsonLd.member, {
+    "@type": "Person",
+    name: "Parthsaarthi",
+    jobTitle: "Administrator of TheFitSaathi",
   });
   assert.equal(
-    organizationJsonLd.logo.contentUrl,
+    organizationJsonLd.logo.url,
     "https://thefitsaathi.com/favicon-512x512.png",
   );
+  assert.equal("sameAs" in organizationJsonLd, false);
   assert.equal(websiteJsonLd.name, "TheFitSaathi");
   assert.equal(websiteJsonLd.url, "https://thefitsaathi.com");
   assert.deepEqual(websiteJsonLd.publisher, {
@@ -92,12 +116,23 @@ test("official people and ownership FAQ use consistent linked entities", () => {
   assert.equal(founderPersonJsonLd.name, "Priyanshu Swain");
   assert.equal(
     founderPersonJsonLd.jobTitle,
-    "Owner and Founder of TheFitSaathi",
+    "Founder and Owner of TheFitSaathi",
   );
   assert.deepEqual(founderPersonJsonLd.worksFor, {
+    "@type": "Organization",
     "@id": organizationJsonLd["@id"],
+    name: "TheFitSaathi",
+    url: "https://thefitsaathi.com",
   });
-  assert.equal(founderPersonJsonLd.url, "https://thefitsaathi.com/about");
+  assert.equal(
+    founderPersonJsonLd["@id"],
+    "https://thefitsaathi.com/fitsaathi-owner#person",
+  );
+  assert.equal(
+    founderPersonJsonLd.url,
+    "https://thefitsaathi.com/fitsaathi-owner",
+  );
+  assert.equal("sameAs" in founderPersonJsonLd, false);
 
   assert.equal(administratorPersonJsonLd.name, "Parthsaarthi");
   assert.equal(
@@ -105,7 +140,10 @@ test("official people and ownership FAQ use consistent linked entities", () => {
     "Administrator of TheFitSaathi",
   );
   assert.deepEqual(administratorPersonJsonLd.worksFor, {
+    "@type": "Organization",
     "@id": organizationJsonLd["@id"],
+    name: "TheFitSaathi",
+    url: "https://thefitsaathi.com",
   });
   assert.equal(
     ownershipFaqJsonLd.mainEntity.length,
@@ -122,21 +160,15 @@ test("official people and ownership FAQ use consistent linked entities", () => {
 
 test("ownership pages receive exact canonical metadata", () => {
   const about = generateSeoMetadata({
-    title: "About TheFitSaathi | Owner Priyanshu Swain",
+    title: "About TheFitSaathi | Indian Fitness and Sports Platform",
     description:
-      "Learn about TheFitSaathi. Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is the platform administrator.",
-    openGraphTitle: "About TheFitSaathi | Owner and Founder",
-    openGraphDescription:
-      "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the platform.",
+      "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsaarthi.",
     path: "/about",
   });
   const owner = generateSeoMetadata({
-    title: "TheFitSaathi Owner and Founder | Priyanshu Swain",
+    title: "Who Is the Owner of TheFitSaathi? | Priyanshu Swain",
     description:
-      "Priyanshu Swain is the owner and founder of TheFitSaathi. Parthsaarthi is the administrator of the Indian fitness and sports platform.",
-    openGraphTitle: "Who Is the Owner of TheFitSaathi?",
-    openGraphDescription:
-      "Priyanshu Swain is the owner and founder of TheFitSaathi, and Parthsaarthi is its administrator.",
+      "Priyanshu Swain is the founder and owner of TheFitSaathi, the Indian fitness, sports and coaching platform available at thefitsaathi.com.",
     path: "/fitsaathi-owner",
   });
 
@@ -150,16 +182,22 @@ test("ownership pages receive exact canonical metadata", () => {
     about.title && typeof about.title === "object" && "absolute" in about.title
       ? about.title.absolute
       : about.title,
-    "About TheFitSaathi | Owner Priyanshu Swain",
+    "About TheFitSaathi | Indian Fitness and Sports Platform",
   );
   assert.equal(
     owner.title && typeof owner.title === "object" && "absolute" in owner.title
       ? owner.title.absolute
       : owner.title,
-    "TheFitSaathi Owner and Founder | Priyanshu Swain",
+    "Who Is the Owner of TheFitSaathi? | Priyanshu Swain",
   );
-  assert.equal(about.openGraph?.title, "About TheFitSaathi | Owner and Founder");
-  assert.equal(owner.openGraph?.title, "Who Is the Owner of TheFitSaathi?");
+  assert.equal(
+    about.openGraph?.title,
+    "About TheFitSaathi | Indian Fitness and Sports Platform",
+  );
+  assert.equal(
+    owner.openGraph?.title,
+    "Who Is the Owner of TheFitSaathi? | Priyanshu Swain",
+  );
 });
 
 test("filtered directory URLs are noindex and breadcrumbs use canonical URLs", () => {
@@ -221,6 +259,15 @@ test("production aliases redirect permanently without affecting canonical, previ
     assert.equal(
       legacyDomainRedirect.headers.get("location"),
       "https://thefitsaathi.com/find-coach?q=yoga",
+    );
+
+    const wwwRedirect = middleware(
+      new NextRequest("https://www.thefitsaathi.com/about"),
+    );
+    assert.equal(wwwRedirect.status, 308);
+    assert.equal(
+      wwwRedirect.headers.get("location"),
+      "https://thefitsaathi.com/about",
     );
 
     const canonicalResponse = middleware(

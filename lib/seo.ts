@@ -29,7 +29,7 @@ export const siteUrl = configuredSiteUrl();
 export const brandName = "TheFitSaathi";
 export const brandAlternateNames = [
   "The FitSaathi",
-  "FitSaathi",
+  "TheFitSaathi Fitness and Sports Platform",
 ] as const;
 
 export const seoConfig = {
@@ -166,21 +166,30 @@ export function generateSeoMetadata({
 }: SeoMetadataInput = {}): Metadata {
   const canonical = canonicalUrl(path);
   const imageUrl = seoImageUrl(image);
-  const safeTitle = sanitizeSeoText(title, 75) || seoConfig.defaultTitle;
+  const normalizeBrandSpelling = (value: string) =>
+    value
+      .replace(/\bThe\s+FitSaathi\b/g, brandName)
+      .replace(/\bFitSaathi\b/g, brandName);
+  const safeTitle =
+    normalizeBrandSpelling(sanitizeSeoText(title, 75)) || seoConfig.defaultTitle;
   const safeDescription =
-    sanitizeSeoText(description, 200) || seoConfig.defaultDescription;
+    normalizeBrandSpelling(sanitizeSeoText(description, 200)) ||
+    seoConfig.defaultDescription;
   const safeOpenGraphDescription =
-    sanitizeSeoText(openGraphDescription, 200) || safeDescription;
+    normalizeBrandSpelling(sanitizeSeoText(openGraphDescription, 200)) ||
+    safeDescription;
   const safeTwitterDescription =
-    sanitizeSeoText(twitterDescription, 200) || safeOpenGraphDescription;
-  const includesBrand = /fit\s*saathi/i.test(safeTitle);
+    normalizeBrandSpelling(sanitizeSeoText(twitterDescription, 200)) ||
+    safeOpenGraphDescription;
+  const includesBrand = /thefitsaathi/i.test(safeTitle);
   const documentTitle = includesBrand
     ? safeTitle
     : `${safeTitle} | ${seoConfig.siteName}`;
   const safeOpenGraphTitle =
-    sanitizeSeoText(openGraphTitle, 75) || documentTitle;
+    normalizeBrandSpelling(sanitizeSeoText(openGraphTitle, 75)) ||
+    documentTitle;
   const safeKeywords = keywords
-    .map((keyword) => sanitizeSeoText(keyword, 60))
+    .map((keyword) => normalizeBrandSpelling(sanitizeSeoText(keyword, 60)))
     .filter(Boolean)
     .slice(0, 14);
 
@@ -242,46 +251,64 @@ export function generateSeoMetadata({
 }
 
 export const founderPersonJsonLd = {
+  "@context": "https://schema.org",
   "@type": "Person",
-  "@id": `${siteUrl}/#priyanshu-swain`,
+  "@id": `${siteUrl}/fitsaathi-owner#person`,
   name: "Priyanshu Swain",
-  jobTitle: "Owner and Founder of TheFitSaathi",
-  worksFor: { "@id": `${siteUrl}/#organization` },
-  url: canonicalUrl("/about"),
+  url: canonicalUrl("/fitsaathi-owner"),
+  jobTitle: "Founder and Owner of TheFitSaathi",
+  worksFor: {
+    "@type": "Organization",
+    "@id": `${siteUrl}/#organization`,
+    name: brandName,
+    url: siteUrl,
+  },
 };
 
 export const administratorPersonJsonLd = {
+  "@context": "https://schema.org",
   "@type": "Person",
   "@id": `${siteUrl}/#parthsaarthi`,
   name: "Parthsaarthi",
   jobTitle: "Administrator of TheFitSaathi",
-  worksFor: { "@id": `${siteUrl}/#organization` },
+  worksFor: {
+    "@type": "Organization",
+    "@id": `${siteUrl}/#organization`,
+    name: brandName,
+    url: siteUrl,
+  },
   url: canonicalUrl("/about"),
 };
 
 export const organizationJsonLd = {
+  "@context": "https://schema.org",
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
   name: seoConfig.siteName,
   alternateName: [...brandAlternateNames],
   url: siteUrl,
-  founder: { "@id": founderPersonJsonLd["@id"] },
-  employee: { "@id": administratorPersonJsonLd["@id"] },
   logo: {
     "@type": "ImageObject",
-    "@id": `${siteUrl}/#logo`,
     url: absoluteUrl(seoConfig.logo),
-    contentUrl: absoluteUrl(seoConfig.logo),
-    width: 512,
-    height: 512,
-    caption: seoConfig.siteName,
   },
   description:
-    "TheFitSaathi is an Indian fitness and sports platform for discovering coaches, trainers, gyms, dojos, martial arts academies and other fitness services.",
-  areaServed: { "@type": "Country", name: "India" },
+    "TheFitSaathi is an Indian fitness, sports and coaching platform founded and owned by Priyanshu Swain.",
+  founder: {
+    "@type": "Person",
+    "@id": founderPersonJsonLd["@id"],
+    name: founderPersonJsonLd.name,
+    url: founderPersonJsonLd.url,
+    jobTitle: founderPersonJsonLd.jobTitle,
+  },
+  member: {
+    "@type": "Person",
+    name: administratorPersonJsonLd.name,
+    jobTitle: administratorPersonJsonLd.jobTitle,
+  },
 };
 
 export const websiteJsonLd = {
+  "@context": "https://schema.org",
   "@type": "WebSite",
   "@id": `${siteUrl}/#website`,
   url: siteUrl,
@@ -297,8 +324,6 @@ export const brandIdentityJsonLd = {
   "@context": "https://schema.org",
   "@graph": [
     organizationJsonLd,
-    founderPersonJsonLd,
-    administratorPersonJsonLd,
     websiteJsonLd,
   ],
 };
@@ -317,9 +342,8 @@ export const ownershipFaqItems = [
     answer: "Parthsaarthi is the administrator of TheFitSaathi.",
   },
   {
-    question: "Are TheFitSaathi, The FitSaathi and FitSaathi the same platform?",
-    answer:
-      "Yes. On thefitsaathi.com, TheFitSaathi, The FitSaathi and FitSaathi refer to the same fitness and sports platform.",
+    question: "What is the official website of TheFitSaathi?",
+    answer: "The official website is https://thefitsaathi.com.",
   },
 ] as const;
 

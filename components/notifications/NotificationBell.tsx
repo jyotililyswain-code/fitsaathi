@@ -50,7 +50,7 @@ export function NotificationBell() {
         {unreadCount ? <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-acid px-1.5 py-0.5 text-center text-[10px] font-black text-ink">{unreadCount > 99 ? "99+" : unreadCount}</span> : null}
       </button>
       {open ? (
-        <section id="notification-menu" role="dialog" aria-modal="false" aria-labelledby="notification-menu-title" className="absolute right-[-3.25rem] top-[calc(100%+0.5rem)] z-[70] flex max-h-[calc(100dvh-5.5rem)] w-[min(23rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl 2xl:right-0">
+        <section id="notification-menu" role="dialog" aria-modal="false" aria-labelledby="notification-menu-title" className="fixed left-3 right-3 top-20 z-[70] mt-3 flex max-h-[calc(100dvh-6rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-full sm:w-[min(23rem,calc(100vw-2rem))]">
           <div className="flex items-center justify-between border-b border-white/10 p-4">
             <div><p id="notification-menu-title" className="font-bold text-white">Notifications</p><p className="text-xs text-zinc-500">{unreadCount} unread</p></div>
             <button type="button" onClick={() => void markAllRead()} disabled={!unreadCount} className="inline-flex min-h-11 items-center gap-1 px-1 text-xs font-semibold text-acid disabled:opacity-40"><CheckCheck className="h-4 w-4" />Mark all read</button>

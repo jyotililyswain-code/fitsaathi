@@ -26,14 +26,14 @@ export function ReportProblemButton({ variant = "footer" }: ReportProblemButtonP
         type="button"
         onClick={() => setOpen(true)}
         className={variant === "dashboard"
-          ? "min-h-32 rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left text-white transition hover:border-acid/40 hover:bg-white/[0.06]"
+          ? "focus-ring flex min-h-36 w-full min-w-0 flex-col items-start justify-between rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-left text-white transition hover:border-acid/50 hover:bg-white/[0.06]"
           : "inline-flex min-h-11 items-center gap-2 text-sm text-zinc-400 transition hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"}
         aria-haspopup="dialog"
       >
         <MessageCircleWarning className={variant === "dashboard" ? "h-6 w-6 text-acid" : "h-4 w-4"} aria-hidden="true" />
         {variant === "dashboard" ? (
-          <span>
-            <span className="mt-3 block text-lg font-semibold">Report a Problem</span>
+          <span className="mt-4 min-w-0">
+            <span className="block break-words text-lg font-semibold">Report a Problem</span>
             <span className="text-sm text-zinc-400">Open support</span>
           </span>
         ) : "Report a Problem"}

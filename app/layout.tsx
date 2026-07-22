@@ -3,11 +3,9 @@ import Script from "next/script";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { JsonLd } from "@/components/JsonLd";
 import { AuthSessionProvider } from "@/lib/auth-client";
 import {
   brandName,
-  brandIdentityJsonLd,
   generateSeoMetadata,
   seoConfig,
   siteUrl,
@@ -69,7 +67,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en-IN">
       <body className="bg-ink font-sans antialiased">
-        <JsonLd data={brandIdentityJsonLd} />
         <a
           href="#main-content"
           className="focus-ring fixed left-3 top-3 z-[200] -translate-y-24 rounded-lg bg-acid px-4 py-3 font-semibold text-ink transition focus:translate-y-0"

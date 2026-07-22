@@ -142,9 +142,17 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       value={{ user, checking, reload: () => sync(true) }}
     >
       {!publicPage && checking ? (
-        <main className="grid min-h-screen place-items-center bg-ink px-4 text-sm text-zinc-400">
-          Restoring your session...
-        </main>
+        <div className="min-h-dvh bg-ink">
+          <div data-session-loading-header aria-hidden="true" className="h-20 border-b border-white/10 bg-ink shadow-lg shadow-black/20">
+            <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+              <span className="h-10 w-40 animate-pulse rounded-xl bg-white/[0.05]" />
+              <span className="h-11 w-32 animate-pulse rounded-lg bg-white/[0.05]" />
+            </div>
+          </div>
+          <main className="grid min-h-[calc(100dvh-5rem)] place-items-center px-4 text-sm text-zinc-400">
+            Restoring your session...
+          </main>
+        </div>
       ) : !publicPage && sessionError && !user ? (
         <main className="grid min-h-screen place-items-center bg-ink px-4 text-center text-sm text-zinc-400">
           <section>

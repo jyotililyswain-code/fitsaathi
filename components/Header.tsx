@@ -29,6 +29,22 @@ const signedInNav = [
   ["Dashboard", "/dashboard"],
 ] as const;
 
+const publicDesktopNav = [
+  ["Home", "/"],
+  ["Find Coach", "/find-coach"],
+  ["Dojos", "/dojos"],
+  ["Shop", "/shop"],
+  ["About", "/about"],
+] as const;
+
+const signedInDesktopNav = [
+  ["Home", "/"],
+  ["Find Coach", "/find-coach"],
+  ["Dojos", "/dojos"],
+  ["Shop", "/shop"],
+  ["Dashboard", "/dashboard"],
+] as const;
+
 export function Header() {
   const router = useRouter();
   const pathname = usePathname() || "/";
@@ -75,19 +91,20 @@ export function Header() {
 
   const signedIn = Boolean(user);
   const visibleNav = signedIn ? [...publicNav, ...signedInNav] : publicNav;
+  const desktopNav = signedIn ? signedInDesktopNav : publicDesktopNav;
   const accountLabel = signedIn ? "My Account" : "Log In / Sign Up";
   const accountHref = signedIn ? dashboardHref(role) : "/login";
 
   if (pathname.startsWith("/super-admin-dashboard")) return null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-ink/90 backdrop-blur-xl">
-      <nav className="mx-auto flex max-w-screen-2xl items-center justify-between gap-1 px-2 py-3 min-[360px]:px-3 sm:gap-3 sm:px-6 sm:py-4 lg:px-8">
+    <header className="sticky top-0 z-[60] h-20 w-full border-b border-white/10 bg-ink shadow-lg shadow-black/20">
+      <nav className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
           aria-label="Go to TheFitSaathi homepage"
           onClick={() => setOpen(false)}
-          className="pointer-events-auto relative z-10 flex shrink-0 cursor-pointer items-center gap-2 text-xl font-bold tracking-tight text-white"
+          className="focus-ring pointer-events-auto relative z-10 flex min-w-0 shrink-0 cursor-pointer items-center gap-2 rounded-lg text-xl font-bold tracking-tight text-white"
         >
           <Image
             src="/favicon-192x192.png"
@@ -102,33 +119,36 @@ export function Header() {
           </span>
         </Link>
         <div
-          className="hidden min-w-0 flex-1 items-center justify-center gap-3 overflow-hidden px-3 text-xs font-medium text-zinc-300 2xl:flex"
+          className="hidden min-w-0 flex-1 items-center justify-center gap-1 px-3 text-sm font-medium text-zinc-300 xl:flex"
           aria-label="Primary navigation"
         >
-          {visibleNav.map(([label, href]) => (
+          {desktopNav.map(([label, href]) => (
             <Link
               key={href}
               href={href}
-              className={`whitespace-nowrap rounded-full px-2.5 py-2 transition hover:bg-white/[.05] hover:text-white ${pathname === href ? "bg-white/[.06] text-white" : ""}`}
+              aria-current={pathname === href ? "page" : undefined}
+              className={`focus-ring shrink-0 whitespace-nowrap rounded-full px-3 py-2 transition hover:bg-white/[.07] hover:text-white ${pathname === href ? "bg-white/[.08] text-white" : ""}`}
             >
               {label}
             </Link>
           ))}
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <CustomerCareButton variant="header" />
-          <NotificationBell />
+          <div className="hidden md:block">
+            <CustomerCareButton variant="header" />
+          </div>
+          {signedIn ? <NotificationBell /> : null}
           {checkingAuth ? (
             <span
               aria-hidden="true"
-              className="h-11 w-11 shrink-0 animate-pulse rounded-lg border border-acid/20 bg-white/[0.04] sm:w-36"
+              className="h-11 w-11 shrink-0 animate-pulse rounded-lg border border-acid/20 bg-white/[0.04] sm:w-[7.75rem]"
             />
           ) : (
             <Link
               href={accountHref}
               aria-label={accountLabel}
               title={accountLabel}
-              className="inline-flex h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-acid bg-transparent px-3 text-acid transition duration-[250ms] hover:scale-[1.03] hover:bg-acid hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:px-2.5 lg:px-3"
+              className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg border border-acid bg-transparent px-3 text-acid transition hover:bg-acid hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid focus-visible:ring-offset-2 focus-visible:ring-offset-ink sm:w-[7.75rem]"
             >
               <UserRound className="h-4 w-4" aria-hidden="true" />
               <span className="hidden whitespace-nowrap text-sm font-semibold sm:inline">
@@ -141,8 +161,8 @@ export function Header() {
             type="button"
             disabled={!hydrated}
             onClick={() => setOpen((value) => !value)}
-            className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/10 text-white transition hover:border-acid/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid disabled:cursor-wait disabled:opacity-60 2xl:hidden"
-            aria-label={open ? "Close menu" : "Open menu"}
+            className="inline-flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-white/15 text-white transition hover:border-acid/50 hover:text-acid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid disabled:cursor-wait disabled:opacity-60"
+            aria-label={open ? "Close navigation menu" : "Open navigation menu"}
             aria-expanded={open}
             aria-controls="mobile-primary-navigation"
           >
@@ -153,15 +173,16 @@ export function Header() {
       {open ? (
         <div
           id="mobile-primary-navigation"
-          className="safe-area-bottom absolute inset-x-0 top-full max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-ink px-4 py-4 shadow-2xl 2xl:hidden"
+          className="safe-area-bottom absolute inset-x-0 top-full max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-ink px-4 py-4 shadow-2xl shadow-black/60"
         >
-          <div className="mx-auto grid max-w-7xl gap-3 text-sm text-zinc-300">
+          <div className="mx-auto grid max-w-7xl gap-2 text-sm text-zinc-200 sm:grid-cols-2 lg:grid-cols-3">
             {visibleNav.map(([label, href]) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="inline-flex min-h-11 items-center rounded-xl border border-white/10 px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid"
+                aria-current={pathname === href ? "page" : undefined}
+                className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-3 transition hover:border-acid/40 hover:bg-white/[.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid ${pathname === href ? "border-acid/40 bg-acid/[.08] text-white" : "border-white/10"}`}
               >
                 {label}
               </Link>
