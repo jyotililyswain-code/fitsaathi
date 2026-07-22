@@ -113,7 +113,7 @@ export async function POST(request: Request) {
         const providerNotification = await createBookingEventNotification(tx, { event: input.packageType === "trial" ? "trial_created_provider" : "created", booking, recipientUserId: provider.ownerId, actorUserId: user.id, audience: "provider", messageOverride: input.packageType === "trial" ? `A new trial has been booked by ${input.name || customer.name} for ${input.preferredDate} at ${input.preferredTime}. No approval is required.` : undefined });
         const customerNotification = await createNotification(tx, { recipientUserId: user.id, type: input.packageType === "trial" ? "trial_confirmed" : "booking_confirmed", title: input.packageType === "trial" ? "Trial confirmed" : "Booking request sent", message: input.packageType === "trial" ? `Your trial with ${provider.name} has been confirmed. You can now view their contact number.` : "Your booking request was sent to the provider.", bookingId: booking.id, relatedEntityType: "booking", relatedEntityId: booking.id, actionUrl: customerBookingAction(booking.id), deduplicationKey: `booking_confirmed:${booking.id}:${user.id}`, metadata: { bookingId: booking.id } });
         return { booking, notificationIds: [providerNotification.id, customerNotification.id] };
-      });
+      }, { maxWait: 10_000, timeout: 20_000 });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         const duplicate = await findIdempotentBooking(input.idempotencyKey);
@@ -127,8 +127,14 @@ export async function POST(request: Request) {
     if (error instanceof ApiAuthError) return NextResponse.json({ error: error.message }, { status: error.status });
     if (error instanceof RequestSecurityError) return NextResponse.json({ error: error.message }, { status: 403 });
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Please correct the booking details.", issues: error.issues }, { status: 400 });
-    console.error("booking.create_failed", { category: error instanceof Error ? error.name : "unknown" });
-    return NextResponse.json({ error: "Could not create this booking." }, { status: 500 });
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      console.error("booking.create_failed", { category: error.name, code: error.code, message: error.message.slice(0, 500) });
+      if (error.code === "P2002") return NextResponse.json({ error: "You already have a booking for this request.", code: "BOOKING_DUPLICATE" }, { status: 409 });
+      if (error.code === "P2003") return NextResponse.json({ error: "This dojo is no longer available. Please choose another provider.", code: "PROVIDER_UNAVAILABLE" }, { status: 409 });
+      if (["P2021", "P2022", "P1001", "P1008", "P2028"].includes(error.code)) return NextResponse.json({ error: "The booking service is temporarily unavailable. Please try again shortly.", code: "BOOKING_SERVICE_UNAVAILABLE" }, { status: 503 });
+    }
+    console.error("booking.create_failed", { category: error instanceof Error ? error.name : "unknown", message: error instanceof Error ? error.message.slice(0, 500) : "unknown" });
+    return NextResponse.json({ error: "We could not save your booking. Please try again shortly.", code: "BOOKING_CREATE_FAILED" }, { status: 500 });
   }
 }
 

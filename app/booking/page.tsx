@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSessionUser } from "@/lib/auth-client";
 import { getCoach, getDojo } from "@/lib/data";
 import { todayInIndia } from "@/lib/date";
-import { readJsonResponse } from "@/lib/http";
+import { HttpResponseError, readJsonResponse } from "@/lib/http";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 
 type CreatedBooking = {
@@ -58,7 +58,7 @@ export default function BookingPage() {
 
     setLoading(true);
     processingRef.current = true;
-    if (!idempotencyKeyRef.current) idempotencyKeyRef.current = crypto.randomUUID();
+    if (!idempotencyKeyRef.current) idempotencyKeyRef.current = createIdempotencyKey();
     setMessage("");
     try {
       const response = await fetch("/api/bookings/create", {
@@ -83,7 +83,9 @@ export default function BookingPage() {
       const booking = await readJsonResponse<CreatedBooking>(response, "Could not create this booking.");
       router.push(`/booking/confirmed?bookingId=${encodeURIComponent(booking.bookingId)}&provider=${encodeURIComponent(booking.providerName)}&type=${encodeURIComponent(booking.packageType || String(form.get("packageType") || ""))}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Could not create this booking.");
+      if (error instanceof HttpResponseError && error.status === 401) setMessage("Please sign in before booking.");
+      else if (error instanceof TypeError) setMessage("We could not reach the booking service. Check your connection and try again.");
+      else setMessage(error instanceof Error ? error.message : "We could not save your booking. Please try again shortly.");
     } finally {
       setLoading(false);
       processingRef.current = false;
@@ -123,6 +125,15 @@ export default function BookingPage() {
       </form>
     </main>
   );
+}
+
+function createIdempotencyKey() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, character => {
+    const random = Math.random() * 16 | 0;
+    const value = character === "x" ? random : random & 0x3 | 0x8;
+    return value.toString(16);
+  });
 }
 
 function PolicyCheck({ checked, onChange, href, label }: { checked: boolean; onChange: (value: boolean) => void; href: string; label: string }) {
