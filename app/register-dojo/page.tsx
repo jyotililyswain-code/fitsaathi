@@ -10,6 +10,7 @@ import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { cleanupProviderUploads, getProviderUploadConfiguration, prepareProviderFile, selectedFile, uploadProviderFile } from "@/lib/provider-registration-upload";
 import type { ProviderFileKind } from "@/lib/provider-upload-rules";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
+import { RegistrationGate } from "@/components/RegistrationGate";
 
 const ENABLE_AADHAAR = process.env.NEXT_PUBLIC_ENABLE_AADHAAR_VERIFICATION === "true";
 const establishmentTypeOptions = [
@@ -35,7 +36,11 @@ export default function RegisterDojoPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading) return;
-    if (!user) return setMessage("Please sign in before registering a dojo or gym.");
+    if (!user) {
+      setMessage("Please sign in before registering a dojo or gym.");
+      router.push("/login?next=%2Fregister-dojo");
+      return;
+    }
 
     const form = event.currentTarget;
     const formData = new FormData(form);
@@ -132,7 +137,8 @@ export default function RegisterDojoPage() {
   }
 
   return (
-    <main className="mx-auto grid w-full max-w-5xl gap-8 px-4 py-10 sm:px-6 lg:px-8">
+    <RegistrationGate type="dojo" path="/register-dojo">
+      <main className="mx-auto grid w-full max-w-5xl gap-8 px-4 py-10 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-3xl text-center">
         <p className="text-sm text-acid">Dojo / Gym registration</p>
         <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">Register Your Dojo or Gym</h1>
@@ -185,7 +191,8 @@ export default function RegisterDojoPage() {
         {status ? <p className="mt-3 text-sm text-acid">{status}{loading && uploadProgress ? ` ${uploadProgress}%` : ""}</p> : null}
         {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
       </form>
-    </main>
+      </main>
+    </RegistrationGate>
   );
 }
 

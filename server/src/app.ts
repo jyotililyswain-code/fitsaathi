@@ -8,7 +8,7 @@ import multer from "multer";
 import morgan from "morgan";
 import { z } from "zod";
 import { isStrongPassword, normalizeEmail } from "../../lib/auth/email";
-import { automaticDojoActivation, canManageDojo, dojoModerationData, PUBLIC_DOJO_SELECT, publicDojo, publicDojoWhere } from "../../lib/dojo-visibility";
+import { automaticDojoActivation, canManageDojo, dojoModerationData, PUBLIC_DOJO_ORDER_BY, PUBLIC_DOJO_SELECT, publicDojo, publicDojoWhere } from "../../lib/dojo-visibility";
 import { resolveDojoImageUrl } from "../../lib/dojo-image";
 import { accessToken, allowRoles, authenticate, hashToken, refreshToken, type AuthRequest, type SessionUser } from "./auth";
 import { config } from "./config";
@@ -325,7 +325,7 @@ app.delete("/api/coaches/:id", authenticate, asyncRoute(async (request: AuthRequ
 app.get("/api/dojos", asyncRoute(async (request, response) => {
   const query = z.object({ featured: z.enum(["true", "false"]).optional(), limit: z.coerce.number().int().min(1).max(100).default(48), search: z.string().trim().max(100).optional(), category: z.string().trim().max(80).optional(), city: z.string().trim().max(80).optional() }).parse(request.query);
   const featured = query.featured === "true";
-  const items = await prisma.dojo.findMany({ where: publicDojoWhere(query), select: PUBLIC_DOJO_SELECT, orderBy: featured ? { rating: "desc" } : { createdAt: "desc" }, take: query.limit });
+  const items = await prisma.dojo.findMany({ where: publicDojoWhere(query), select: PUBLIC_DOJO_SELECT, orderBy: PUBLIC_DOJO_ORDER_BY, take: query.limit });
   console.info("dojo.public_search_completed", { count: items.length, featured, hasSearch: Boolean(query.search), hasCategory: Boolean(query.category), hasCity: Boolean(query.city) });
   response.set("Cache-Control", "no-store, max-age=0").json(items.map(publicDojo));
 }));

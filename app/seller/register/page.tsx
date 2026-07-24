@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 import { useSessionUser } from "@/lib/auth-client";
 import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
+import { RegistrationGate } from "@/components/RegistrationGate";
 
 export default function SellerRegistrationPage() {
   const router = useRouter();
@@ -15,7 +16,11 @@ export default function SellerRegistrationPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user) return setMessage("Please sign in before registering as a seller.");
+    if (!user) {
+      setMessage("Please sign in before registering as a seller.");
+      router.push("/login?next=%2Fregister-seller");
+      return;
+    }
     const source = new FormData(event.currentTarget);
     const phone = normalizePhone(String(source.get("phoneNumber")));
     const aadhaar = String(source.get("aadhaarNumber")).replace(/\D/g, "");
@@ -45,7 +50,8 @@ export default function SellerRegistrationPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
+    <RegistrationGate type="seller" path="/register-seller">
+      <main className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
       <section>
         <p className="text-sm text-acid">FitSaathi sellers</p>
         <h1 className="mt-2 text-4xl font-bold text-white">Open your fitness store</h1>
@@ -75,7 +81,8 @@ export default function SellerRegistrationPage() {
         <button disabled={loading} className="mt-5 w-full rounded-xl bg-acid px-5 py-3 font-semibold text-ink disabled:bg-zinc-700">{loading ? "Submitting securely…" : "Submit seller application"}</button>
         {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
       </form>
-    </main>
+      </main>
+    </RegistrationGate>
   );
 }
 

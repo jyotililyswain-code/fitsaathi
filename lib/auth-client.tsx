@@ -43,6 +43,7 @@ const publicSeoRoutes = new Set([
   "/become-a-coach",
   "/register-dojo",
   "/register-seller",
+  "/live-data",
   "/get-started",
   "/pamphlet",
   "/policies",

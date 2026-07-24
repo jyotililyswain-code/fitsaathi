@@ -11,6 +11,7 @@ import { SOCIAL_INTERESTS } from "@/lib/social";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
 import { AuthModeTabs } from "@/components/AuthModeTabs";
 import { GoogleOAuthButton } from "@/components/auth/GoogleOAuthButton";
+import { safeAuthRedirect } from "@/lib/auth-redirect";
 
 const maxInterestLength = 50;
 
@@ -95,7 +96,12 @@ export default function SignupPage() {
       });
       if (supabase) await supabase.auth.setSession(result.supabaseSession);
       notifyAuthChanged();
-      router.replace(result.redirectTo || "/dashboard");
+      const requestedPath = new URLSearchParams(window.location.search).get(
+        "next",
+      );
+      router.replace(
+        safeAuthRedirect(requestedPath, result.redirectTo || "/dashboard"),
+      );
       router.refresh();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Signup failed.");

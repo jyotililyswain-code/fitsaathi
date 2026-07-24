@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useSessionUser } from "@/lib/auth-client";
+import { safeAuthRedirect } from "@/lib/auth-redirect";
 import { dashboardPathForRole } from "@/lib/roles";
 
 export function GuestOnly({ children }: { children: ReactNode }) {
@@ -10,7 +11,14 @@ export function GuestOnly({ children }: { children: ReactNode }) {
   const { user, checking } = useSessionUser();
 
   useEffect(() => {
-    if (!checking && user) router.replace(dashboardPathForRole(user.role));
+    if (!checking && user) {
+      const requestedPath = new URLSearchParams(window.location.search).get(
+        "next",
+      );
+      router.replace(
+        safeAuthRedirect(requestedPath, dashboardPathForRole(user.role)),
+      );
+    }
   }, [checking, router, user]);
 
   if (checking || user) {

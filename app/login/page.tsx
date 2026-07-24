@@ -20,10 +20,16 @@ export default function LoginPage() {
   const [accepted, setAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [signupHref, setSignupHref] = useState("/signup");
 
   useEffect(() => {
-    const oauthMessage = googleOAuthErrorMessage(new URLSearchParams(window.location.search).get("error"));
+    const search = new URLSearchParams(window.location.search);
+    const oauthMessage = googleOAuthErrorMessage(search.get("error"));
     if (oauthMessage) setMessage(oauthMessage);
+    const returnPath = safeAuthRedirect(search.get("next"), "");
+    if (returnPath) {
+      setSignupHref(`/signup?next=${encodeURIComponent(returnPath)}`);
+    }
   }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -60,7 +66,7 @@ export default function LoginPage() {
       message={message}
       showPassword={showPassword}
       onShowPasswordChange={setShowPassword}
-      footer={<Link className="text-acid" href="/signup">Create an account</Link>}
+      footer={<Link className="text-acid" href={signupHref}>Create an account</Link>}
     />
   );
 }

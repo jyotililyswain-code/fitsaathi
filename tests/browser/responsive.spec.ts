@@ -22,6 +22,7 @@ const majorTemplates = [
   "/find-coach",
   "/dojos",
   "/signup",
+  "/live-data",
   "/booking",
   "/shop",
   "/pamphlet",

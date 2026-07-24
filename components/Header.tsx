@@ -3,45 +3,41 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, UserRound, X } from "lucide-react";
+import { Activity, LogOut, Menu, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CustomerCareButton } from "@/components/CustomerCareModal";
 import { logoutSession, useSessionUser } from "@/lib/auth-client";
 import { dashboardPathForRole } from "@/lib/roles";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 
-const publicNav = [
+const sharedNav = [
   ["Home", "/"],
   ["Find Coach", "/find-coach"],
   ["Dojos", "/dojos"],
   ["Shop", "/shop"],
+] as const;
+
+const registrationNav = [
   ["Become a Coach", "/become-a-coach"],
   ["Register as Seller", "/register-seller"],
   ["Register Dojo / Gym", "/register-dojo"],
+] as const;
+
+const companyNav = [
   ["About TheFitSaathi", "/about"],
   ["FAQ", "/faq"],
 ] as const;
 
-const signedInNav = [
+const signedInExtraNav = [
   ["Find Fitness Partner", "/life"],
   ["Booking", "/booking"],
   ["Chat", "/chat"],
-  ["Dashboard", "/dashboard"],
 ] as const;
 
-const publicDesktopNav = [
-  ["Home", "/"],
-  ["Find Coach", "/find-coach"],
-  ["Dojos", "/dojos"],
-  ["Shop", "/shop"],
-  ["About", "/about"],
-] as const;
+const publicDesktopNav = sharedNav;
 
 const signedInDesktopNav = [
-  ["Home", "/"],
-  ["Find Coach", "/find-coach"],
-  ["Dojos", "/dojos"],
-  ["Shop", "/shop"],
+  ...sharedNav,
   ["Dashboard", "/dashboard"],
 ] as const;
 
@@ -90,7 +86,17 @@ export function Header() {
   }
 
   const signedIn = Boolean(user);
-  const visibleNav = signedIn ? [...publicNav, ...signedInNav] : publicNav;
+  const liveDataNav = ["Check Live Data", "/live-data"] as const;
+  const visibleNav = signedIn
+    ? [
+        ...sharedNav,
+        ["Dashboard", "/dashboard"] as const,
+        liveDataNav,
+        ...signedInExtraNav,
+        ...registrationNav,
+        ...companyNav,
+      ]
+    : [...sharedNav, liveDataNav, ...registrationNav, ...companyNav];
   const desktopNav = signedIn ? signedInDesktopNav : publicDesktopNav;
   const accountLabel = signedIn ? "My Account" : "Log In / Sign Up";
   const accountHref = signedIn ? dashboardHref(role) : "/login";
@@ -98,7 +104,7 @@ export function Header() {
   if (pathname.startsWith("/super-admin-dashboard")) return null;
 
   return (
-    <header className="sticky top-0 z-[60] h-20 w-full border-b border-white/10 bg-ink shadow-lg shadow-black/20">
+    <header className="sticky top-0 z-[60] h-[calc(5rem+env(safe-area-inset-top))] w-full border-b border-white/10 bg-ink pt-[env(safe-area-inset-top)] shadow-lg shadow-black/20">
       <nav className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <Link
           href="/"
@@ -132,6 +138,18 @@ export function Header() {
               {label}
             </Link>
           ))}
+          <Link
+            href="/live-data"
+            aria-current={pathname === "/live-data" ? "page" : undefined}
+            className={`focus-ring inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 font-semibold transition hover:bg-acid hover:text-ink ${
+              pathname === "/live-data"
+                ? "border-acid bg-acid text-ink"
+                : "border-acid/35 text-acid"
+            }`}
+          >
+            <Activity className="h-4 w-4" aria-hidden="true" />
+            Check Live Data
+          </Link>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <div className="hidden md:block">
@@ -184,6 +202,12 @@ export function Header() {
                 aria-current={pathname === href ? "page" : undefined}
                 className={`inline-flex min-h-11 items-center rounded-xl border px-4 py-3 transition hover:border-acid/40 hover:bg-white/[.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acid ${pathname === href ? "border-acid/40 bg-acid/[.08] text-white" : "border-white/10"}`}
               >
+                {href === "/live-data" ? (
+                  <Activity
+                    className="mr-2 h-4 w-4 shrink-0 text-acid"
+                    aria-hidden="true"
+                  />
+                ) : null}
                 {label}
               </Link>
             ))}

@@ -22,6 +22,15 @@ export const PUBLIC_DOJO_SELECT = {
   verified: true
 } satisfies Prisma.DojoSelect;
 
+// Keep the priority in the database query so every page of a filtered or
+// paginated result set has verified listings first. The id tie-breaker makes
+// rows with the same verification and creation timestamp deterministic.
+export const PUBLIC_DOJO_ORDER_BY = [
+  { verified: "desc" },
+  { createdAt: "desc" },
+  { id: "asc" },
+] satisfies Prisma.DojoOrderByWithRelationInput[];
+
 export type PublicDojoRecord = Prisma.DojoGetPayload<{ select: typeof PUBLIC_DOJO_SELECT }>;
 export type DojoSearchFilters = { search?: string; category?: string; city?: string };
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { automaticDojoActivation, canManageDojo, dojoModerationData, publicDojo, publicDojoWhere } from "../lib/dojo-visibility";
+import { automaticDojoActivation, canManageDojo, dojoModerationData, PUBLIC_DOJO_ORDER_BY, publicDojo, publicDojoWhere } from "../lib/dojo-visibility";
 
 test("public dojo queries require active and approved status fields", () => {
   const where = publicDojoWhere({ search: "FitSaathi Test", city: "Pune", category: "Karate" });
@@ -11,6 +11,14 @@ test("public dojo queries require active and approved status fields", () => {
   assert.equal(dojoModerationData("suspended").approved, false);
   const activation = automaticDojoActivation(new Date("2026-07-12T12:00:00.000Z"));
   assert.deepEqual(activation, { status: "active", approved: true, approvedAt: new Date("2026-07-12T12:00:00.000Z"), verified: false });
+});
+
+test("public dojo discovery orders verified listings before newest unverified listings", () => {
+  assert.deepEqual(PUBLIC_DOJO_ORDER_BY, [
+    { verified: "desc" },
+    { createdAt: "desc" },
+    { id: "asc" },
+  ]);
 });
 
 test("gym searches include records registered with the gym establishment type", () => {

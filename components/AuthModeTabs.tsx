@@ -1,17 +1,35 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { safeAuthRedirect } from "@/lib/auth-redirect";
 
 type AuthMode = "login" | "signup";
 
 export function AuthModeTabs({ current }: { current: AuthMode }) {
+  const [returnPath, setReturnPath] = useState("");
+
+  useEffect(() => {
+    setReturnPath(
+      safeAuthRedirect(
+        new URLSearchParams(window.location.search).get("next"),
+        "",
+      ),
+    );
+  }, []);
+
+  const hrefFor = (href: string) =>
+    returnPath ? `${href}?next=${encodeURIComponent(returnPath)}` : href;
+
   return (
     <nav
       aria-label="Choose authentication mode"
       className="grid w-full max-w-md grid-cols-2 rounded-xl border border-white/10 bg-black/20 p-1"
     >
-      <AuthModeLink href="/login" active={current === "login"}>
+      <AuthModeLink href={hrefFor("/login")} active={current === "login"}>
         Log In
       </AuthModeLink>
-      <AuthModeLink href="/signup" active={current === "signup"}>
+      <AuthModeLink href={hrefFor("/signup")} active={current === "signup"}>
         Sign Up
       </AuthModeLink>
     </nav>

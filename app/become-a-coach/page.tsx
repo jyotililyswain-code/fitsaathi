@@ -10,6 +10,7 @@ import { localApi, notifyAuthChanged } from "@/lib/local-api";
 import { cleanupProviderUploads, getProviderUploadConfiguration, prepareProviderFile, selectedFile, uploadProviderFile } from "@/lib/provider-registration-upload";
 import type { ProviderFileKind } from "@/lib/provider-upload-rules";
 import { isValidIndianPhone, normalizePhone } from "@/lib/validation";
+import { RegistrationGate } from "@/components/RegistrationGate";
 
 type CoachFile = { field: string; kind: ProviderFileKind; label: string; required?: boolean };
 const coachFiles: CoachFile[] = [
@@ -115,7 +116,8 @@ export default function BecomeCoachPage() {
   }
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+    <RegistrationGate type="coach" path="/become-a-coach">
+      <main className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
       <section>
         <p className="text-sm text-acid">Become a coach</p>
         <h1 className="mt-2 text-3xl font-bold text-white sm:text-4xl">Register with real profile details</h1>
@@ -157,7 +159,8 @@ export default function BecomeCoachPage() {
         {status ? <p className="mt-3 text-sm text-acid">{status}{loading && uploadProgress ? ` ${uploadProgress}%` : ""}</p> : null}
         {message ? <p className="mt-4 text-sm text-zinc-300">{message}</p> : null}
       </form>
-    </main>
+      </main>
+    </RegistrationGate>
   );
 }
 
