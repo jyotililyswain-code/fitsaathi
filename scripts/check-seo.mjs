@@ -8,10 +8,11 @@ const canonicalOrigin = "https://thefitsaathi.com";
 const productionAliasOrigin = "https://fitsaathi.vercel.app";
 const expectedTitle = "TheFitSaathi | Find Coaches, Gyms, Dojos and Fitness Services";
 const expectedDescription =
-  "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.";
+  "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsarthi.";
 const expectedWebsiteDescription =
   "TheFitSaathi is an Indian fitness and sports platform for discovering coaches, personal trainers, yoga instructors, martial arts teachers, dojos, gyms and sports training services.";
 const expectedAlternateNames = [
+  "FitSaathi",
   "The FitSaathi",
   "TheFitSaathi Fitness and Sports Platform",
 ];
@@ -303,7 +304,7 @@ try {
   check(text.includes("About TheFitSaathi"), "Homepage About TheFitSaathi section is absent.");
   check(
     text.includes(
-      "TheFitSaathi is an Indian fitness, sports and coaching platform available at thefitsaathi.com. The platform helps users discover coaches, gyms, dojos, academies and sports-related services. Priyanshu Swain is the founder and owner of TheFitSaathi. Parthsaarthi is the administrator of the platform.",
+      "TheFitSaathi is an Indian fitness, sports and coaching platform available at thefitsaathi.com. The platform helps users discover coaches, gyms, dojos, academies and sports-related services. Priyanshu Swain is the founder and owner of TheFitSaathi. Parthsarthi is the website administrator of the platform.",
     ),
     "Homepage entity summary is absent from initial HTML.",
   );
@@ -353,8 +354,8 @@ try {
     "Organization JSON-LD is not connected to the TheFitSaathi founder.",
   );
   check(
-    organization?.member?.name === "Parthsaarthi" &&
-      organization?.member?.jobTitle === "Administrator of TheFitSaathi",
+    organization?.member?.name === "Parthsarthi" &&
+      organization?.member?.jobTitle === "Website Administrator of TheFitSaathi",
     "Organization JSON-LD is not connected to the TheFitSaathi administrator.",
   );
   check(
@@ -610,19 +611,19 @@ try {
       title:
         "About TheFitSaathi | Indian Fitness and Sports Platform",
       description:
-        "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsaarthi.",
+        "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsarthi.",
       openGraphTitle:
         "About TheFitSaathi | Indian Fitness and Sports Platform",
       openGraphDescription:
-        "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsaarthi.",
+        "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsarthi.",
       h1: "About TheFitSaathi",
       breadcrumbLabel: "About TheFitSaathi",
       hasFaq: false,
-      people: 0,
+      people: 1,
       requiredSentences: [
         "Priyanshu Swain founded TheFitSaathi.",
         "Priyanshu Swain is the owner of TheFitSaathi.",
-        "Parthsaarthi is the administrator of TheFitSaathi.",
+        "Parthsarthi is the website administrator of TheFitSaathi.",
         "The official website of TheFitSaathi is https://thefitsaathi.com.",
       ],
     },
@@ -642,7 +643,7 @@ try {
       requiredSentences: [
         "Priyanshu Swain is the founder and owner of TheFitSaathi.",
         "TheFitSaathi is an Indian fitness, sports and coaching platform operating through the official domain thefitsaathi.com.",
-        "Parthsaarthi is the administrator of TheFitSaathi.",
+        "Parthsarthi is the website administrator of TheFitSaathi.",
         "The official website of TheFitSaathi is https://thefitsaathi.com.",
       ],
     },
@@ -658,7 +659,7 @@ try {
     },
     {
       question: "Who is the administrator of TheFitSaathi?",
-      answer: "Parthsaarthi is the administrator of TheFitSaathi.",
+      answer: "Parthsarthi is the website administrator of TheFitSaathi.",
     },
     {
       question: "What is the official website of TheFitSaathi?",

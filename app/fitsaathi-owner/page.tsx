@@ -97,7 +97,7 @@ export default function FitSaathiOwnerPage() {
               Priyanshu Swain is the founder and owner of TheFitSaathi.
             </p>
             <p className="mt-3 leading-7 text-zinc-400">
-              Parthsaarthi is the administrator of TheFitSaathi.
+              Parthsarthi is the website administrator of TheFitSaathi.
             </p>
           </section>
 

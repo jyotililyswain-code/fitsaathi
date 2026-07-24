@@ -24,7 +24,7 @@ test("every Prisma model supports its CRUD lifecycle and required relations", as
     const coach = await prisma.coach.create({ data: { ownerId: ids.coachUser, name: "Audit Coach", category: "Strength", city: "Delhi", baseFee: 800, customerPrice: 1500, coachPayout: 900 } }); ids.coach = coach.id;
     assert.equal((await prisma.coach.update({ where: { id: coach.id }, data: { verified: true, status: "approved" } })).verified, true);
     const dojo = await prisma.dojo.create({ data: { ownerId: ids.dojoUser, name: "Audit Dojo", category: "Karate", city: "Delhi", originalPrice: 1800, finalPrice: 1800 } }); ids.dojo = dojo.id;
-    assert.equal((await prisma.dojo.update({ where: { id: dojo.id }, data: { approved: true, status: "approved" } })).approved, true);
+    assert.equal((await prisma.dojo.update({ where: { id: dojo.id }, data: { approved: true, status: "active", approvedAt: new Date() } })).approved, true);
 
     const verification = await prisma.providerVerification.create({ data: { ownerId: ids.coachUser, profileId: coach.id, profileType: "coach", aadhaarFrontPath: "/private/audit.webp" } }); ids.verification = verification.id;
     assert.equal((await prisma.providerVerification.update({ where: { id: verification.id }, data: { status: "approved", reviewedById: ids.adminUser } })).status, "approved");

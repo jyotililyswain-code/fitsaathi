@@ -20,6 +20,7 @@ const sectionClass =
 export default function AboutPage() {
   return (
     <>
+      <JsonLd data={founderPersonJsonLd} />
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -28,7 +29,7 @@ export default function AboutPage() {
           url: canonicalUrl("/about"),
           name: "About TheFitSaathi",
           description:
-            "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsaarthi.",
+            "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsarthi.",
           isPartOf: { "@id": websiteJsonLd["@id"] },
           about: [
             { "@id": organizationJsonLd["@id"] },
@@ -65,9 +66,10 @@ export default function AboutPage() {
             About TheFitSaathi
           </h1>
           <p className="mt-6 text-lg leading-8 text-zinc-300">
-            TheFitSaathi is an Indian fitness, sports and coaching platform
-            available at thefitsaathi.com. The platform helps users discover
-            coaches, gyms, dojos, academies and sports-related services.
+            TheFitSaathi, also known as FitSaathi, is a fitness-services
+            platform founded and owned by Priyanshu Swain. Parthsarthi serves
+            as the website administrator and supports the platform&apos;s
+            administration and operations.
           </p>
           <p className="mt-4 leading-8 text-zinc-400">
             TheFitSaathi is an independent fitness and sports platform and is
@@ -90,9 +92,16 @@ export default function AboutPage() {
               users discover coaches, gyms, dojos, academies and sports-related
               services.
             </p>
+            <p className="mt-3 leading-8 text-zinc-400">
+              FitSaathi and TheFitSaathi refer to the same platform and brand.
+            </p>
           </section>
 
-          <section aria-labelledby="who-founded-thefitsaathi" className={sectionClass}>
+          <section
+            id="priyanshu-swain"
+            aria-labelledby="who-founded-thefitsaathi"
+            className={sectionClass}
+          >
             <h2
               id="who-founded-thefitsaathi"
               className="text-2xl font-bold text-white sm:text-3xl"
@@ -130,10 +139,40 @@ export default function AboutPage() {
               id="who-administers-thefitsaathi"
               className="text-2xl font-bold text-white sm:text-3xl"
             >
-              Who administers TheFitSaathi?
+              Website administrator
             </h2>
             <p className="mt-4 text-lg font-semibold leading-8 text-white">
-              Parthsaarthi is the administrator of TheFitSaathi.
+              Parthsarthi is the website administrator of TheFitSaathi.
+            </p>
+          </section>
+
+          <section aria-labelledby="thefitsaathi-mission" className={sectionClass}>
+            <h2
+              id="thefitsaathi-mission"
+              className="text-2xl font-bold text-white sm:text-3xl"
+            >
+              Mission
+            </h2>
+            <p className="mt-4 leading-8 text-zinc-300">
+              TheFitSaathi&apos;s mission is to make it easier for people to
+              discover fitness coaches, gyms, dojos, academies and relevant
+              training services while giving legitimate providers a clear way
+              to present their services.
+            </p>
+          </section>
+
+          <section aria-labelledby="how-thefitsaathi-works" className={sectionClass}>
+            <h2
+              id="how-thefitsaathi-works"
+              className="text-2xl font-bold text-white sm:text-3xl"
+            >
+              How the platform works
+            </h2>
+            <p className="mt-4 leading-8 text-zinc-300">
+              Visitors can explore approved public profiles and marketplace
+              listings. Signed-in customers can send bookings, while coaches,
+              dojo or gym operators, and sellers can register and manage their
+              information through the relevant private dashboard.
             </p>
           </section>
 

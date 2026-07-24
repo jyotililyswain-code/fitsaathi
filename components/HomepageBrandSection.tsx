@@ -22,7 +22,7 @@ export function HomepageBrandSection() {
             available at thefitsaathi.com. The platform helps users discover
             coaches, gyms, dojos, academies and sports-related services.
             Priyanshu Swain is the founder and owner of TheFitSaathi.
-            Parthsaarthi is the administrator of the platform.
+            Parthsarthi is the website administrator of the platform.
           </p>
           <p className="mt-3 leading-7 text-zinc-400">
             TheFitSaathi is an independent fitness and sports platform and is

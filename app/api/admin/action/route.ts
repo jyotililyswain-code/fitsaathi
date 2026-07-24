@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { canDelete, canManageFinance, canManageOrders, canManageUsers, canModerateMarketplace, isAdminRole, type AdminRole } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
-import { getClientIp, isRateLimited, sanitizeText } from "@/lib/security";
+import { assertSameOrigin, getClientIp, isRateLimited, RequestSecurityError, sanitizeText } from "@/lib/security";
 import { dojoModerationData } from "@/lib/dojo-visibility";
 import { removeUploads } from "@/server/src/uploads";
 import { removeProviderUploads } from "@/server/src/provider-uploads";
@@ -11,10 +11,11 @@ import { removeProviderUploads } from "@/server/src/provider-uploads";
 type ActionBody = { action?: unknown; targetId?: unknown; value?: unknown; reason?: unknown; settings?: unknown };
 
 export async function POST(request: Request) {
-  if (await isRateLimited(`admin-action:${getClientIp(request)}`, 60, 60_000)) return NextResponse.json({ error: "Too many admin actions." }, { status: 429 });
   try {
+    assertSameOrigin(request);
     const actor = await requireApiUser(request);
     if (!isAdminRole(actor.role)) return NextResponse.json({ error: "Administrator access required." }, { status: 403 });
+    if (await isRateLimited(`admin-action:${actor.id}:${getClientIp(request)}`, 60, 60_000)) return NextResponse.json({ error: "Too many admin actions." }, { status: 429 });
     const role = actor.role as AdminRole;
     const body = (await request.json()) as ActionBody;
     const action = sanitizeText(body.action, 60);
@@ -55,10 +56,20 @@ export async function POST(request: Request) {
       await prisma.report.update({ where: { id: targetId }, data: { status: value || "resolved", resolvedById: actor.id, resolution: reason } });
     } else if (action === "delete_product") {
       if (!canDelete(role)) return NextResponse.json({ error: "Delete permission required." }, { status: 403 });
-      await prisma.product.delete({ where: { id: targetId } });
+      const product = await prisma.product.findUnique({ where: { id: targetId }, include: { images: true } });
+      if (!product) return NextResponse.json({ error: "Product not found." }, { status: 404 });
+      await prisma.product.delete({ where: { id: product.id } });
+      removeUploads(product.images.flatMap(image => [image.path, image.thumbnail]));
     } else if (action === "delete_seller") {
       if (!canDelete(role)) return NextResponse.json({ error: "Delete permission required." }, { status: 403 });
-      await prisma.seller.delete({ where: { id: targetId } });
+      const seller = await prisma.seller.findUnique({ where: { id: targetId }, include: { products: { include: { images: true } } } });
+      if (!seller) return NextResponse.json({ error: "Seller not found." }, { status: 404 });
+      await prisma.seller.delete({ where: { id: seller.id } });
+      removeUploads([
+        seller.profilePath,
+        seller.aadhaarPath,
+        ...seller.products.flatMap(product => product.images.flatMap(image => [image.path, image.thumbnail])),
+      ]);
     } else if (action === "delete_dojo") {
       if (!canDelete(role)) return NextResponse.json({ error: "Delete permission required." }, { status: 403 });
       const dojo = await prisma.dojo.findUnique({ where: { id: targetId }, select: { id: true, imagePath: true } });
@@ -85,6 +96,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, action, targetId });
   } catch (error) {
     if (error instanceof ApiAuthError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof RequestSecurityError) return NextResponse.json({ error: error.message }, { status: 403 });
     console.error("admin.action_failed", error);
     return NextResponse.json({ error: "Admin action failed." }, { status: 500 });
   }

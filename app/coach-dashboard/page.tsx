@@ -40,7 +40,7 @@ export default function CoachDashboardPage() {
   }
   return (
     <AuthGuard role="coach">
-      <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <main className="mx-auto min-w-0 max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <BookingRealtimeListener onRefresh={bookings.reload} />
       <h1 className="text-4xl font-bold text-white">Coach dashboard</h1>
       <p className="mt-3 text-zinc-400">Registration and all FitSaathi bookings are free, with no platform deductions or hidden charges.</p>
@@ -58,10 +58,10 @@ export default function CoachDashboardPage() {
         <Tile icon={<Bell />} label="Unread notifications" value={String(notifications.unreadCount)} />
       </div>
       <div className="mt-8"><NotificationPermissionCard /></div>
-      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+      <div className="mt-8 grid min-w-0 gap-4 lg:grid-cols-2">
         <Panel title="Booking requests">
           {message ? <p className="mb-3 rounded-xl border border-acid/30 bg-acid/10 p-3 text-sm text-acid">{message}</p> : null}
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+          <div className="mb-4 flex max-w-full gap-2 overflow-x-auto pb-1">
             {(["pending", "confirmed", "accepted", "rejected", "completed"] as const).map((tab) => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold capitalize ${activeTab === tab ? "bg-acid text-ink" : "border border-white/10 text-zinc-300"}`}>
                 {tab} ({bookings.data.filter((booking) => (booking.status || "pending") === tab).length})
@@ -91,7 +91,7 @@ function Tile({ icon, label, value }: { icon: ReactNode; label: string; value: s
 }
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"><h2 className="mb-4 text-xl font-semibold text-white">{title}</h2>{children}</section>;
+  return <section className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-5"><h2 className="mb-4 text-xl font-semibold text-white">{title}</h2>{children}</section>;
 }
 
 function BookingCard({ booking, onStatus }: { booking: Booking; onStatus: (id: string, status: "accepted" | "rejected" | "completed" | "cancelled" | "rescheduled", schedule?: { preferredDate: string; preferredTime: string }) => void }) {

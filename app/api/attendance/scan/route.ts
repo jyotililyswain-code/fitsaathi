@@ -2,14 +2,15 @@ import { NextResponse } from "next/server";
 import { hashAttendanceCode, isSixDigitAttendanceCode } from "@/lib/attendance";
 import { prisma } from "@/lib/prisma";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
-import { getClientIp, isRateLimited, sanitizeText } from "@/lib/security";
+import { assertSameOrigin, getClientIp, isRateLimited, RequestSecurityError, sanitizeText } from "@/lib/security";
 
 const invalidMessage = "Invalid or expired attendance code";
 
 export async function POST(request: Request) {
-  if (await isRateLimited(`attendance-verify:${getClientIp(request)}`, 15, 60_000)) return NextResponse.json({ error: "Too many attendance code attempts." }, { status: 429 });
   try {
+    assertSameOrigin(request);
     const user = await requireApiUser(request);
+    if (await isRateLimited(`attendance-verify:${user.id}:${getClientIp(request)}`, 15, 60_000)) return NextResponse.json({ error: "Too many attendance code attempts." }, { status: 429 });
     const body = await request.json();
     const bookingId = sanitizeText(body.bookingId, 80);
     const code = sanitizeText(body.code, 6);
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ attendanceId: result.attendance.id, bookingId: booking.id, markedAt: result.attendance.scannedAt, attendanceStatus: "marked", message: "Attendance marked successfully" });
   } catch (error: any) {
     if (error instanceof ApiAuthError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof RequestSecurityError) return NextResponse.json({ error: error.message }, { status: 403 });
     if (error?.code === "P2002") return NextResponse.json({ error: invalidMessage }, { status: 409 });
     return NextResponse.json({ error: "Attendance verification failed." }, { status: 500 });
   }

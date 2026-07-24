@@ -24,7 +24,7 @@ import {
   updateSupabasePassword,
 } from "./supabase-auth";
 import { matchesRouter } from "./matches";
-import { optimizeUploads, removeUploads, upload } from "./uploads";
+import { discardIncomingUploads, optimizeUploads, removeUploads, upload } from "./uploads";
 import { containsInlineFileData, isOwnedProviderPath, isProviderFileKind, isProviderRegistrationType, type ProviderRegistrationType } from "../../lib/provider-upload-rules";
 import { calculateBookingPricing, resolveMonthlyFeeRupees } from "../../lib/booking-pricing";
 import { assertProviderUpload, handleProviderBlobUpload, localProviderUpload, providerStorageMode, providerUploadError, readProviderUpload, removeProviderUploads, removeUnreferencedProviderUploads, storeLocalProviderUpload } from "./provider-uploads";
@@ -36,8 +36,12 @@ const pricing = (value: unknown) => { const sellerPrice = Math.max(0, Math.round
 const establishmentTypes = ["DOJO", "GYM", "FITNESS_STUDIO", "YOGA_STUDIO", "MARTIAL_ARTS_ACADEMY", "OTHER"] as const;
 const publicUser = { id: true, name: true, email: true, phone: true, role: true, registrationIntent: true, emailVerified: true, emailVerifiedAt: true, accountStatus: true, notificationOnboardingCompleted: true, address: true, acceptedPolicies: true, acceptedPolicyVersion: true, createdAt: true } as const;
 const publicCoach = ({ phoneNumber: _phone, isPhoneVerified: _phoneVerified, coachPayout: _payout, photoPath, ...coach }: any) => ({ ...coach, photoPath: photoPath ? `/api/coaches/${coach.id}/photo` : undefined });
-const publicSellerRecord = ({ phone: _phone, aadhaarPath: _aadhaar, gstNumber: _gst, owner, ...seller }: any) => ({ ...seller, ...(owner ? { owner: { id: owner.id, name: owner.name } } : {}) });
-const publicProductRecord = ({ sellerPrice: _sellerPrice, sellerPayout: _sellerPayout, platformFee: _platformFee, seller, ...product }: any) => ({ ...product, ...(seller ? { seller: publicSellerRecord(seller) } : {}) });
+const publicSellerRecord = ({ ownerId: _ownerId, phone: _phone, aadhaarPath: _aadhaar, gstNumber: _gst, owner, ...seller }: any) => ({ ...seller, ...(owner ? { owner: { name: owner.name } } : {}) });
+const publicProductRecord = ({ sellerPrice: _sellerPrice, sellerPayout: _sellerPayout, platformFee: _platformFee, seller, reviews, ...product }: any) => ({
+  ...product,
+  ...(seller ? { seller: publicSellerRecord(seller) } : {}),
+  ...(reviews ? { reviews: reviews.map(({ userId: _userId, productId: _productId, ...review }: any) => review) } : {}),
+});
 const editableDojoSelect = {
   id: true,
   name: true,
@@ -203,7 +207,7 @@ app.post("/api/auth/refresh", asyncRoute(async (request, response) => {
 }));
 app.post("/api/auth/logout", asyncRoute(async (request, response) => { const token = String(request.body?.refreshToken || request.headers.cookie?.match(/(?:^|;\s*)fitsaathi_refresh=([^;]+)/)?.[1] || ""); if (token) await prisma.refreshToken.deleteMany({ where: { tokenHash: hashToken(token) } }); clearSessionCookies(response); response.status(204).end(); }));
 app.get("/api/auth/me", authenticate, asyncRoute(async (request: AuthRequest, response) => response.json(await prisma.user.findUnique({ where: { id: request.user!.id }, select: publicUser }))));
-app.post("/api/auth/forgot-password", asyncRoute(async (request, response) => {
+app.post("/api/auth/forgot-password", databaseRateLimit(5, 10 * 60_000, "forgot-password"), asyncRoute(async (request, response) => {
   const input = credentials.pick({ email: true }).parse(request.body);
   await sendSupabasePasswordReset(input.email);
   response.json({ message: "If the account exists, check your email for a reset link." });
@@ -511,7 +515,7 @@ app.delete("/api/dojos/:id", authenticate, asyncRoute(async (request: AuthReques
   response.status(204).end();
 }));
 
-app.post("/api/contact", asyncRoute(async (request, response) => {
+app.post("/api/contact", databaseRateLimit(5, 10 * 60_000, "contact"), asyncRoute(async (request, response) => {
   const input = z.object({ name: z.string().min(2).max(100), email: z.string().email(), phone: z.string().max(20).optional(), message: z.string().min(10).max(2000) }).parse(request.body);
   const item = await prisma.contactMessage.create({ data: input }); response.status(201).json({ id: item.id });
 }));
@@ -522,16 +526,34 @@ app.post("/api/chats", authenticate, asyncRoute(async (request: AuthRequest, res
 
 app.get("/api/products", asyncRoute(async (request, response) => {
   const query = z.object({ search: z.string().optional(), category: z.string().optional(), brand: z.string().optional(), trusted: z.enum(["true", "false"]).optional(), minPrice: z.coerce.number().optional(), maxPrice: z.coerce.number().optional(), page: z.coerce.number().min(1).default(1), limit: z.coerce.number().min(1).max(50).default(20), sort: z.enum(["newest", "price_asc", "price_desc", "rating"]).default("newest") }).parse(request.query);
-  const where: any = { status: "approved", ...(query.category && { category: query.category }), ...(query.brand && { brand: query.brand }), ...(query.trusted === "true" && { seller: { trusted: true } }), ...((query.minPrice != null || query.maxPrice != null) && { customerPrice: { gte: query.minPrice, lte: query.maxPrice } }), ...(query.search && { OR: [{ title: { contains: query.search, mode: "insensitive" } }, { description: { contains: query.search, mode: "insensitive" } }] }) };
+  const where: any = { status: "approved", seller: { status: { in: ["verified", "trusted"] }, owner: { accountStatus: "active" }, ...(query.trusted === "true" ? { trusted: true } : {}) }, ...(query.category && { category: query.category }), ...(query.brand && { brand: query.brand }), ...((query.minPrice != null || query.maxPrice != null) && { customerPrice: { gte: query.minPrice, lte: query.maxPrice } }), ...(query.search && { OR: [{ title: { contains: query.search, mode: "insensitive" } }, { description: { contains: query.search, mode: "insensitive" } }] }) };
   const orderBy: any = query.sort === "price_asc" ? { customerPrice: "asc" } : query.sort === "price_desc" ? { customerPrice: "desc" } : query.sort === "rating" ? { rating: "desc" } : { createdAt: "desc" };
   const [items, total] = await prisma.$transaction([prisma.product.findMany({ where, include: { images: true, seller: { select: { id: true, storeName: true, trusted: true, verified: true, rating: true } } }, orderBy: [{ seller: { trusted: "desc" } }, orderBy], skip: (query.page - 1) * query.limit, take: query.limit }), prisma.product.count({ where })]);
   response.json({ items: items.map(publicProductRecord), total, page: query.page, pages: Math.ceil(total / query.limit) });
 }));
-app.get("/api/products/:id", asyncRoute(async (request, response) => { const item = await prisma.product.findUnique({ where: { id: request.params.id }, include: { images: true, seller: true, reviews: true } }); item ? response.json(publicProductRecord(item)) : response.status(404).json({ error: "Product not found." }); }));
+app.get("/api/products/:id", asyncRoute(async (request, response) => { const item = await prisma.product.findFirst({ where: { id: request.params.id, status: "approved", seller: { status: { in: ["verified", "trusted"] }, owner: { accountStatus: "active" } } }, include: { images: true, seller: true, reviews: true } }); item ? response.json(publicProductRecord(item)) : response.status(404).json({ error: "Product not found." }); }));
 app.post("/api/products", authenticate, allowRoles("seller", ...admins), upload.array("images", 6), asyncRoute(async (request: AuthRequest, response) => {
-  const input = z.object({ title: z.string().min(3), description: z.string().min(10), category: z.string().min(2), brand: z.string().min(1), sellerPrice: z.coerce.number().positive(), stock: z.coerce.number().int().min(0) }).parse(request.body);
-  const seller = await prisma.seller.findUnique({ where: { ownerId: request.user!.id } }); if (!seller) return response.status(403).json({ error: "Seller profile required." });
-  const images = await optimizeUploads((request.files as Express.Multer.File[]) || [], "products"); const item = await prisma.product.create({ data: { sellerId: seller.id, ...input, ...pricing(input.sellerPrice), images: { create: images.map((image, sortOrder) => ({ ...image, sortOrder })) } }, include: { images: true } }); response.status(201).json(item);
+  const files = (request.files as Express.Multer.File[]) || [];
+  const parsed = z.object({ title: z.string().min(3), description: z.string().min(10), category: z.string().min(2), brand: z.string().min(1), sellerPrice: z.coerce.number().positive(), stock: z.coerce.number().int().min(0) }).safeParse(request.body);
+  if (!parsed.success) {
+    discardIncomingUploads(files);
+    return response.status(422).json({ error: "Please correct the product details.", issues: parsed.error.issues });
+  }
+  const seller = await prisma.seller.findUnique({ where: { ownerId: request.user!.id } });
+  if (!seller) {
+    discardIncomingUploads(files);
+    return response.status(403).json({ error: "Seller profile required." });
+  }
+  let images: Awaited<ReturnType<typeof optimizeUploads>> = [];
+  try {
+    images = await optimizeUploads(files, "products");
+    const item = await prisma.product.create({ data: { sellerId: seller.id, ...parsed.data, ...pricing(parsed.data.sellerPrice), images: { create: images.map((image, sortOrder) => ({ ...image, sortOrder })) } }, include: { images: true } });
+    response.status(201).json(item);
+  } catch (error) {
+    discardIncomingUploads(files);
+    removeUploads(images.flatMap(image => [image.path, image.thumbnail]));
+    throw error;
+  }
 }));
 app.put("/api/products/:id", authenticate, allowRoles("seller", ...admins), asyncRoute(async (request: AuthRequest, response) => {
   const item = await prisma.product.findUnique({ where: { id: String(request.params.id) }, include: { seller: true } }); if (!item) return response.status(404).json({ error: "Product not found." });
@@ -549,11 +571,11 @@ app.delete("/api/products/:id", authenticate, allowRoles("seller", ...admins), a
 }));
 
 app.get("/api/sellers", asyncRoute(async (_request, response) => {
-  const sellers = await prisma.seller.findMany({ where: { status: { in: ["verified", "trusted"] } }, orderBy: [{ trusted: "desc" }, { rating: "desc" }], include: { owner: { select: { id: true, name: true } } } });
+  const sellers = await prisma.seller.findMany({ where: { status: { in: ["verified", "trusted"] }, owner: { accountStatus: "active" } }, orderBy: [{ trusted: "desc" }, { rating: "desc" }], include: { owner: { select: { id: true, name: true } } } });
   response.json(sellers.map(publicSellerRecord));
 }));
 app.get("/api/sellers/:id", asyncRoute(async (request, response) => {
-  const seller = await prisma.seller.findUnique({ where: { id: String(request.params.id) }, include: { owner: { select: { id: true, name: true } } } });
+  const seller = await prisma.seller.findFirst({ where: { id: String(request.params.id), status: { in: ["verified", "trusted"] }, owner: { accountStatus: "active" } }, include: { owner: { select: { id: true, name: true } } } });
   seller ? response.json(publicSellerRecord(seller)) : response.status(404).json({ error: "Seller not found." });
 }));
 app.get("/api/seller/me", authenticate, asyncRoute(async (request: AuthRequest, response) => {
@@ -561,16 +583,57 @@ app.get("/api/seller/me", authenticate, asyncRoute(async (request: AuthRequest, 
   seller ? response.json(seller) : response.status(404).json({ error: "Seller profile not found." });
 }));
 app.post("/api/sellers", authenticate, upload.fields([{ name: "aadhaar", maxCount: 1 }, { name: "profile", maxCount: 1 }]), asyncRoute(async (request: AuthRequest, response) => {
-  const input = z.object({ storeName: z.string().min(2), phone: z.string().min(8), address: z.string().min(8), bio: z.string().max(1000).optional(), gstNumber: z.string().optional(), website: z.string().optional(), socialLinks: z.string().optional() }).parse(request.body); const files = request.files as Record<string, Express.Multer.File[]>;
-  const aadhaar = await optimizeUploads(files?.aadhaar || [], "aadhaar"); const profile = await optimizeUploads(files?.profile || [], "sellers");
-  const result = await prisma.$transaction(async tx => { const seller = await tx.seller.create({ data: { ownerId: request.user!.id, ...input, aadhaarPath: aadhaar[0]?.path, profilePath: profile[0]?.path } }); const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "seller", registrationIntent: "seller", phone: input.phone } }); return { seller, user }; }, { timeout: 20_000 });
-  response.status(201).json({ ...result.seller, session: await issueSession(result.user, response) });
+  const files = (request.files as Record<string, Express.Multer.File[]>) || {};
+  const incomingFiles = Object.values(files).flat();
+  if (!["customer", "seller"].includes(request.user!.role)) {
+    discardIncomingUploads(incomingFiles);
+    return response.status(403).json({ error: "This account cannot create a seller profile." });
+  }
+  const existingSeller = await prisma.seller.findUnique({ where: { ownerId: request.user!.id }, select: { id: true, status: true } });
+  if (existingSeller) {
+    discardIncomingUploads(incomingFiles);
+    return response.status(409).json({ error: "This account already has a seller profile.", profileId: existingSeller.id, profileStatus: existingSeller.status });
+  }
+  const parsed = z.object({ storeName: z.string().min(2), phone: z.string().min(8), address: z.string().min(8), bio: z.string().max(1000).optional(), gstNumber: z.string().optional(), website: z.string().optional(), socialLinks: z.string().optional() }).safeParse(request.body);
+  if (!parsed.success) {
+    discardIncomingUploads(incomingFiles);
+    return response.status(422).json({ error: "Please correct the seller details.", issues: parsed.error.issues });
+  }
+  let aadhaar: Awaited<ReturnType<typeof optimizeUploads>> = [];
+  let profile: Awaited<ReturnType<typeof optimizeUploads>> = [];
+  try {
+    aadhaar = await optimizeUploads(files.aadhaar || [], "aadhaar");
+    profile = await optimizeUploads(files.profile || [], "sellers");
+    const input = parsed.data;
+    const result = await prisma.$transaction(async tx => { const seller = await tx.seller.create({ data: { ownerId: request.user!.id, ...input, aadhaarPath: aadhaar[0]?.path, profilePath: profile[0]?.path } }); const user = await tx.user.update({ where: { id: request.user!.id }, data: { role: "seller", registrationIntent: "seller", phone: input.phone } }); return { seller, user }; }, { timeout: 20_000 });
+    response.status(201).json({ ...result.seller, session: await issueSession(result.user, response) });
+  } catch (error) {
+    discardIncomingUploads(incomingFiles);
+    removeUploads([...aadhaar, ...profile].flatMap(image => [image.path, image.thumbnail]));
+    throw error;
+  }
 }));
 app.patch("/api/sellers/:id/verify", authenticate, allowRoles("admin", "super_admin", "moderator"), asyncRoute(async (request: AuthRequest, response) => { const status = z.object({ status: z.enum(["pending", "verified", "trusted", "rejected", "suspended"]) }).parse(request.body).status; const seller = await prisma.seller.update({ where: { id: String(request.params.id) }, data: { status, verified: ["verified", "trusted"].includes(status), trusted: status === "trusted" } }); await prisma.adminLog.create({ data: { actorId: request.user!.id, action: "seller_status", targetId: seller.id, details: { status }, ip: request.ip } }); response.json(seller); }));
 
 app.post("/api/orders", authenticate, asyncRoute(async (request: AuthRequest, response) => {
   const input = z.object({ shippingAddress: z.string().min(10), items: z.array(z.object({ productId: z.string().uuid(), quantity: z.number().int().min(1).max(20) })).min(1) }).parse(request.body);
-  const order = await prisma.$transaction(async tx => { const products = await tx.product.findMany({ where: { id: { in: input.items.map(i => i.productId) }, status: "approved" } }); if (products.length !== input.items.length) throw new Error("One or more products are unavailable."); const lines = input.items.map(line => { const product = products.find(p => p.id === line.productId)!; if (product.stock < line.quantity) throw new Error(`${product.title} is out of stock.`); return { product, quantity: line.quantity }; }); const total = lines.reduce((sum, line) => sum + line.product.customerPrice * line.quantity, 0); const platformRevenue = lines.reduce((sum, line) => sum + line.product.platformFee * line.quantity, 0); const created = await tx.order.create({ data: { userId: request.user!.id, shippingAddress: input.shippingAddress, total, platformRevenue, items: { create: lines.map(line => ({ productId: line.product.id, sellerId: line.product.sellerId, quantity: line.quantity, customerPrice: line.product.customerPrice, sellerPayout: line.product.sellerPayout, platformFee: line.product.platformFee })) } }, include: { items: true } }); for (const line of lines) await tx.product.update({ where: { id: line.product.id }, data: { stock: { decrement: line.quantity } } }); return created; }); response.status(201).json(order);
+  const quantities = new Map<string, number>();
+  for (const item of input.items) quantities.set(item.productId, (quantities.get(item.productId) || 0) + item.quantity);
+  if ([...quantities.values()].some(quantity => quantity > 20)) return response.status(400).json({ error: "A product quantity cannot exceed 20." });
+  const requestedItems = [...quantities].map(([productId, quantity]) => ({ productId, quantity }));
+  const order = await prisma.$transaction(async tx => {
+    const products = await tx.product.findMany({ where: { id: { in: requestedItems.map(item => item.productId) }, status: "approved", seller: { status: { in: ["verified", "trusted"] }, owner: { accountStatus: "active" } } } });
+    if (products.length !== requestedItems.length) throw new Error("One or more products are unavailable.");
+    const lines = requestedItems.map(line => { const product = products.find(candidate => candidate.id === line.productId)!; return { product, quantity: line.quantity }; });
+    for (const line of lines) {
+      const claim = await tx.product.updateMany({ where: { id: line.product.id, status: "approved", stock: { gte: line.quantity }, seller: { status: { in: ["verified", "trusted"] }, owner: { accountStatus: "active" } } }, data: { stock: { decrement: line.quantity } } });
+      if (claim.count !== 1) throw new Error(`${line.product.title} is out of stock.`);
+    }
+    const total = lines.reduce((sum, line) => sum + line.product.customerPrice * line.quantity, 0);
+    const platformRevenue = lines.reduce((sum, line) => sum + line.product.platformFee * line.quantity, 0);
+    return tx.order.create({ data: { userId: request.user!.id, shippingAddress: input.shippingAddress, total, platformRevenue, items: { create: lines.map(line => ({ productId: line.product.id, sellerId: line.product.sellerId, quantity: line.quantity, customerPrice: line.product.customerPrice, sellerPayout: line.product.sellerPayout, platformFee: line.product.platformFee })) } }, include: { items: true } });
+  });
+  response.status(201).json(order);
 }));
 app.get("/api/orders", authenticate, asyncRoute(async (request: AuthRequest, response) => response.json(await prisma.order.findMany({ where: admins.includes(request.user!.role) ? {} : { userId: request.user!.id }, include: { items: { include: { product: { include: { images: true } } } }, payment: true }, orderBy: { createdAt: "desc" }, take: 100 }))));
 

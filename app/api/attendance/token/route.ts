@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { ATTENDANCE_CODE_TTL_SECONDS, generateAttendanceCode, hashAttendanceCode } from "@/lib/attendance";
 import { prisma } from "@/lib/prisma";
 import { ApiAuthError, requireApiUser } from "@/lib/server-auth";
-import { getClientIp, isRateLimited, sanitizeText } from "@/lib/security";
+import { assertSameOrigin, getClientIp, isRateLimited, RequestSecurityError, sanitizeText } from "@/lib/security";
 
 export async function POST(request: Request) {
-  if (await isRateLimited(`attendance-code:${getClientIp(request)}`, 10, 60_000)) return NextResponse.json({ error: "Too many attendance code requests." }, { status: 429 });
   try {
+    assertSameOrigin(request);
     const user = await requireApiUser(request);
+    if (await isRateLimited(`attendance-code:${user.id}:${getClientIp(request)}`, 10, 60_000)) return NextResponse.json({ error: "Too many attendance code requests." }, { status: 429 });
     const bookingId = sanitizeText((await request.json()).bookingId, 80);
     const booking = await prisma.booking.findFirst({ where: { id: bookingId, userId: user.id } });
     if (!booking) return NextResponse.json({ error: "Active booking not found." }, { status: 404 });
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ code, expiresAt: expiresAt.toISOString(), expiresInSeconds: ATTENDANCE_CODE_TTL_SECONDS }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof ApiAuthError) return NextResponse.json({ error: error.message }, { status: error.status });
+    if (error instanceof RequestSecurityError) return NextResponse.json({ error: error.message }, { status: 403 });
     return NextResponse.json({ error: "Could not generate attendance code." }, { status: 500 });
   }
 }

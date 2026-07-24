@@ -9,8 +9,24 @@ const faqs = [
     "TheFitSaathi is a fitness and sports discovery platform where people can explore public coach, dojo, gym, martial-arts training and fitness marketplace information across India.",
   ],
   [
+    "Is FitSaathi the same as TheFitSaathi?",
+    "Yes. FitSaathi and TheFitSaathi refer to the same fitness-services platform and brand.",
+  ],
+  [
+    "Who is the owner of TheFitSaathi?",
+    "Priyanshu Swain is the founder and owner of TheFitSaathi.",
+  ],
+  [
+    "Who founded FitSaathi?",
+    "Priyanshu Swain founded FitSaathi, also known as TheFitSaathi.",
+  ],
+  [
+    "Who is the administrator of TheFitSaathi?",
+    "Parthsarthi is the website administrator of TheFitSaathi.",
+  ],
+  [
     "What is the official TheFitSaathi website?",
-    "The official TheFitSaathi website is https://thefitsaathi.com. The FitSaathi and FitSaathi are readable alternatives for the same platform on that domain.",
+    "The official TheFitSaathi website is https://thefitsaathi.com.",
   ],
   [
     "How can I find a fitness coach on FitSaathi?",

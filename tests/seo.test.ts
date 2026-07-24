@@ -76,6 +76,7 @@ test("homepage brand entity nodes use one connected production identity", () => 
   assert.equal(organizationJsonLd.name, "TheFitSaathi");
   assert.equal(organizationJsonLd.url, "https://thefitsaathi.com");
   assert.deepEqual(organizationJsonLd.alternateName, [
+    "FitSaathi",
     "The FitSaathi",
     "TheFitSaathi Fitness and Sports Platform",
   ]);
@@ -88,8 +89,8 @@ test("homepage brand entity nodes use one connected production identity", () => 
   });
   assert.deepEqual(organizationJsonLd.member, {
     "@type": "Person",
-    name: "Parthsaarthi",
-    jobTitle: "Administrator of TheFitSaathi",
+    name: "Parthsarthi",
+    jobTitle: "Website Administrator of TheFitSaathi",
   });
   assert.equal(
     organizationJsonLd.logo.url,
@@ -134,10 +135,10 @@ test("official people and ownership FAQ use consistent linked entities", () => {
   );
   assert.equal("sameAs" in founderPersonJsonLd, false);
 
-  assert.equal(administratorPersonJsonLd.name, "Parthsaarthi");
+  assert.equal(administratorPersonJsonLd.name, "Parthsarthi");
   assert.equal(
     administratorPersonJsonLd.jobTitle,
-    "Administrator of TheFitSaathi",
+    "Website Administrator of TheFitSaathi",
   );
   assert.deepEqual(administratorPersonJsonLd.worksFor, {
     "@type": "Organization",
@@ -162,7 +163,7 @@ test("ownership pages receive exact canonical metadata", () => {
   const about = generateSeoMetadata({
     title: "About TheFitSaathi | Indian Fitness and Sports Platform",
     description:
-      "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsaarthi.",
+      "Learn about TheFitSaathi, an Indian fitness and sports platform founded and owned by Priyanshu Swain and administered by Parthsarthi.",
     path: "/about",
   });
   const owner = generateSeoMetadata({

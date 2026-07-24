@@ -92,8 +92,8 @@ export function Footer() {
 
       <div className="border-t border-white/10 px-4 py-5 sm:px-6">
         <p className="mx-auto max-w-7xl text-sm leading-6 text-zinc-500">
-          TheFitSaathi was founded by Priyanshu Swain and is administered by
-          Parthsaarthi.
+          TheFitSaathi is founded and owned by Priyanshu Swain. Website
+          administration is managed by Parthsarthi.
         </p>
       </div>
     </footer>

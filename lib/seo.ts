@@ -28,6 +28,7 @@ function configuredSiteUrl() {
 export const siteUrl = configuredSiteUrl();
 export const brandName = "TheFitSaathi";
 export const brandAlternateNames = [
+  "FitSaathi",
   "The FitSaathi",
   "TheFitSaathi Fitness and Sports Platform",
 ] as const;
@@ -38,11 +39,11 @@ export const seoConfig = {
   domainName: "thefitsaathi.com",
   defaultTitle: "TheFitSaathi | Find Coaches, Gyms, Dojos and Fitness Services",
   defaultDescription:
-    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.",
+    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsarthi.",
   defaultOpenGraphDescription:
-    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.",
+    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsarthi.",
   defaultTwitterDescription:
-    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsaarthi.",
+    "TheFitSaathi is an Indian fitness and sports platform owned and founded by Priyanshu Swain and administered by Parthsarthi.",
   defaultKeywords: [
     "FitSaathi",
     "Fit Saathi",
@@ -268,9 +269,9 @@ export const founderPersonJsonLd = {
 export const administratorPersonJsonLd = {
   "@context": "https://schema.org",
   "@type": "Person",
-  "@id": `${siteUrl}/#parthsaarthi`,
-  name: "Parthsaarthi",
-  jobTitle: "Administrator of TheFitSaathi",
+  "@id": `${siteUrl}/about#parthsarthi`,
+  name: "Parthsarthi",
+  jobTitle: "Website Administrator of TheFitSaathi",
   worksFor: {
     "@type": "Organization",
     "@id": `${siteUrl}/#organization`,
@@ -339,7 +340,7 @@ export const ownershipFaqItems = [
   },
   {
     question: "Who is the administrator of TheFitSaathi?",
-    answer: "Parthsaarthi is the administrator of TheFitSaathi.",
+    answer: "Parthsarthi is the website administrator of TheFitSaathi.",
   },
   {
     question: "What is the official website of TheFitSaathi?",
